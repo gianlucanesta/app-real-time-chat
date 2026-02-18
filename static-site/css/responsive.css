@@ -8,10 +8,10 @@
     padding: var(--space-8) var(--space-6);
   }
 
-  /* Chat: narrower sidebar */
+  /* Chat: narrower sidebar on tablet */
   .chat-sidebar {
-    width: 220px;
-    min-width: 220px;
+    width: 260px;
+    min-width: 260px;
   }
 
   /* Settings: hide sidebar text, icon-only */
@@ -73,6 +73,9 @@
   /* Chat: stack layout */
   .chat-page {
     flex-direction: column;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
   }
   .chat-sidebar {
     width: 100%;
@@ -87,11 +90,48 @@
     display: none;
   }
 
+  /* Chat main fills viewport, flex column, no page scroll */
+  .chat-main {
+    height: 100vh;
+    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
   .back-btn {
     display: flex;
   }
 
+  /* Header: name on one line, hide "Online" text */
+  .chat-header {
+    padding: var(--space-2) var(--space-3);
+    gap: var(--space-2);
+    height: auto;
+    min-height: 48px;
+  }
+  .chat-contact-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: var(--font-size-base);
+  }
+  .chat-status {
+    display: none;
+  }
+  .chat-header-actions .icon-btn {
+    width: 28px;
+    height: 28px;
+  }
+  .chat-header-actions .icon-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
   .chat-messages {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     padding: var(--space-3);
   }
   .message-group-received,
@@ -100,7 +140,36 @@
   }
 
   .chat-input-area {
+    flex-shrink: 0;
     padding: var(--space-2) var(--space-3);
+    border-top: 1px solid var(--color-border);
+    background-color: var(--color-bg);
+  }
+  .chat-input-row {
+    gap: var(--space-1);
+  }
+  .chat-input-field {
+    min-width: 0;
+    height: 36px;
+    padding: 0 var(--space-3);
+  }
+  .input-action-btn {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+  .input-action-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+  .send-btn {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+  .send-btn svg {
+    width: 16px;
+    height: 16px;
   }
 
   /* Settings: bottom navigation bar */

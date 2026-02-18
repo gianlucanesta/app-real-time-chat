@@ -54,7 +54,7 @@
       <div class="conversation-list">
 
         <!-- Conversation 1 – active -->
-        <div class="conversation-item active">
+        <div class="conversation-item active" data-contact="elena">
           <div class="avatar-wrapper">
             <div class="avatar avatar-md" style="background:linear-gradient(135deg,#EC4899,#F97316);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">ER</div>
             <span class="status-dot"></span>
@@ -206,7 +206,6 @@
             <div class="typing-indicator">
               <span class="dot"></span><span class="dot"></span><span class="dot"></span>
             </div>
-            </div>
           </div>
         </div>
 
@@ -309,5 +308,28 @@
     </div>
 
   </div>
+
+  <!-- Mobile sidebar toggle script -->
+  <script>
+    (function () {
+      var sidebar = document.getElementById('sidebar');
+      var backBtn = document.querySelector('.back-btn');
+      var elenaItem = document.querySelector('.conversation-item[data-contact="elena"]');
+
+      // Only Elena's conversation opens the chat
+      if (elenaItem) {
+        elenaItem.addEventListener('click', function () {
+          sidebar.classList.add('hidden');
+        });
+      }
+
+      // Back button shows sidebar again
+      if (backBtn) {
+        backBtn.addEventListener('click', function () {
+          sidebar.classList.remove('hidden');
+        });
+      }
+    })();
+  </script>
 </body>
 </html>

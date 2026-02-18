@@ -117,6 +117,7 @@
 /* --- Chat Page Layout --- */
 .chat-page {
   height: 100vh;
+  max-height: 100vh;
   display: flex;
   overflow: hidden;
 }
@@ -291,6 +292,9 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .chat-header {
@@ -329,6 +333,7 @@
 /* Messages Area */
 .chat-messages {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--space-4) var(--space-6);
   display: flex;
@@ -341,7 +346,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  max-width: 65%;
+  max-width: 60%;
   margin-bottom: var(--space-4);
 }
 .message-group-sent {
@@ -349,7 +354,7 @@
   flex-direction: column;
   align-items: flex-end;
   align-self: flex-end;
-  max-width: 65%;
+  max-width: 60%;
   margin-bottom: var(--space-4);
 }
 .message-avatar-row {
@@ -364,6 +369,7 @@
   border-top: 1px solid var(--color-border);
   padding: var(--space-3) var(--space-4);
   flex-shrink: 0;
+  background-color: var(--color-bg);
 }
 .chat-input-row {
   display: flex;
