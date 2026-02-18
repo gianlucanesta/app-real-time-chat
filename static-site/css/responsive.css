@@ -1,0 +1,171 @@
+/* === Responsive Design === */
+
+/* ---- Tablet (768 – 1023 px) ---- */
+@media (max-width: 1023px) {
+  /* Auth pages: slightly more padding */
+  .auth-card {
+    max-width: 400px;
+    padding: var(--space-8) var(--space-6);
+  }
+
+  /* Chat: narrower sidebar */
+  .chat-sidebar {
+    width: 220px;
+    min-width: 220px;
+  }
+
+  /* Settings: hide sidebar text, icon-only */
+  .settings-sidebar {
+    width: 72px;
+    min-width: 72px;
+    padding: var(--space-5) var(--space-3);
+    align-items: center;
+  }
+  .settings-logo span {
+    display: none;
+  }
+  .nav-item span {
+    display: none;
+  }
+  .nav-item {
+    justify-content: center;
+    padding: var(--space-2);
+    width: 40px;
+    height: 40px;
+  }
+  .settings-user-footer .user-info {
+    display: none;
+  }
+  .settings-user-footer {
+    justify-content: center;
+  }
+
+  /* Settings main */
+  .settings-main {
+    padding: var(--space-6);
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- Mobile (< 768 px) ---- */
+@media (max-width: 767px) {
+  /* Auth */
+  .auth-page {
+    padding: var(--space-4);
+  }
+  .auth-card {
+    max-width: 100%;
+    border-radius: var(--radius-md);
+    padding: var(--space-6) var(--space-5);
+  }
+  .auth-page::after {
+    width: 300px;
+    height: 120px;
+  }
+
+  /* Terms text: scale down to stay on one line */
+  .terms-text {
+    font-size: clamp(11px, 3.2vw, var(--font-size-base));
+  }
+
+  /* Chat: stack layout */
+  .chat-page {
+    flex-direction: column;
+  }
+  .chat-sidebar {
+    width: 100%;
+    min-width: 100%;
+    height: 100vh;
+    position: absolute;
+    z-index: 50;
+    left: 0;
+    top: 0;
+  }
+  .chat-sidebar.hidden {
+    display: none;
+  }
+
+  .back-btn {
+    display: flex;
+  }
+
+  .chat-messages {
+    padding: var(--space-3);
+  }
+  .message-group-received,
+  .message-group-sent {
+    max-width: 85%;
+  }
+
+  .chat-input-area {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  /* Settings: full-width sidebar overlay */
+  .settings-page {
+    flex-direction: column;
+  }
+  .settings-sidebar {
+    width: 100%;
+    min-width: 100%;
+    flex-direction: row;
+    padding: var(--space-3);
+    gap: var(--space-2);
+    height: auto;
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+    align-items: center;
+  }
+  .settings-logo {
+    margin-bottom: 0;
+    margin-right: var(--space-4);
+    flex-shrink: 0;
+  }
+  .settings-logo span {
+    display: none;
+  }
+  .settings-nav {
+    flex-direction: row;
+    gap: var(--space-1);
+    flex: unset;
+  }
+  .nav-item {
+    justify-content: center;
+    padding: var(--space-2);
+    width: 40px;
+    height: 40px;
+  }
+  .nav-item span {
+    display: none;
+  }
+  .settings-user-footer {
+    display: none;
+  }
+
+  .settings-main {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-section {
+    flex-direction: column;
+    text-align: center;
+  }
+  .profile-buttons {
+    justify-content: center;
+  }
+
+  /* Modal */
+  .modal-card {
+    max-width: 100%;
+    padding: var(--space-5);
+    margin: var(--space-3);
+    border-radius: var(--radius-md);
+  }
+}
