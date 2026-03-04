@@ -1,7 +1,4 @@
 .env
-.github
-
-docs
 node_modules
 dist
 
