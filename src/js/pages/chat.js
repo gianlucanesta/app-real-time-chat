@@ -293,6 +293,8 @@ function _createMsgEmojiPopup(menuId) {
   popup.appendChild(row);
   return popup;
 }
+
+function _createMsgContextMenu(msg, menuId) {
   const menu = document.createElement("div");
   menu.className = "msg-context-menu";
   menu.id = menuId;
