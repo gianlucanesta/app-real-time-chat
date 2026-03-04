@@ -38,7 +38,9 @@ export function initSignupPage() {
     }
   });
   phoneEl?.addEventListener("blur", () => {
-    if (phoneEl.value && !validatePhone(phoneEl.value)) {
+    if (!phoneEl.value.trim()) {
+      markError(phoneEl, "Phone number is required.");
+    } else if (!validatePhone(phoneEl.value)) {
       markError(phoneEl, "Please enter a valid phone number.");
     } else {
       clearError(phoneEl);
@@ -76,7 +78,10 @@ function _handleSignup({ emailEl, phoneEl, passEl, termsEl }) {
     markError(emailEl, "Please enter a valid email address.");
     valid = false;
   }
-  if (phoneEl?.value && !validatePhone(phoneEl.value)) {
+  if (!phoneEl?.value.trim()) {
+    markError(phoneEl, "Phone number is required.");
+    valid = false;
+  } else if (!validatePhone(phoneEl.value)) {
     markError(phoneEl, "Please enter a valid phone number.");
     valid = false;
   }
