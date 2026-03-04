@@ -22,6 +22,7 @@ export function initChatPage() {
   _initSearch();
   _initInputArea();
   _initMessageActions();
+  _initStaticMessageMenus();
   _initNewChatPanel();
   _initFilterChips();
   _initSidebarMenu();
@@ -201,6 +202,7 @@ function _createMessageEl(msg) {
     time.textContent = msg.time;
 
     group.appendChild(row);
+    group.appendChild(_createMsgEmojiPopup(menuId));
     group.appendChild(_createMsgContextMenu(msg, menuId));
     group.appendChild(time);
   } else {
@@ -224,6 +226,7 @@ function _createMessageEl(msg) {
     time.textContent = msg.time;
 
     group.appendChild(row);
+    group.appendChild(_createMsgEmojiPopup(menuId));
     group.appendChild(_createMsgContextMenu(msg, menuId));
     group.appendChild(time);
   }
@@ -237,7 +240,7 @@ function _createMsgReactBtn(menuId) {
   btn.className = "msg-react-btn";
   btn.setAttribute("aria-label", "React");
   btn.dataset.role = "react";
-  btn.dataset.menu = menuId;
+  btn.dataset.menu = menuId + "-emoji";
   btn.innerHTML =
     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">` +
     `<circle cx="12" cy="12" r="10"/>` +
@@ -262,22 +265,21 @@ function _createMsgChevronInside(menuId) {
   return btn;
 }
 
-function _createMsgContextMenu(msg, menuId) {
-  const menu = document.createElement("div");
-  menu.className = "msg-context-menu";
-  menu.id = menuId;
-  menu.setAttribute("aria-hidden", "true");
+function _createMsgEmojiPopup(menuId) {
+  const popup = document.createElement("div");
+  popup.className = "msg-emoji-popup";
+  popup.id = menuId + "-emoji";
+  popup.setAttribute("aria-hidden", "true");
 
-  // Quick emoji reactions row
-  const emojiRow = document.createElement("div");
-  emojiRow.className = "msg-emoji-row";
+  const row = document.createElement("div");
+  row.className = "msg-emoji-row";
   ["👍", "❤️", "😂", "😮", "😢", "🙏"].forEach((emoji) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "msg-emoji-pick";
     btn.textContent = emoji;
     btn.dataset.emoji = emoji;
-    emojiRow.appendChild(btn);
+    row.appendChild(btn);
   });
   const morePick = document.createElement("button");
   morePick.type = "button";
@@ -287,8 +289,14 @@ function _createMsgContextMenu(msg, menuId) {
     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">` +
     `<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>` +
     `</svg>`;
-  emojiRow.appendChild(morePick);
-  menu.appendChild(emojiRow);
+  row.appendChild(morePick);
+  popup.appendChild(row);
+  return popup;
+}
+  const menu = document.createElement("div");
+  menu.className = "msg-context-menu";
+  menu.id = menuId;
+  menu.setAttribute("aria-hidden", "true");
 
   const isSent = msg.from === "me";
 
@@ -823,6 +831,50 @@ function _initContactPanel() {
 }
 
 // ── Message hover actions & context menu ───────────────────────
+function _openMenu(menu, triggerEl) {
+  const group = menu.parentElement;
+  if (!group) return;
+
+  const groupRect = group.getBoundingClientRect();
+  const triggerRect = triggerEl.getBoundingClientRect();
+  const isEmojiPopup = menu.classList.contains("msg-emoji-popup");
+  const estimatedH = isEmojiPopup ? 64 : 370;
+
+  menu.style.top = "";
+  menu.style.bottom = "";
+
+  if (triggerRect.top > estimatedH) {
+    // Enough space above: anchor bottom of menu to top of trigger
+    menu.style.bottom = (groupRect.bottom - triggerRect.top + 6) + "px";
+  } else {
+    // Not enough: anchor top of menu to bottom of trigger
+    menu.style.top = (triggerRect.bottom - groupRect.top + 6) + "px";
+  }
+
+  menu.classList.add("open");
+  menu.setAttribute("aria-hidden", "false");
+}
+
+function _initStaticMessageMenus() {
+  // Inject emoji popups + context menus for pre-rendered static messages
+  document.querySelectorAll(".message-group-received, .message-group-sent").forEach((group) => {
+    const chevron = group.querySelector(".msg-chevron-inside");
+    const reactBtn = group.querySelector(".msg-react-btn");
+    if (!chevron || !reactBtn) return;
+
+    const menuId = chevron.dataset.menu;
+    if (!menuId || document.getElementById(menuId)) return; // already injected
+
+    const isSent = group.classList.contains("message-group-sent");
+    const fakeMsg = { id: menuId, from: isSent ? "me" : "other", text: "" };
+    group.insertBefore(_createMsgEmojiPopup(menuId), group.querySelector(".message-time"));
+    group.insertBefore(_createMsgContextMenu(fakeMsg, menuId), group.querySelector(".message-time"));
+
+    // Redirect react btn to the emoji popup
+    reactBtn.dataset.menu = menuId + "-emoji";
+  });
+}
+
 function _initMessageActions() {
   const area = document.getElementById("chat-messages");
   if (!area) return;
@@ -842,8 +894,7 @@ function _initMessageActions() {
       const isOpen = menu.classList.contains("open");
       _closeAllMsgMenus();
       if (!isOpen) {
-        menu.classList.add("open");
-        menu.setAttribute("aria-hidden", "false");
+        _openMenu(menu, actionBtn);
       }
       return;
     }
@@ -866,7 +917,7 @@ function _initMessageActions() {
     }
 
     // Tapped inside open menu but not on a button — keep open
-    if (menuEl) {
+    if (menuEl || e.target.closest(".msg-emoji-popup")) {
       e.stopPropagation();
       return;
     }
@@ -877,9 +928,11 @@ function _initMessageActions() {
 }
 
 function _closeAllMsgMenus() {
-  document.querySelectorAll(".msg-context-menu.open").forEach((m) => {
+  document.querySelectorAll(".msg-context-menu.open, .msg-emoji-popup.open").forEach((m) => {
     m.classList.remove("open");
     m.setAttribute("aria-hidden", "true");
+    m.style.top = "";
+    m.style.bottom = "";
   });
 }
 
