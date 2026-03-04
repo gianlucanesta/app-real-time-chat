@@ -186,14 +186,14 @@ function _createMessageEl(msg) {
     row.className = "message-row";
 
     // React emoji button: left of bubble for sent messages
-    row.appendChild(_createMsgReactBtn(menuId));
-
+    // With flex-direction: row-reverse, DOM-first = visual-right, DOM-second = visual-left
     const bubble = document.createElement("div");
     bubble.className = "message-bubble message-sent";
     bubble.textContent = msg.text; // textContent — XSS safe
     // Chevron: inside bubble
     bubble.appendChild(_createMsgChevronInside(menuId));
-    row.appendChild(bubble);
+    row.appendChild(bubble); // first → visual RIGHT
+    row.appendChild(_createMsgReactBtn(menuId)); // second → visual LEFT
 
     const time = document.createElement("div");
     time.className = "message-time";
