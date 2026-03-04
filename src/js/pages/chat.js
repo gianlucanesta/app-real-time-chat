@@ -121,10 +121,6 @@ function _selectConversation(contactId) {
     headerAv.style.fontWeight = "700";
     headerAv.style.fontSize = "14px";
   }
-  // Update header avatar status dot
-  const headerDot = document.getElementById("header-avatar-dot");
-  if (headerDot) headerDot.style.display = conv.contact.online ? "" : "none";
-
   if (statusEl) {
     if (conv.contact.online) {
       statusEl.textContent = "Online";
