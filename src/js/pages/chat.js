@@ -185,11 +185,14 @@ function _createMessageEl(msg) {
     const row = document.createElement("div");
     row.className = "message-row";
 
-    row.appendChild(_createMsgHoverActions(menuId));
+    // React emoji button: left of bubble for sent messages
+    row.appendChild(_createMsgReactBtn(menuId));
 
     const bubble = document.createElement("div");
     bubble.className = "message-bubble message-sent";
     bubble.textContent = msg.text; // textContent — XSS safe
+    // Chevron: inside bubble
+    bubble.appendChild(_createMsgChevronInside(menuId));
     row.appendChild(bubble);
 
     const time = document.createElement("div");
@@ -209,9 +212,12 @@ function _createMessageEl(msg) {
     const bubble = document.createElement("div");
     bubble.className = "message-bubble message-received";
     bubble.textContent = msg.text;
+    // Chevron: inside bubble
+    bubble.appendChild(_createMsgChevronInside(menuId));
     row.appendChild(bubble);
 
-    row.appendChild(_createMsgHoverActions(menuId));
+    // React emoji button: right of bubble for received messages
+    row.appendChild(_createMsgReactBtn(menuId));
 
     const time = document.createElement("div");
     time.className = "message-time";
@@ -225,38 +231,35 @@ function _createMessageEl(msg) {
   return group;
 }
 
-function _createMsgHoverActions(menuId) {
-  const wrap = document.createElement("div");
-  wrap.className = "msg-hover-actions";
-
-  const reactBtn = document.createElement("button");
-  reactBtn.type = "button";
-  reactBtn.className = "msg-action-btn";
-  reactBtn.setAttribute("aria-label", "React");
-  reactBtn.dataset.role = "react";
-  reactBtn.dataset.menu = menuId;
-  reactBtn.innerHTML =
+function _createMsgReactBtn(menuId) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "msg-react-btn";
+  btn.setAttribute("aria-label", "React");
+  btn.dataset.role = "react";
+  btn.dataset.menu = menuId;
+  btn.innerHTML =
     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">` +
     `<circle cx="12" cy="12" r="10"/>` +
     `<path d="M8 14s1.5 2 4 2 4-2 4-2"/>` +
     `<line x1="9" y1="9" x2="9.01" y2="9"/>` +
     `<line x1="15" y1="9" x2="15.01" y2="9"/>` +
     `</svg>`;
+  return btn;
+}
 
-  const menuBtn = document.createElement("button");
-  menuBtn.type = "button";
-  menuBtn.className = "msg-action-btn";
-  menuBtn.setAttribute("aria-label", "Message options");
-  menuBtn.dataset.role = "menu";
-  menuBtn.dataset.menu = menuId;
-  menuBtn.innerHTML =
+function _createMsgChevronInside(menuId) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "msg-chevron-inside";
+  btn.setAttribute("aria-label", "Message options");
+  btn.dataset.role = "menu";
+  btn.dataset.menu = menuId;
+  btn.innerHTML =
     `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">` +
     `<polyline points="6 9 12 15 18 9"/>` +
     `</svg>`;
-
-  wrap.appendChild(reactBtn);
-  wrap.appendChild(menuBtn);
-  return wrap;
+  return btn;
 }
 
 function _createMsgContextMenu(msg, menuId) {
@@ -287,16 +290,20 @@ function _createMsgContextMenu(msg, menuId) {
   emojiRow.appendChild(morePick);
   menu.appendChild(emojiRow);
 
+  const isSent = msg.from === "me";
+
   // Action items list
-  [
+  const actions = [
+    ...(isSent ? [{ action: "info", label: "Info messaggio", icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>` }] : []),
     { action: "reply",   label: "Rispondi",   icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>` },
     { action: "copy",    label: "Copia",      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>` },
     { action: "forward", label: "Inoltra",    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>` },
     { action: "pin",     label: "Fissa",      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>` },
     { action: "star",    label: "Importante", icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>` },
     { action: "select",  label: "Seleziona",  icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>` },
-    { action: "report",  label: "Segnala",    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>` },
-  ].forEach(({ action, label, icon }) => {
+    ...(!isSent ? [{ action: "report", label: "Segnala", icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>` }] : []),
+  ];
+  actions.forEach(({ action, label, icon }) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "msg-context-item";
@@ -334,11 +341,12 @@ function _initInputArea() {
   const cameraBtn = document.querySelector('[aria-label="Camera"]');
   if (!input || !sendBtn) return;
 
-  // Enable/disable send button based on content
+  // Toggle mic/send button based on content
   input.addEventListener("input", () => {
     const hasText = input.value.trim().length > 0;
     sendBtn.disabled = !hasText;
-    sendBtn.style.opacity = hasText ? "1" : "0.5";
+    sendBtn.style.display = hasText ? "flex" : "none";
+    if (voiceBtn) voiceBtn.style.display = hasText ? "none" : "flex";
   });
 
   // Enter = send; Shift+Enter = newline
@@ -387,10 +395,12 @@ function _sendMessage() {
 
   input.value = "";
   const sendBtn = document.querySelector(".send-btn");
+  const voiceBtn2 = document.querySelector('[aria-label="Voice note"]');
   if (sendBtn) {
     sendBtn.disabled = true;
-    sendBtn.style.opacity = "0.5";
+    sendBtn.style.display = "none";
   }
+  if (voiceBtn2) voiceBtn2.style.display = "flex";
 
   _simulateReply();
 }
@@ -545,14 +555,9 @@ function _initSearch() {
 // ── Header actions ─────────────────────────────────────────────
 function _initHeaderActions() {
   document
-    .querySelector('[aria-label="Video call"]')
+    .querySelector('[aria-label="Call"]')
     ?.addEventListener("click", () =>
-      showToast("Video call is not available in demo mode.", "info"),
-    );
-  document
-    .querySelector('[aria-label="Voice call"]')
-    ?.addEventListener("click", () =>
-      showToast("Voice call is not available in demo mode.", "info"),
+      showToast("Calls are not available in demo mode.", "info"),
     );
   document
     .querySelector('[aria-label="More options"]')
@@ -823,7 +828,7 @@ function _initMessageActions() {
   if (!area) return;
 
   area.addEventListener("click", (e) => {
-    const actionBtn = e.target.closest(".msg-action-btn");
+    const actionBtn = e.target.closest(".msg-react-btn, .msg-chevron-inside");
     const menuEl = e.target.closest(".msg-context-menu");
     const emojiPick = e.target.closest(".msg-emoji-pick");
     const contextItem = e.target.closest(".msg-context-item");
@@ -891,6 +896,7 @@ function _handleMsgAction(action, text) {
     case "pin":      showToast("Message pinned.", "success");      break;
     case "star":     showToast("Added to important messages.", "success"); break;
     case "select":   showToast("Select: coming soon.", "info");    break;
+    case "info":     showToast("Info messaggio: coming soon.", "info"); break;
     case "report":   showToast("Message reported.", "info");       break;
     case "delete":   showToast("Message deleted.", "info");        break;
     default:         showToast("Coming soon.", "info");

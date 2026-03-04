@@ -590,6 +590,7 @@ input[type="range"]::-moz-range-thumb {
   align-items: flex-end;
 }
 .message-bubble {
+  position: relative;
   padding: var(--space-3) var(--space-4);
   font-size: var(--font-size-base);
   line-height: 1.6;
