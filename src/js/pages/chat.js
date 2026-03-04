@@ -905,7 +905,34 @@ function _initMessageActions() {
     if (emojiPick) {
       e.stopPropagation();
       const emoji = emojiPick.dataset.emoji;
-      showToast(emoji ? "Reacted with " + emoji : "More reactions: coming soon.", emoji ? "success" : "info");
+      if (!emoji) {
+        showToast("Altre reazioni: presto disponibile.", "info");
+        _closeAllMsgMenus();
+        return;
+      }
+      const popup = emojiPick.closest(".msg-emoji-popup");
+      const group = popup ? popup.closest(".message-group-received, .message-group-sent") : null;
+      if (group) {
+        let strip = group.querySelector(".msg-reaction-strip");
+        const existing = strip ? strip.querySelector("[data-emoji]") : null;
+        if (existing && existing.dataset.emoji === emoji) {
+          strip.remove();
+        } else {
+          if (!strip) {
+            strip = document.createElement("div");
+            strip.className = "msg-reaction-strip";
+            const row = group.querySelector(".message-row");
+            row ? row.after(strip) : group.appendChild(strip);
+          } else {
+            strip.innerHTML = "";
+          }
+          const badge = document.createElement("div");
+          badge.className = "msg-reaction-badge";
+          badge.dataset.emoji = emoji;
+          badge.textContent = emoji;
+          strip.appendChild(badge);
+        }
+      }
       _closeAllMsgMenus();
       return;
     }
@@ -943,17 +970,17 @@ function _handleMsgAction(action, text) {
     case "copy":
       navigator.clipboard
         .writeText(text)
-        .then(() => showToast("Message copied.", "success"))
-        .catch(() => showToast("Could not copy message.", "error"));
+        .then(() => showToast("Messaggio copiato.", "success"))
+        .catch(() => showToast("Impossibile copiare il messaggio.", "error"));
       break;
-    case "reply":    showToast("Reply: coming soon.", "info");    break;
-    case "forward":  showToast("Forward: coming soon.", "info");  break;
-    case "pin":      showToast("Message pinned.", "success");      break;
-    case "star":     showToast("Added to important messages.", "success"); break;
-    case "select":   showToast("Select: coming soon.", "info");    break;
-    case "info":     showToast("Info messaggio: coming soon.", "info"); break;
-    case "report":   showToast("Message reported.", "info");       break;
-    case "delete":   showToast("Message deleted.", "info");        break;
-    default:         showToast("Coming soon.", "info");
+    case "reply":    showToast("Rispondi: presto disponibile.", "info");           break;
+    case "forward":  showToast("Inoltra: presto disponibile.", "info");             break;
+    case "pin":      showToast("Messaggio fissato.", "success");                    break;
+    case "star":     showToast("Aggiunto ai messaggi importanti.", "success");      break;
+    case "select":   showToast("Seleziona: presto disponibile.", "info");           break;
+    case "info":     showToast("Info messaggio: presto disponibile.", "info");      break;
+    case "report":   showToast("Messaggio segnalato.", "info");                     break;
+    case "delete":   showToast("Messaggio eliminato.", "info");                     break;
+    default:         showToast("Presto disponibile.", "info");
   }
 }

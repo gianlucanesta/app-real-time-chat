@@ -799,6 +799,29 @@
   right: 0;
 }
 
+/* Reaction badge on message */
+.msg-reaction-strip {
+  margin-top: -10px;
+  margin-bottom: 4px;
+  padding: 0 6px;
+}
+.msg-reaction-badge {
+  display: inline-flex;
+  align-items: center;
+  background: var(--color-card);
+  border: 1.5px solid var(--color-border);
+  border-radius: 9999px;
+  padding: 1px 8px;
+  font-size: 16px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.12s ease;
+}
+.msg-reaction-badge:hover {
+  transform: scale(1.18);
+}
+
 /* Emoji reaction row */
 .msg-emoji-row {
   display: flex;
