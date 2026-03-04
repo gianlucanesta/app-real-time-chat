@@ -7,6 +7,7 @@
   --color-border: #1e293b;
   --color-accent: #2563eb;
   --color-accent-hover: #3b82f6;
+  --color-accent-subtle: rgba(37, 99, 235, 0.12);
   --color-text: #f1f5f9;
   --color-text-secondary: #94a3b8;
   --color-success: #22c55e;
@@ -56,7 +57,7 @@
   --avatar-lg: 80px;
   --input-h: 44px;
   --sidebar-w: 360px;
-  --settings-sidebar-w: 220px;
+  --settings-sidebar-w: 380px;
 
   /* Transitions */
   --transition-fast: 150ms ease;

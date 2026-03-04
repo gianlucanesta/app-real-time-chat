@@ -15,6 +15,7 @@ export function initSettingsPage() {
   _initAvatarUpload();
   _initNav();
   _initLogout();
+  _initNavAvatar();
   initTogglePassword();
 }
 
@@ -23,21 +24,17 @@ function _loadUserProfile() {
   const user = getCurrentUser();
   if (!user) return;
 
-  // Sidebar footer
-  const sidebarAv = document.querySelector(".settings-user-footer .avatar");
-  const sidebarName = document.querySelector(
-    ".settings-user-footer .user-name",
-  );
-  const sidebarRole = document.querySelector(
-    ".settings-user-footer .user-role",
-  );
+  // Settings panel profile card
+  const sidebarAv = document.getElementById("settings-sidebar-avatar");
+  const sidebarName = document.getElementById("settings-sidebar-name");
+  const sidebarTagline = document.getElementById("settings-sidebar-tagline");
   if (sidebarAv) {
     sidebarAv.style.background =
       user.avatarGradient || "linear-gradient(135deg,#2563EB,#7C3AED)";
     sidebarAv.textContent = user.initials || "Me";
   }
   if (sidebarName) sidebarName.textContent = user.displayName;
-  if (sidebarRole) sidebarRole.textContent = user.role || "";
+  if (sidebarTagline) sidebarTagline.textContent = user.role || "";
 
   // Profile section
   const profileAv = document.querySelector(".profile-section .avatar-lg");
@@ -211,25 +208,38 @@ function _initAvatarUpload() {
 
 // ── Navigation ─────────────────────────────────────────────────
 function _initNav() {
-  document.querySelectorAll(".nav-item").forEach((item) => {
-    item.addEventListener("click", (e) => {
-      e.preventDefault();
+  document.querySelectorAll(".settings-nav-item").forEach((item) => {
+    item.addEventListener("click", () => {
       document
-        .querySelectorAll(".nav-item")
+        .querySelectorAll(".settings-nav-item")
         .forEach((n) => n.classList.remove("active"));
       item.classList.add("active");
 
-      const label = item.querySelector("span")?.textContent?.trim() || "";
-      const sectionHeader = document.querySelector(
-        ".settings-section-header h1",
-      );
-      if (sectionHeader) sectionHeader.textContent = label + " Settings";
+      const section = item.dataset.section || "general";
 
-      if (label !== "General") {
-        showToast(`${label} settings: coming soon.`, "info");
+      // Hide all sections, show target
+      document.querySelectorAll(".settings-section").forEach((s) => s.classList.remove("active"));
+      const target = document.getElementById("section-" + section);
+      if (target) {
+        target.classList.add("active");
+      } else {
+        const title = item.querySelector(".settings-nav-title")?.textContent?.trim() || section;
+        showToast(`${title} settings: coming soon.`, "info");
       }
     });
   });
+}
+
+// ── Nav bar avatar ─────────────────────────────────────────────
+function _initNavAvatar() {
+  const user = getCurrentUser();
+  if (!user) return;
+  const navAv = document.getElementById("nav-profile-avatar");
+  if (navAv) {
+    navAv.textContent = user.initials || "Me";
+    navAv.style.background =
+      user.avatarGradient || "linear-gradient(135deg,#2563EB,#7C3AED)";
+  }
 }
 
 // ── Logout ─────────────────────────────────────────────────────
