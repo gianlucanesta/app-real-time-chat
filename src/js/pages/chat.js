@@ -24,6 +24,7 @@ export function initChatPage() {
   _initNewChatModal();
   _initHeaderActions();
   _initMobileSidebar();
+  _initNavBar();
 }
 
 // ── User profile ───────────────────────────────────────────────
@@ -48,6 +49,20 @@ function _loadUserProfile() {
   }
   if (nameEl) nameEl.textContent = user.displayName;
   if (roleEl) roleEl.textContent = user.role || "";
+
+  // Populate left nav avatar
+  const navAv = document.getElementById("nav-profile-avatar");
+  if (navAv) {
+    if (user.avatar) {
+      navAv.style.backgroundImage = `url(${user.avatar})`;
+      navAv.style.backgroundSize = "cover";
+      navAv.textContent = "";
+    } else {
+      navAv.style.background =
+        user.avatarGradient || "linear-gradient(135deg,#2563EB,#7C3AED)";
+      navAv.textContent = user.initials || "Me";
+    }
+  }
 }
 
 // ── Conversation list ──────────────────────────────────────────
@@ -547,6 +562,19 @@ function _renderContactList(filter = "") {
       `</div>` +
       `<input type="checkbox" class="contact-check" value="${_esc(user.id)}" />`;
     list.appendChild(label);
+  });
+}
+
+// ── Left nav bar ──────────────────────────────────────────────
+function _initNavBar() {
+  const labels = { calls: "Calls", communities: "Communities", status: "Status", starred: "Starred", archived: "Archived" };
+  document.querySelectorAll(".chat-nav-item[data-nav]").forEach((btn) => {
+    const key = btn.dataset.nav;
+    if (key && key !== "chats") {
+      btn.addEventListener("click", () =>
+        showToast(`${labels[key] ?? key}: coming soon.`, "info"),
+      );
+    }
   });
 }
 
