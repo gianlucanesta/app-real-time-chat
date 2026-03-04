@@ -801,9 +801,19 @@
 
 /* Reaction badge on message */
 .msg-reaction-strip {
-  margin-top: -10px;
-  margin-bottom: 4px;
-  padding: 0 6px;
+  position: relative;
+  z-index: 2;
+  margin-top: -14px;
+  margin-bottom: 6px;
+  display: flex;
+}
+.message-group-received .msg-reaction-strip {
+  justify-content: flex-start;
+  padding-left: 10px;
+}
+.message-group-sent .msg-reaction-strip {
+  justify-content: flex-end;
+  padding-right: 10px;
 }
 .msg-reaction-badge {
   display: inline-flex;
@@ -811,9 +821,9 @@
   background: var(--color-card);
   border: 1.5px solid var(--color-border);
   border-radius: 9999px;
-  padding: 1px 8px;
+  padding: 2px 8px;
   font-size: 16px;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
   cursor: pointer;
   user-select: none;
   transition: transform 0.12s ease;
