@@ -400,6 +400,109 @@
 
       <!-- ===== Chat Main ===== -->
       <main class="chat-main">
+
+        <!-- ===== Contact Info Panel (slide-in overlay) ===== -->
+        <div class="contact-info-panel" id="contact-info-panel" aria-hidden="true">
+          <!-- Panel Header -->
+          <div class="contact-info-header">
+            <button type="button" class="icon-btn" id="cip-back-btn" aria-label="Back">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+            </button>
+            <h2>Contact info</h2>
+            <button type="button" class="cip-edit-text-btn" id="cip-edit-btn">Edit</button>
+          </div>
+
+          <!-- Scrollable body -->
+          <div class="contact-info-body">
+
+            <!-- Hero: large avatar + name + role -->
+            <div class="contact-info-hero">
+              <div class="cip-hero-avatar" id="cip-avatar">ER</div>
+              <div class="cip-name" id="cip-name">Elena Rodriguez</div>
+              <div class="cip-sub" id="cip-sub">Product Designer</div>
+            </div>
+
+            <!-- Quick action buttons: Audio | Video | Search -->
+            <div class="contact-info-actions">
+              <button type="button" class="cip-action-btn" id="cip-call-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 6.29 6.29l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                </svg>
+                <span>Audio</span>
+              </button>
+              <button type="button" class="cip-action-btn" id="cip-video-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="23 7 16 12 23 17 23 7"/>
+                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                </svg>
+                <span>Video</span>
+              </button>
+              <button type="button" class="cip-action-btn" id="cip-search-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+                <span>Search</span>
+              </button>
+            </div>
+
+            <!-- Group 1: Media + Important -->
+            <div class="cip-group">
+              <button type="button" class="cip-row" id="cip-media-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                <span class="cip-row-label">Media, links &amp; docs</span>
+                <span class="cip-row-value" id="cip-media-count">0</span>
+                <svg class="cip-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button type="button" class="cip-row" id="cip-important-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+                <span class="cip-row-label">Important</span>
+                <span class="cip-row-value">0</span>
+                <svg class="cip-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+
+            <!-- Group 2: Notifications + Chat theme -->
+            <div class="cip-group">
+              <button type="button" class="cip-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+                <span class="cip-row-label">Notifications</span>
+                <svg class="cip-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button type="button" class="cip-row">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M8.56 2.75c4.37 6.03 6.02 9.42 8.03 17.72m2.54-15.38c-3.72 4.35-8.94 5.66-16.88 5.85"/>
+                </svg>
+                <span class="cip-row-label">Chat theme</span>
+                <svg class="cip-row-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+
+            <!-- Group 3: Danger actions -->
+            <div class="cip-group">
+              <button type="button" class="cip-danger-row" id="cip-block-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                </svg>
+                <span>Block contact</span>
+              </button>
+            </div>
+
+          </div><!-- /.contact-info-body -->
+        </div><!-- /.contact-info-panel -->
+
         <!-- Chat Header -->
         <div class="chat-header">
           <!-- Back button (mobile only) -->
@@ -416,28 +519,30 @@
             </svg>
           </button>
 
-          <div class="avatar-wrapper">
-            <div
-              class="avatar avatar-md"
-              style="
-                background: linear-gradient(135deg, #ec4899, #f97316);
-                color: #fff;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 700;
-                font-size: 14px;
-              "
-            >
-              ER
+          <button type="button" class="chat-header-trigger" id="contact-info-trigger" aria-label="View contact info">
+            <div class="avatar-wrapper">
+              <div
+                class="avatar avatar-md"
+                style="
+                  background: linear-gradient(135deg, #ec4899, #f97316);
+                  color: #fff;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-weight: 700;
+                  font-size: 14px;
+                "
+              >
+                ER
+              </div>
             </div>
-          </div>
-          <div class="chat-header-info">
-            <div class="chat-contact-name">Elena Rodriguez</div>
-            <div class="chat-status">Online</div>
-          </div>
+            <div class="chat-header-info">
+              <div class="chat-contact-name">Elena Rodriguez</div>
+              <div class="chat-status">Online</div>
+            </div>
+          </button>
           <div class="chat-header-actions">
-            <button class="icon-btn" aria-label="Search">
+            <button class="icon-btn header-hide-mobile" aria-label="Search">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -477,7 +582,7 @@
                 />
               </svg>
             </button>
-            <button class="icon-btn" aria-label="More options">
+            <button class="icon-btn header-hide-mobile" aria-label="More options">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -600,6 +705,19 @@
                 placeholder="Type your message..."
               />
             </div>
+            <button class="input-action-btn input-camera-btn" aria-label="Camera">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </button>
             <button class="input-action-btn" aria-label="Voice note">
               <svg
                 viewBox="0 0 24 24"

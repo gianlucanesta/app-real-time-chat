@@ -570,6 +570,7 @@
   min-height: 0;
   height: 100vh;
   overflow: hidden;
+  position: relative; /* anchor for contact-info-panel overlay */
 }
 
 .chat-header {
@@ -583,6 +584,25 @@
 }
 .chat-header-info {
   flex: 1;
+  min-width: 0;
+}
+/* Clickable contact trigger in header (avatar + name/status as button) */
+.chat-header-trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  text-align: left;
+  transition: background-color var(--transition-fast);
+}
+.chat-header-trigger:hover {
+  background-color: var(--color-input);
 }
 .chat-header-info .chat-contact-name {
   font-size: var(--font-size-md);
@@ -1153,8 +1173,199 @@
   color: var(--color-text);
 }
 
+/* Camera button in input bar — hidden on desktop, shown on mobile */
+.input-camera-btn {
+  display: none;
+}
+
 /* Mobile back button (visible only on mobile) */
 .back-btn {
   display: none;
+}
+
+/* ── Contact Info Panel ──────────────────────────────────────── */
+.contact-info-panel {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  background-color: var(--color-bg);
+  transform: translateX(100%);
+  transition: transform 0.22s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.contact-info-panel.open {
+  transform: translateX(0);
+}
+
+.contact-info-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-card);
+  flex-shrink: 0;
+  height: 64px;
+}
+.contact-info-header h2 {
+  flex: 1;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-bold);
+  color: var(--color-text);
+}
+.cip-edit-text-btn {
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  transition: background-color var(--transition-fast);
+}
+.cip-edit-text-btn:hover {
+  background-color: var(--color-input);
+}
+
+.contact-info-body {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.contact-info-body::-webkit-scrollbar {
+  display: none;
+}
+
+.contact-info-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-8) var(--space-4) var(--space-6);
+  gap: var(--space-2);
+  background-color: var(--color-card);
+  border-bottom: 1px solid var(--color-border);
+}
+.cip-hero-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ec4899, #f97316);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+}
+.cip-name {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-bold);
+  color: var(--color-text);
+}
+.cip-sub {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.contact-info-actions {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background-color: var(--color-card);
+  border-bottom: 1px solid var(--color-border);
+}
+.cip-action-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background-color: var(--color-input);
+  border-radius: var(--radius-lg);
+  border: none;
+  cursor: pointer;
+  color: var(--color-accent);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-medium);
+  transition: background-color var(--transition-fast);
+}
+.cip-action-btn:hover {
+  background-color: var(--color-border);
+}
+.cip-action-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.cip-group {
+  background-color: var(--color-card);
+  border-radius: var(--radius-xl);
+  margin: var(--space-4);
+  overflow: hidden;
+}
+.cip-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color var(--transition-fast);
+}
+.cip-row:last-child {
+  border-bottom: none;
+}
+.cip-row:hover {
+  background-color: var(--color-input);
+}
+.cip-row svg:first-child {
+  width: 20px;
+  height: 20px;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+.cip-row-label {
+  flex: 1;
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+}
+.cip-row-value {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+.cip-row-chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+.cip-danger-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-danger);
+  font-size: var(--font-size-base);
+  transition: background-color var(--transition-fast);
+}
+.cip-danger-row:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+.cip-danger-row svg {
+  width: 20px;
+  height: 20px;
 }
 

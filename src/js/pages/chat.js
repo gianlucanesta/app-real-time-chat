@@ -25,6 +25,7 @@ export function initChatPage() {
   _initFilterChips();
   _initSidebarMenu();
   _initHeaderActions();
+  _initContactPanel();
   _initMobileSidebar();
   _initNavBar();
 }
@@ -153,6 +154,7 @@ function _selectConversation(contactId) {
     document.getElementById("sidebar-search")?.value || "",
   );
   _renderMessages(contactId);
+  _updateContactPanel(contactId);
 }
 
 // ── Messages ───────────────────────────────────────────────────
@@ -230,6 +232,7 @@ function _initInputArea() {
   const emojiBtn = document.querySelector('[aria-label="Emoji"]');
   const attachBtn = document.querySelector('[aria-label="Add attachment"]');
   const voiceBtn = document.querySelector('[aria-label="Voice note"]');
+  const cameraBtn = document.querySelector('[aria-label="Camera"]');
   if (!input || !sendBtn) return;
 
   // Enable/disable send button based on content
@@ -254,6 +257,9 @@ function _initInputArea() {
   );
   voiceBtn?.addEventListener("click", () =>
     showToast("Voice notes are not available in demo mode.", "info"),
+  );
+  cameraBtn?.addEventListener("click", () =>
+    showToast("Camera is not available in demo mode.", "info"),
   );
 }
 
@@ -658,4 +664,64 @@ function _esc(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+// ── Contact Info Panel ──────────────────────────────────────────
+function _updateContactPanel(contactId) {
+  const conv = conversations[contactId];
+  if (!conv) return;
+  const el = (id) => document.getElementById(id);
+  const av = el("cip-avatar");
+  const nameEl = el("cip-name");
+  const subEl = el("cip-sub");
+  if (av) {
+    av.style.background = conv.contact.gradient;
+    av.textContent = conv.contact.initials;
+  }
+  if (nameEl) nameEl.textContent = conv.contact.displayName;
+  if (subEl) subEl.textContent = conv.contact.role || "";
+  const mediaCountEl = el("cip-media-count");
+  if (mediaCountEl) mediaCountEl.textContent = conv.messages.length;
+}
+
+function _initContactPanel() {
+  const panel = document.getElementById("contact-info-panel");
+  if (!panel) return;
+
+  const openPanel = () => {
+    _updateContactPanel(activeContactId);
+    panel.classList.add("open");
+    panel.setAttribute("aria-hidden", "false");
+  };
+  const closePanel = () => {
+    panel.classList.remove("open");
+    panel.setAttribute("aria-hidden", "true");
+  };
+
+  document.getElementById("contact-info-trigger")?.addEventListener("click", openPanel);
+  document.getElementById("cip-back-btn")?.addEventListener("click", closePanel);
+  document.getElementById("cip-edit-btn")?.addEventListener("click", () =>
+    showToast("Edit contact: coming soon.", "info"),
+  );
+  document.getElementById("cip-call-btn")?.addEventListener("click", () =>
+    showToast("Voice call is not available in demo mode.", "info"),
+  );
+  document.getElementById("cip-video-btn")?.addEventListener("click", () =>
+    showToast("Video call is not available in demo mode.", "info"),
+  );
+  document.getElementById("cip-search-btn")?.addEventListener("click", () =>
+    showToast("In-chat search: coming soon.", "info"),
+  );
+  document.getElementById("cip-block-btn")?.addEventListener("click", () =>
+    showToast("Block contact: coming soon.", "info"),
+  );
+  document.getElementById("cip-media-row")?.addEventListener("click", () =>
+    showToast("Media: coming soon.", "info"),
+  );
+  document.getElementById("cip-important-row")?.addEventListener("click", () =>
+    showToast("Important messages: coming soon.", "info"),
+  );
+  panel.querySelectorAll(".cip-row:not(#cip-media-row):not(#cip-important-row)").forEach((row) => {
+    row.addEventListener("click", () => showToast("Coming soon.", "info"));
+  });
 }
