@@ -1,6 +1,5 @@
-import { getCurrentUser } from "../auth.js";
+import { getCurrentUser, logout } from "../auth.js";
 import { showToast } from "../ui/toast.js";
-import { openModal, closeModal } from "../ui/modal.js";
 import {
   MOCK_CONVERSATIONS,
   MOCK_USERS,
@@ -10,6 +9,7 @@ import { debounce } from "../utils.js";
 
 // ── Module state ───────────────────────────────────────────────
 let activeContactId = "usr_mock_002";
+let activeFilterType = "all";
 // Deep-copy conversations so we can mutate them at runtime without touching
 // the imported source object.
 const conversations = JSON.parse(JSON.stringify(MOCK_CONVERSATIONS));
@@ -21,7 +21,9 @@ export function initChatPage() {
   _selectConversation(activeContactId);
   _initSearch();
   _initInputArea();
-  _initNewChatModal();
+  _initNewChatPanel();
+  _initFilterChips();
+  _initSidebarMenu();
   _initHeaderActions();
   _initMobileSidebar();
   _initNavBar();
@@ -31,24 +33,6 @@ export function initChatPage() {
 function _loadUserProfile() {
   const user = getCurrentUser();
   if (!user) return;
-
-  const avatarEl = document.querySelector(".sidebar-header .avatar");
-  const nameEl = document.querySelector(".sidebar-header .user-name");
-  const roleEl = document.querySelector(".sidebar-header .user-role");
-
-  if (avatarEl) {
-    if (user.avatar) {
-      avatarEl.style.backgroundImage = `url(${user.avatar})`;
-      avatarEl.style.backgroundSize = "cover";
-      avatarEl.textContent = "";
-    } else {
-      avatarEl.style.background =
-        user.avatarGradient || "linear-gradient(135deg,#2563EB,#7C3AED)";
-      avatarEl.textContent = user.initials || "Me";
-    }
-  }
-  if (nameEl) nameEl.textContent = user.displayName;
-  if (roleEl) roleEl.textContent = user.role || "";
 
   // Populate left nav avatar
   const navAv = document.getElementById("nav-profile-avatar");
@@ -66,18 +50,22 @@ function _loadUserProfile() {
 }
 
 // ── Conversation list ──────────────────────────────────────────
-function _renderConversationList(filter = "") {
+function _renderConversationList(filter = "", filterType = activeFilterType) {
   const list = document.querySelector(".conversation-list");
   if (!list) return;
   list.innerHTML = "";
 
   const ids = Object.keys(conversations);
   const lFilter = filter.toLowerCase();
-  const filtered = lFilter
+  let filtered = lFilter
     ? ids.filter((id) =>
         conversations[id].contact.displayName.toLowerCase().includes(lFilter),
       )
     : ids;
+
+  if (filterType === "unread") {
+    filtered = filtered.filter((id) => conversations[id].unread > 0);
+  }
 
   filtered.forEach((id) => {
     const conv = conversations[id];
@@ -465,82 +453,50 @@ function _initHeaderActions() {
     ?.addEventListener("click", () =>
       showToast("In-chat search: coming soon.", "info"),
     );
-  document
-    .querySelector('[aria-label="Edit"]')
-    ?.addEventListener("click", () =>
-      showToast("Edit mode: coming soon.", "info"),
-    );
-  document
-    .querySelector('[aria-label="Archive"]')
-    ?.addEventListener("click", () =>
-      showToast("Archive: coming soon.", "info"),
-    );
 }
 
-// ── New chat modal ─────────────────────────────────────────────
-function _initNewChatModal() {
-  document
-    .getElementById("new-chat-btn")
-    ?.addEventListener("click", () => openModal("newChatModal"));
-  document
-    .getElementById("modal-close-btn")
-    ?.addEventListener("click", () => closeModal("newChatModal"));
-  document
-    .getElementById("modal-cancel-btn")
-    ?.addEventListener("click", () => closeModal("newChatModal"));
+// ── New-chat slide-in panel ─────────────────────────────────────
+function _initNewChatPanel() {
+  const panel = document.getElementById("new-chat-panel");
+  if (!panel) return;
 
-  document.getElementById("modal-contact-search")?.addEventListener(
+  const openPanel = () => {
+    panel.classList.add("open");
+    panel.setAttribute("aria-hidden", "false");
+    _renderNewChatContactList("");
+    const searchEl = document.getElementById("new-chat-search");
+    if (searchEl) searchEl.value = "";
+  };
+  const closePanel = () => {
+    panel.classList.remove("open");
+    panel.setAttribute("aria-hidden", "true");
+  };
+
+  document.getElementById("new-chat-btn")?.addEventListener("click", openPanel);
+  document.getElementById("new-chat-back-btn")?.addEventListener("click", closePanel);
+
+  document.getElementById("new-chat-search")?.addEventListener(
     "input",
-    debounce((e) => _renderContactList(e.target.value)),
+    debounce((e) => _renderNewChatContactList(e.target.value)),
   );
 
-  document.getElementById("tab-private")?.addEventListener("click", (e) => {
-    e.currentTarget.classList.add("active");
-    document.getElementById("tab-group")?.classList.remove("active");
-  });
-  document.getElementById("tab-group")?.addEventListener("click", (e) => {
-    e.currentTarget.classList.add("active");
-    document.getElementById("tab-private")?.classList.remove("active");
+  document.getElementById("new-chat-options-btn")?.addEventListener("click", () =>
+    showToast("Options: coming soon.", "info"),
+  );
+
+  panel.querySelectorAll(".new-chat-action-item").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const action = btn.dataset.ncAction;
+      const labels = { group: "New group", contact: "New contact", community: "New community" };
+      showToast(`${labels[action] ?? "Action"}: coming soon.`, "info");
+    });
   });
 
-  document
-    .getElementById("start-chat-btn")
-    ?.addEventListener("click", _startNewChat);
-
-  _renderContactList("");
+  _renderNewChatContactList("");
 }
 
-function _startNewChat() {
-  const checked = document.querySelector(".contact-check:checked");
-  if (!checked) {
-    showToast("Please select a contact first.", "warning");
-    return;
-  }
-
-  const contactId = checked.value;
-  closeModal("newChatModal");
-
-  // Create an empty conversation entry if this contact has no history yet
-  if (!conversations[contactId]) {
-    const contact = MOCK_USERS.find((u) => u.id === contactId);
-    if (contact) {
-      conversations[contactId] = {
-        contact,
-        unread: 0,
-        lastTime: "Now",
-        lastMessage: "",
-        messages: [],
-      };
-    }
-  }
-
-  _selectConversation(contactId);
-  const sidebar = document.getElementById("sidebar");
-  if (sidebar) sidebar.classList.add("hidden");
-}
-
-function _renderContactList(filter = "") {
-  const list = document.querySelector(".contact-list");
+function _renderNewChatContactList(filter = "") {
+  const list = document.getElementById("new-chat-contact-list");
   if (!list) return;
   list.innerHTML = "";
 
@@ -552,16 +508,98 @@ function _renderContactList(filter = "") {
   );
 
   filtered.forEach((user) => {
-    const label = document.createElement("label");
-    label.className = "contact-row";
-    label.innerHTML =
-      `<div class="avatar avatar-md" style="background:${user.gradient};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">${_esc(user.initials)}</div>` +
-      `<div class="contact-info">` +
+    const row = document.createElement("div");
+    row.className = "new-chat-contact-row";
+    row.innerHTML =
+      `<div class="avatar avatar-md" style="background:${user.gradient};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">${_esc(user.initials)}</div>` +
+      `<div>` +
       `<div class="contact-name">${_esc(user.displayName)}</div>` +
-      `<div class="contact-email">${_esc(user.role)}</div>` +
-      `</div>` +
-      `<input type="checkbox" class="contact-check" value="${_esc(user.id)}" />`;
-    list.appendChild(label);
+      `<div class="contact-role">${_esc(user.role)}</div>` +
+      `</div>`;
+
+    row.addEventListener("click", () => {
+      const panel = document.getElementById("new-chat-panel");
+      panel?.classList.remove("open");
+      panel?.setAttribute("aria-hidden", "true");
+
+      if (!conversations[user.id]) {
+        conversations[user.id] = {
+          contact: user,
+          unread: 0,
+          lastTime: "Now",
+          lastMessage: "",
+          messages: [],
+        };
+      }
+      _selectConversation(user.id);
+      const sidebar = document.getElementById("sidebar");
+      if (sidebar) sidebar.classList.add("hidden");
+    });
+
+    list.appendChild(row);
+  });
+}
+
+// ── Filter chips ───────────────────────────────────────────────
+function _initFilterChips() {
+  document.querySelectorAll(".filter-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const filter = chip.dataset.filter;
+      if (filter === "favorites") {
+        showToast("Favorites: coming soon.", "info");
+        return;
+      }
+      if (filter === "more") {
+        showToast("More filters: coming soon.", "info");
+        return;
+      }
+      // Update active state
+      document.querySelectorAll(".filter-chip").forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      activeFilterType = filter;
+      _renderConversationList(
+        document.getElementById("sidebar-search")?.value || "",
+        filter,
+      );
+    });
+  });
+}
+
+// ── Sidebar menu (three-dot) ────────────────────────────────────
+function _initSidebarMenu() {
+  const btn = document.getElementById("sidebar-menu-btn");
+  const dropdown = document.getElementById("sidebar-menu-dropdown");
+  if (!btn || !dropdown) return;
+
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle("open");
+  });
+
+  // Close on outside click
+  document.addEventListener("click", (e) => {
+    if (!dropdown.contains(e.target) && e.target !== btn) {
+      dropdown.classList.remove("open");
+    }
+  });
+
+  dropdown.querySelectorAll(".sidebar-menu-item").forEach((item) => {
+    item.addEventListener("click", () => {
+      dropdown.classList.remove("open");
+      const action = item.dataset.action;
+      if (action === "logout") {
+        logout();
+        window.location.replace("index.html");
+        return;
+      }
+      const labels = {
+        "new-group": "New group",
+        "important": "Important messages",
+        "select": "Select chat",
+        "mark-read": "Mark all as read",
+      };
+      showToast(`${labels[action] ?? "Action"}: coming soon.`, "info");
+    });
   });
 }
 

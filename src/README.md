@@ -72,11 +72,3 @@ src/
 | Modals             | `.open` CSS class toggled by `openModal()` / `closeModal()`             |
 | Theming            | `localStorage['ephemeral_theme']` — `'dark'` (default) or `'light'`     |
 | Message simulation | Incoming "replies" use a 400 ms + 1200–2000 ms random delay             |
-
----
-
-## Developer Resources
-
-- Migration plan: [.github/docs/Practice Assignment 6_JS_Migration_Plan.md](.github/docs/Practice%20Assignment%206_JS_Migration_Plan.md)
-- Commit workflow skill: [.github/skills/js-commit-workflow/SKILL.md](.github/skills/js-commit-workflow/SKILL.md)
-- JS migration skill: [.github/skills/vanilla-js-migration/SKILL.md](.github/skills/vanilla-js-migration/SKILL.md)
