@@ -21,6 +21,7 @@ export function initChatPage() {
   _selectConversation(activeContactId);
   _initSearch();
   _initInputArea();
+  _initMessageActions();
   _initNewChatPanel();
   _initFilterChips();
   _initSidebarMenu();
@@ -175,54 +176,152 @@ function _renderMessages(contactId) {
 }
 
 function _createMessageEl(msg) {
-  const conv = conversations[activeContactId];
   const group = document.createElement("div");
+  const menuId = "msg-menu-" + msg.id;
 
   if (msg.from === "me") {
     group.className = "message-group-sent";
 
+    const row = document.createElement("div");
+    row.className = "message-row";
+
+    row.appendChild(_createMsgHoverActions(menuId));
+
     const bubble = document.createElement("div");
     bubble.className = "message-bubble message-sent";
     bubble.textContent = msg.text; // textContent — XSS safe
+    row.appendChild(bubble);
 
     const time = document.createElement("div");
     time.className = "message-time";
     time.style.textAlign = "right";
     time.textContent = msg.time;
 
-    group.appendChild(bubble);
+    group.appendChild(row);
+    group.appendChild(_createMsgContextMenu(msg, menuId));
     group.appendChild(time);
   } else {
     group.className = "message-group-received";
 
     const row = document.createElement("div");
-    row.className = "message-avatar-row";
-
-    const av = document.createElement("div");
-    av.className = "avatar avatar-sm";
-    av.style.cssText =
-      `background:${conv.contact.gradient};color:#fff;display:flex;` +
-      `align-items:center;justify-content:center;font-weight:700;font-size:11px;`;
-    av.textContent = conv.contact.initials;
-
-    const inner = document.createElement("div");
+    row.className = "message-row";
 
     const bubble = document.createElement("div");
     bubble.className = "message-bubble message-received";
     bubble.textContent = msg.text;
+    row.appendChild(bubble);
+
+    row.appendChild(_createMsgHoverActions(menuId));
 
     const time = document.createElement("div");
     time.className = "message-time";
     time.textContent = msg.time;
 
-    inner.appendChild(bubble);
-    inner.appendChild(time);
-    row.appendChild(av);
-    row.appendChild(inner);
     group.appendChild(row);
+    group.appendChild(_createMsgContextMenu(msg, menuId));
+    group.appendChild(time);
   }
 
   return group;
+}
+
+function _createMsgHoverActions(menuId) {
+  const wrap = document.createElement("div");
+  wrap.className = "msg-hover-actions";
+
+  const reactBtn = document.createElement("button");
+  reactBtn.type = "button";
+  reactBtn.className = "msg-action-btn";
+  reactBtn.setAttribute("aria-label", "React");
+  reactBtn.dataset.role = "react";
+  reactBtn.dataset.menu = menuId;
+  reactBtn.innerHTML =
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">` +
+    `<circle cx="12" cy="12" r="10"/>` +
+    `<path d="M8 14s1.5 2 4 2 4-2 4-2"/>` +
+    `<line x1="9" y1="9" x2="9.01" y2="9"/>` +
+    `<line x1="15" y1="9" x2="15.01" y2="9"/>` +
+    `</svg>`;
+
+  const menuBtn = document.createElement("button");
+  menuBtn.type = "button";
+  menuBtn.className = "msg-action-btn";
+  menuBtn.setAttribute("aria-label", "Message options");
+  menuBtn.dataset.role = "menu";
+  menuBtn.dataset.menu = menuId;
+  menuBtn.innerHTML =
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">` +
+    `<polyline points="6 9 12 15 18 9"/>` +
+    `</svg>`;
+
+  wrap.appendChild(reactBtn);
+  wrap.appendChild(menuBtn);
+  return wrap;
+}
+
+function _createMsgContextMenu(msg, menuId) {
+  const menu = document.createElement("div");
+  menu.className = "msg-context-menu";
+  menu.id = menuId;
+  menu.setAttribute("aria-hidden", "true");
+
+  // Quick emoji reactions row
+  const emojiRow = document.createElement("div");
+  emojiRow.className = "msg-emoji-row";
+  ["👍", "❤️", "😂", "😮", "😢", "🙏"].forEach((emoji) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "msg-emoji-pick";
+    btn.textContent = emoji;
+    btn.dataset.emoji = emoji;
+    emojiRow.appendChild(btn);
+  });
+  const morePick = document.createElement("button");
+  morePick.type = "button";
+  morePick.className = "msg-emoji-pick msg-emoji-more";
+  morePick.setAttribute("aria-label", "More reactions");
+  morePick.innerHTML =
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">` +
+    `<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>` +
+    `</svg>`;
+  emojiRow.appendChild(morePick);
+  menu.appendChild(emojiRow);
+
+  // Action items list
+  [
+    { action: "reply",   label: "Rispondi",   icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>` },
+    { action: "copy",    label: "Copia",      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>` },
+    { action: "forward", label: "Inoltra",    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>` },
+    { action: "pin",     label: "Fissa",      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>` },
+    { action: "star",    label: "Importante", icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>` },
+    { action: "select",  label: "Seleziona",  icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>` },
+    { action: "report",  label: "Segnala",    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>` },
+  ].forEach(({ action, label, icon }) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "msg-context-item";
+    btn.dataset.action = action;
+    btn.dataset.msgId = msg.id;
+    btn.dataset.msgText = msg.text;
+    btn.innerHTML = icon + `<span>${_esc(label)}</span>`;
+    menu.appendChild(btn);
+  });
+
+  const sep = document.createElement("div");
+  sep.className = "msg-context-separator";
+  menu.appendChild(sep);
+
+  const delBtn = document.createElement("button");
+  delBtn.type = "button";
+  delBtn.className = "msg-context-item msg-context-danger";
+  delBtn.dataset.action = "delete";
+  delBtn.dataset.msgId = msg.id;
+  delBtn.innerHTML =
+    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>` +
+    `<span>Elimina</span>`;
+  menu.appendChild(delBtn);
+
+  return menu;
 }
 
 // ── Input area ─────────────────────────────────────────────────
@@ -308,20 +407,12 @@ function _simulateReply() {
     typingGroup.className = "message-group-received";
 
     const row = document.createElement("div");
-    row.className = "message-avatar-row";
-
-    const av = document.createElement("div");
-    av.className = "avatar avatar-sm";
-    av.style.cssText =
-      `background:${conv.contact.gradient};color:#fff;display:flex;` +
-      `align-items:center;justify-content:center;font-weight:700;font-size:11px;`;
-    av.textContent = conv.contact.initials;
+    row.className = "message-row";
 
     const indicator = document.createElement("div");
     indicator.className = "typing-indicator";
     indicator.innerHTML = "<span></span><span></span><span></span>";
 
-    row.appendChild(av);
     row.appendChild(indicator);
     typingGroup.appendChild(row);
     area.appendChild(typingGroup);
@@ -724,4 +815,84 @@ function _initContactPanel() {
   panel.querySelectorAll(".cip-row:not(#cip-media-row):not(#cip-important-row)").forEach((row) => {
     row.addEventListener("click", () => showToast("Coming soon.", "info"));
   });
+}
+
+// ── Message hover actions & context menu ───────────────────────
+function _initMessageActions() {
+  const area = document.getElementById("chat-messages");
+  if (!area) return;
+
+  area.addEventListener("click", (e) => {
+    const actionBtn = e.target.closest(".msg-action-btn");
+    const menuEl = e.target.closest(".msg-context-menu");
+    const emojiPick = e.target.closest(".msg-emoji-pick");
+    const contextItem = e.target.closest(".msg-context-item");
+
+    // Tapped a hover action button (react emoji OR chevron) — toggle menu
+    if (actionBtn) {
+      e.stopPropagation();
+      const menuId = actionBtn.dataset.menu;
+      const menu = menuId ? document.getElementById(menuId) : null;
+      if (!menu) return;
+      const isOpen = menu.classList.contains("open");
+      _closeAllMsgMenus();
+      if (!isOpen) {
+        menu.classList.add("open");
+        menu.setAttribute("aria-hidden", "false");
+      }
+      return;
+    }
+
+    // Tapped an emoji reaction
+    if (emojiPick) {
+      e.stopPropagation();
+      const emoji = emojiPick.dataset.emoji;
+      showToast(emoji ? "Reacted with " + emoji : "More reactions: coming soon.", emoji ? "success" : "info");
+      _closeAllMsgMenus();
+      return;
+    }
+
+    // Tapped a context-menu action item
+    if (contextItem) {
+      e.stopPropagation();
+      _handleMsgAction(contextItem.dataset.action, contextItem.dataset.msgText || "");
+      _closeAllMsgMenus();
+      return;
+    }
+
+    // Tapped inside open menu but not on a button — keep open
+    if (menuEl) {
+      e.stopPropagation();
+      return;
+    }
+  });
+
+  // Close all open menus when clicking anywhere outside
+  document.addEventListener("click", () => _closeAllMsgMenus());
+}
+
+function _closeAllMsgMenus() {
+  document.querySelectorAll(".msg-context-menu.open").forEach((m) => {
+    m.classList.remove("open");
+    m.setAttribute("aria-hidden", "true");
+  });
+}
+
+function _handleMsgAction(action, text) {
+  switch (action) {
+    case "copy":
+      navigator.clipboard
+        .writeText(text)
+        .then(() => showToast("Message copied.", "success"))
+        .catch(() => showToast("Could not copy message.", "error"));
+      break;
+    case "reply":    showToast("Reply: coming soon.", "info");    break;
+    case "forward":  showToast("Forward: coming soon.", "info");  break;
+    case "pin":      showToast("Message pinned.", "success");      break;
+    case "star":     showToast("Added to important messages.", "success"); break;
+    case "select":   showToast("Select: coming soon.", "info");    break;
+    case "report":   showToast("Message reported.", "info");       break;
+    case "delete":   showToast("Message deleted.", "info");        break;
+    default:         showToast("Coming soon.", "info");
+  }
 }

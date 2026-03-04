@@ -606,64 +606,46 @@
 
           <!-- Received message 1 -->
           <div class="message-group-received">
-            <div class="message-avatar-row">
-              <div
-                class="avatar avatar-sm"
-                style="
-                  background: linear-gradient(135deg, #ec4899, #f97316);
-                  color: #fff;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  font-weight: 700;
-                  font-size: 11px;
-                "
-              >
-                ER
+            <div class="message-row">
+              <div class="message-bubble message-received">
+                Hey Gianluca! Hope your morning is going well. I've just
+                finished the final iterations for the client dashboard.
               </div>
-              <div>
-                <div class="message-bubble message-received">
-                  Hey Gianluca! Hope your morning is going well. I've just
-                  finished the final iterations for the client dashboard.
-                </div>
-                <div class="message-time">12:42 PM</div>
+              <div class="msg-hover-actions">
+                <button type="button" class="msg-action-btn" aria-label="React"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></button>
+                <button type="button" class="msg-action-btn" aria-label="Message options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
               </div>
             </div>
+            <div class="message-time">12:42 PM</div>
           </div>
 
           <!-- Sent message -->
           <div class="message-group-sent">
-            <div class="message-bubble message-sent">
-              Awesome work, Elena! I just saw the notification. The lighting
-              effects in the new hero section look incredibly cinematic.
+            <div class="message-row">
+              <div class="msg-hover-actions">
+                <button type="button" class="msg-action-btn" aria-label="React"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></button>
+                <button type="button" class="msg-action-btn" aria-label="Message options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+              </div>
+              <div class="message-bubble message-sent">
+                Awesome work, Elena! I just saw the notification. The lighting
+                effects in the new hero section look incredibly cinematic.
+              </div>
             </div>
             <div class="message-time" style="text-align: right">12:44 PM</div>
           </div>
 
           <!-- Received message 2 -->
           <div class="message-group-received">
-            <div class="message-avatar-row">
-              <div
-                class="avatar avatar-sm"
-                style="
-                  background: linear-gradient(135deg, #ec4899, #f97316);
-                  color: #fff;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  font-weight: 700;
-                  font-size: 11px;
-                "
-              >
-                ER
+            <div class="message-row">
+              <div class="message-bubble message-received">
+                That sounds perfect. See you then! 🚀
               </div>
-              <div>
-                <div class="message-bubble message-received">
-                  That sounds perfect. See you then! 🚀
-                </div>
-                <div class="message-time">12:45 PM</div>
+              <div class="msg-hover-actions">
+                <button type="button" class="msg-action-btn" aria-label="React"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></button>
+                <button type="button" class="msg-action-btn" aria-label="Message options"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
               </div>
             </div>
+            <div class="message-time">12:45 PM</div>
           </div>
         </div>
 
@@ -702,7 +684,7 @@
               <input
                 type="text"
                 id="message-input"
-                placeholder="Type your message..."
+                placeholder="Scrivi un messaggio"
               />
             </div>
             <button class="input-action-btn input-camera-btn" aria-label="Camera">

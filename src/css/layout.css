@@ -581,6 +581,7 @@
   border-bottom: 1px solid var(--color-border);
   height: 64px;
   flex-shrink: 0;
+  background-color: var(--color-card);
 }
 .chat-header-info {
   flex: 1;
@@ -643,6 +644,7 @@
   align-items: flex-start;
   max-width: 60%;
   margin-bottom: var(--space-4);
+  position: relative;
 }
 .message-group-sent {
   display: flex;
@@ -651,6 +653,7 @@
   align-self: flex-end;
   max-width: 60%;
   margin-bottom: var(--space-4);
+  position: relative;
 }
 .message-avatar-row {
   display: flex;
@@ -659,12 +662,157 @@
   margin-top: var(--space-1);
 }
 
+/* ── Message row & hover actions ──────────────────────────────── */
+.message-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-1);
+}
+.message-group-received .message-row {
+  flex-direction: row;
+}
+.message-group-sent .message-row {
+  flex-direction: row-reverse;
+}
+
+.msg-hover-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
+  flex-shrink: 0;
+  align-self: flex-end;
+  margin-bottom: 4px;
+}
+.message-row:hover .msg-hover-actions,
+.message-group-received:has(.msg-context-menu.open) .msg-hover-actions,
+.message-group-sent:has(.msg-context-menu.open) .msg-hover-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+.msg-action-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-full);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+.msg-action-btn:hover {
+  background: var(--color-input);
+  color: var(--color-text);
+}
+.msg-action-btn svg {
+  width: 13px;
+  height: 13px;
+  pointer-events: none;
+}
+
+/* Context menu */
+.msg-context-menu {
+  position: absolute;
+  z-index: 30;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  min-width: 220px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  display: none;
+  bottom: calc(100% + 6px);
+}
+.msg-context-menu.open {
+  display: block;
+}
+.message-group-received .msg-context-menu {
+  left: 0;
+}
+.message-group-sent .msg-context-menu {
+  right: 0;
+}
+
+/* Emoji reaction row */
+.msg-emoji-row {
+  display: flex;
+  align-items: center;
+  padding: var(--space-2);
+  gap: 2px;
+  border-bottom: 1px solid var(--color-border);
+}
+.msg-emoji-pick {
+  width: 38px;
+  height: 38px;
+  font-size: 22px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color var(--transition-fast),
+    transform var(--transition-fast);
+}
+.msg-emoji-pick:hover {
+  background: var(--color-input);
+  transform: scale(1.25);
+}
+.msg-emoji-more {
+  color: var(--color-text-secondary);
+  font-size: 16px;
+}
+
+/* Context action items */
+.msg-context-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text);
+  font-size: var(--font-size-base);
+  text-align: left;
+  transition: background-color var(--transition-fast);
+}
+.msg-context-item svg {
+  width: 16px;
+  height: 16px;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+.msg-context-item:hover {
+  background: var(--color-input);
+}
+.msg-context-separator {
+  height: 1px;
+  background: var(--color-border);
+}
+.msg-context-danger {
+  color: var(--color-danger);
+}
+.msg-context-danger svg {
+  color: var(--color-danger);
+}
+
 /* Chat Input */
 .chat-input-area {
   border-top: 1px solid var(--color-border);
   padding: var(--space-3) var(--space-4);
   flex-shrink: 0;
-  background-color: var(--color-bg);
+  background-color: var(--color-card);
 }
 .chat-input-row {
   display: flex;
@@ -726,11 +874,11 @@
   width: 32px;
   height: 32px;
   border-radius: var(--radius-full);
-  background-color: var(--color-border);
+  background-color: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-text);
+  color: var(--color-text-secondary);
   flex-shrink: 0;
   transition:
     background-color var(--transition-fast),
