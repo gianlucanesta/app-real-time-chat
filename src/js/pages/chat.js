@@ -564,11 +564,45 @@ function _initSearch() {
 
 // ── Header actions ─────────────────────────────────────────────
 function _initHeaderActions() {
-  document
-    .querySelector('[aria-label="Call"]')
-    ?.addEventListener("click", () =>
-      showToast("Calls are not available in demo mode.", "info"),
-    );
+  const callBtn = document.querySelector('[aria-label="Call"]');
+  const callDropdown = document.getElementById("call-dropdown");
+
+  if (callBtn && callDropdown) {
+    callBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isOpen = callDropdown.classList.contains("open");
+      callDropdown.classList.toggle("open", !isOpen);
+      callDropdown.setAttribute("aria-hidden", String(isOpen));
+      callBtn.setAttribute("aria-expanded", String(!isOpen));
+    });
+
+    callDropdown.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-call]");
+      if (!btn) return;
+      e.stopPropagation();
+      const action = btn.dataset.call;
+      const msgs = {
+        voice: "Voice call: not available in demo mode.",
+        video: "Video call: not available in demo mode.",
+        group: "New group call: coming soon.",
+        link: "Call link: coming soon.",
+        schedule: "Schedule a call: coming soon.",
+      };
+      showToast(msgs[action] || "Coming soon.", "info");
+      callDropdown.classList.remove("open");
+      callDropdown.setAttribute("aria-hidden", "true");
+      callBtn.setAttribute("aria-expanded", "false");
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".call-btn-wrapper")) {
+        callDropdown.classList.remove("open");
+        callDropdown.setAttribute("aria-hidden", "true");
+        callBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
+
   document
     .querySelector('[aria-label="More options"]')
     ?.addEventListener("click", () =>

@@ -644,6 +644,89 @@
 .chat-call-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
 .chat-call-btn .call-chevron { width: 12px; height: 12px; }
 
+/* Call dropdown */
+.call-btn-wrapper {
+  position: relative;
+}
+.call-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 200;
+  min-width: 260px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  flex-direction: column;
+}
+.call-dropdown.open {
+  display: flex;
+}
+.call-dropdown-contact {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) var(--space-3);
+}
+.call-dropdown-name {
+  flex: 1;
+  font-weight: var(--font-semibold);
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+}
+.call-dropdown-primary-row {
+  display: flex;
+  gap: var(--space-3);
+  padding: 0 var(--space-4) var(--space-4);
+}
+.call-dropdown-primary-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  background: #25d366;
+  color: #000;
+  border: none;
+  border-radius: 9999px;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.call-dropdown-primary-btn:hover {
+  background: #20bd5a;
+}
+.call-dropdown-list {
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+}
+.call-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: none;
+  border: none;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.call-dropdown-item:hover {
+  background: var(--color-input);
+}
+.call-dropdown-item svg {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
 /* Messages Area */
 .chat-messages {
   flex: 1;

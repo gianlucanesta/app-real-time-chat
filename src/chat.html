@@ -542,17 +542,51 @@
             </div>
           </button>
           <div class="chat-header-actions">
-            <!-- Call button (desktop: icon+text+chevron; mobile: icon only) -->
-            <button class="chat-call-btn" aria-label="Call">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="23 7 16 12 23 17 23 7"/>
-                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
-              </svg>
-              <span class="call-text">Chiama</span>
-              <svg class="call-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="6 9 12 15 18 9"/>
-              </svg>
-            </button>
+            <!-- Call button wrapper -->
+            <div class="call-btn-wrapper">
+              <button class="chat-call-btn" aria-label="Call" aria-expanded="false" aria-controls="call-dropdown">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="23 7 16 12 23 17 23 7"/>
+                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                </svg>
+                <span class="call-text">Call</span>
+                <svg class="call-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              <!-- Call dropdown -->
+              <div class="call-dropdown" id="call-dropdown" aria-hidden="true">
+                <div class="call-dropdown-contact">
+                  <div class="avatar avatar-sm" style="background:linear-gradient(135deg,#ec4899,#f97316);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0">ER</div>
+                  <span class="call-dropdown-name">Elena Rodriguez</span>
+                  <span>❤️</span>
+                </div>
+                <div class="call-dropdown-primary-row">
+                  <button class="call-dropdown-primary-btn" data-call="voice">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.58 1.21h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6.29 6.29l1.63-1.63a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 15.92z"/></svg>
+                    Voice
+                  </button>
+                  <button class="call-dropdown-primary-btn" data-call="video">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                    Video
+                  </button>
+                </div>
+                <div class="call-dropdown-list">
+                  <button class="call-dropdown-item" data-call="group">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    New group call
+                  </button>
+                  <button class="call-dropdown-item" data-call="link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    Send call link
+                  </button>
+                  <button class="call-dropdown-item" data-call="schedule">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    Schedule a call
+                  </button>
+                </div>
+              </div>
+            </div>
             <button class="icon-btn" aria-label="Search">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="11" cy="11" r="8"/>
