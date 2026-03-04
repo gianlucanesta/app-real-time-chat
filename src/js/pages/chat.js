@@ -121,9 +121,13 @@ function _selectConversation(contactId) {
     headerAv.style.fontWeight = "700";
     headerAv.style.fontSize = "14px";
   }
+  // Update header avatar status dot
+  const headerDot = document.getElementById("header-avatar-dot");
+  if (headerDot) headerDot.style.display = conv.contact.online ? "" : "none";
+
   if (statusEl) {
     if (conv.contact.online) {
-      statusEl.innerHTML = `<span class="status-dot" style="position:static;width:8px;height:8px;border:none;"></span> Online`;
+      statusEl.textContent = "Online";
       statusEl.style.color = "var(--color-success)";
     } else {
       statusEl.textContent = "Offline";
