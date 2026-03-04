@@ -1,0 +1,255 @@
+/* === Responsive Design === */
+
+/* ---- Tablet (768 – 1023 px) ---- */
+@media (max-width: 1023px) {
+  /* Auth pages: slightly more padding */
+  .auth-card {
+    max-width: 400px;
+    padding: var(--space-8) var(--space-6);
+  }
+
+  /* Chat: narrower sidebar on tablet */
+  .chat-sidebar {
+    width: 260px;
+    min-width: 260px;
+  }
+
+  /* Settings: hide sidebar text, icon-only */
+  .settings-sidebar {
+    width: 72px;
+    min-width: 72px;
+    padding: var(--space-5) var(--space-3);
+    align-items: center;
+  }
+  .settings-logo span {
+    display: none;
+  }
+  .nav-item span {
+    display: none;
+  }
+  .nav-item {
+    justify-content: center;
+    padding: var(--space-2);
+    width: 40px;
+    height: 40px;
+  }
+  .settings-user-footer .user-info {
+    display: none;
+  }
+  .settings-user-footer {
+    justify-content: center;
+  }
+
+  /* Settings main */
+  .settings-main {
+    padding: var(--space-6);
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- Mobile (< 768 px) ---- */
+@media (max-width: 767px) {
+  /* Auth */
+  .auth-page {
+    padding: var(--space-4);
+  }
+  .auth-card {
+    max-width: 100%;
+    border-radius: var(--radius-md);
+    padding: var(--space-6) var(--space-5);
+  }
+  .auth-page::after {
+    width: 300px;
+    height: 120px;
+  }
+
+  /* Terms text: scale down to stay on one line */
+  .terms-text {
+    font-size: clamp(11px, 3.2vw, var(--font-size-base));
+  }
+
+  /* Chat: stack layout */
+  .chat-page {
+    flex-direction: column;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+  }
+  .chat-sidebar {
+    width: 100%;
+    min-width: 100%;
+    height: 100vh;
+    position: absolute;
+    z-index: 50;
+    left: 0;
+    top: 0;
+  }
+  .chat-sidebar.hidden {
+    display: none;
+  }
+
+  /* Chat main fills viewport, flex column, no page scroll */
+  .chat-main {
+    height: 100vh;
+    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .back-btn {
+    display: flex;
+  }
+
+  /* Header: name on one line, hide "Online" text */
+  .chat-header {
+    padding: var(--space-2) var(--space-3);
+    gap: var(--space-2);
+    height: auto;
+    min-height: 48px;
+  }
+  .chat-contact-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: var(--font-size-base);
+  }
+  .chat-status {
+    display: none;
+  }
+  .chat-header-actions .icon-btn {
+    width: 28px;
+    height: 28px;
+  }
+  .chat-header-actions .icon-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .chat-messages {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: var(--space-3);
+  }
+  .message-group-received,
+  .message-group-sent {
+    max-width: 85%;
+  }
+
+  .chat-input-area {
+    flex-shrink: 0;
+    padding: var(--space-2) var(--space-3);
+    border-top: 1px solid var(--color-border);
+    background-color: var(--color-bg);
+  }
+  .chat-input-row {
+    gap: var(--space-1);
+  }
+  .chat-input-field {
+    min-width: 0;
+    height: 36px;
+    padding: 0 var(--space-3);
+  }
+  .input-action-btn {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+  .input-action-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+  .send-btn {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+  .send-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* Settings: bottom navigation bar */
+  .settings-page {
+    flex-direction: column;
+    height: 100vh;
+  }
+  .settings-sidebar {
+    width: 100%;
+    min-width: 100%;
+    flex-direction: row;
+    padding: 0;
+    gap: 0;
+    height: auto;
+    overflow-x: auto;
+    border-right: none;
+    border-top: 1px solid var(--color-border);
+    border-bottom: none;
+    align-items: center;
+    order: 2;                 /* push below main content */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    z-index: 60;
+    background-color: var(--color-bg);
+  }
+  .settings-logo {
+    display: none;            /* hide logo in bottom bar */
+  }
+  .settings-nav {
+    flex-direction: row;
+    gap: 0;
+    flex: 1;
+    justify-content: space-around;
+    width: 100%;
+  }
+  .nav-item {
+    flex: 1;
+    justify-content: center;
+    align-items: center;
+    padding: var(--space-3) 0;
+    width: auto;
+    height: 56px;
+    border-radius: 0;
+  }
+  .nav-item.active {
+    border-radius: 0;
+  }
+  .nav-item span {
+    display: none;
+  }
+  .settings-user-footer {
+    display: none;
+  }
+
+  .settings-main {
+    order: 1;
+    flex: 1;
+    padding: var(--space-5) var(--space-4);
+    padding-bottom: 72px;    /* space for fixed bottom bar */
+    overflow-y: auto;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-section {
+    flex-direction: column;
+    text-align: center;
+  }
+  .profile-buttons {
+    justify-content: center;
+  }
+
+  /* Modal */
+  .modal-card {
+    max-width: 100%;
+    padding: var(--space-5);
+    margin: var(--space-3);
+    border-radius: var(--radius-md);
+  }
+}
