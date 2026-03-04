@@ -28,14 +28,18 @@
 
 /* Bottom glow effect */
 .auth-page::after {
-  content: '';
+  content: "";
   position: fixed;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
   width: 600px;
   height: 200px;
-  background: radial-gradient(ellipse at center bottom, rgba(37, 99, 235, 0.12) 0%, transparent 70%);
+  background: radial-gradient(
+    ellipse at center bottom,
+    rgba(37, 99, 235, 0.12) 0%,
+    transparent 70%
+  );
   pointer-events: none;
   z-index: 0;
 }
@@ -239,7 +243,9 @@
   padding: var(--space-3) var(--space-4);
   cursor: pointer;
   border-left: 3px solid transparent;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 .conversation-item:hover {
   background-color: rgba(26, 35, 50, 0.6);
@@ -408,7 +414,10 @@
   justify-content: center;
   color: #fff;
   flex-shrink: 0;
-  transition: filter var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
+  transition:
+    filter var(--transition-fast),
+    transform var(--transition-fast),
+    opacity var(--transition-fast);
 }
 .send-btn:hover {
   filter: brightness(1.15);
@@ -436,7 +445,10 @@
   justify-content: center;
   color: var(--color-text);
   flex-shrink: 0;
-  transition: background-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
 }
 .input-action-btn:hover {
   background-color: var(--color-input);
@@ -518,7 +530,9 @@
   color: var(--color-text-secondary);
   cursor: pointer;
   border-bottom: 2px solid transparent;
-  transition: color var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 .modal-tab.active {
   color: var(--color-accent);
@@ -605,7 +619,9 @@
   height: 40px;
   cursor: pointer;
   position: relative;
-  transition: background-color var(--transition-fast), color var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
 }
 .nav-item:hover {
   background-color: var(--color-input);

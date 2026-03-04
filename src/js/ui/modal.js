@@ -7,17 +7,17 @@ export function openModal(id) {
   const el = document.getElementById(id);
   if (!el) return;
 
-  el.classList.add('open');
-  el.setAttribute('aria-hidden', 'false');
+  el.classList.add("open");
+  el.setAttribute("aria-hidden", "false");
 
   // Move focus to the first interactive element inside the modal
   const focusable = el.querySelector(
-    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
   );
   if (focusable) focusable.focus();
 
   // Close when clicking the backdrop (not the card itself)
-  el.addEventListener('click', _overlayClose);
+  el.addEventListener("click", _overlayClose);
 }
 
 /**
@@ -28,9 +28,9 @@ export function closeModal(id) {
   const el = document.getElementById(id);
   if (!el) return;
 
-  el.classList.remove('open');
-  el.setAttribute('aria-hidden', 'true');
-  el.removeEventListener('click', _overlayClose);
+  el.classList.remove("open");
+  el.setAttribute("aria-hidden", "true");
+  el.removeEventListener("click", _overlayClose);
 }
 
 function _overlayClose(e) {

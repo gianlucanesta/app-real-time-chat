@@ -6,13 +6,13 @@
  * to protect real user credentials in production.
  */
 
-const STORAGE_USERS = 'ephemeral_users';
-const SESSION_TOKEN = 'ephemeral_session';
+const STORAGE_USERS = "ephemeral_users";
+const SESSION_TOKEN = "ephemeral_session";
 const SCHEMA_VERSION = 1;
 
 // DEMO ONLY: not cryptographically secure
 function obscure(pwd) {
-  return btoa(pwd + ':ephemeral-demo');
+  return btoa(pwd + ":ephemeral-demo");
 }
 
 function getUsers() {
@@ -33,7 +33,7 @@ function getUsers() {
 function saveUsers(users) {
   localStorage.setItem(
     STORAGE_USERS,
-    JSON.stringify({ _v: SCHEMA_VERSION, users })
+    JSON.stringify({ _v: SCHEMA_VERSION, users }),
   );
 }
 
@@ -45,27 +45,27 @@ export function signup({ email, phone, password, displayName }) {
   const users = getUsers();
   const normalizedEmail = email.toLowerCase().trim();
 
-  if (users.find(u => u.email === normalizedEmail)) {
-    return { ok: false, error: 'An account with this email already exists.' };
+  if (users.find((u) => u.email === normalizedEmail)) {
+    return { ok: false, error: "An account with this email already exists." };
   }
 
   const initials = displayName
     .trim()
     .split(/\s+/)
-    .map(n => n[0])
-    .join('')
+    .map((n) => n[0])
+    .join("")
     .toUpperCase()
     .slice(0, 2);
 
   const user = {
-    id: 'usr_' + Date.now(),
+    id: "usr_" + Date.now(),
     displayName: displayName.trim(),
     email: normalizedEmail,
-    phone: phone || '',
-    role: '',
+    phone: phone || "",
+    role: "",
     passwordHash: obscure(password),
     initials,
-    avatarGradient: 'linear-gradient(135deg,#2563EB,#7C3AED)',
+    avatarGradient: "linear-gradient(135deg,#2563EB,#7C3AED)",
     avatar: null,
   };
 
@@ -81,15 +81,15 @@ export function signup({ email, phone, password, displayName }) {
 export function login({ email, password }) {
   const users = getUsers();
   const normalizedEmail = email.toLowerCase().trim();
-  const user = users.find(u => u.email === normalizedEmail);
+  const user = users.find((u) => u.email === normalizedEmail);
 
   if (!user || user.passwordHash !== obscure(password)) {
-    return { ok: false, error: 'Invalid email or password.' };
+    return { ok: false, error: "Invalid email or password." };
   }
 
   sessionStorage.setItem(
     SESSION_TOKEN,
-    JSON.stringify({ userId: user.id, ts: Date.now() })
+    JSON.stringify({ userId: user.id, ts: Date.now() }),
   );
   return { ok: true, user };
 }
@@ -107,7 +107,7 @@ export function getCurrentUser() {
   if (!raw) return null;
   try {
     const { userId } = JSON.parse(raw);
-    return getUsers().find(u => u.id === userId) || null;
+    return getUsers().find((u) => u.id === userId) || null;
   } catch {
     return null;
   }
@@ -119,12 +119,12 @@ export function getCurrentUser() {
  */
 export function updateUser(updatedFields) {
   const raw = sessionStorage.getItem(SESSION_TOKEN);
-  if (!raw) return { ok: false, error: 'Not authenticated.' };
+  if (!raw) return { ok: false, error: "Not authenticated." };
 
   const { userId } = JSON.parse(raw);
   const users = getUsers();
-  const idx = users.findIndex(u => u.id === userId);
-  if (idx === -1) return { ok: false, error: 'User not found.' };
+  const idx = users.findIndex((u) => u.id === userId);
+  if (idx === -1) return { ok: false, error: "User not found." };
 
   users[idx] = { ...users[idx], ...updatedFields };
   saveUsers(users);

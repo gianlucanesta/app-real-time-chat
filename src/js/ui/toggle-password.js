@@ -4,19 +4,21 @@
  * contains the password `<input>`.
  */
 export function initTogglePassword() {
-  document.querySelectorAll('.toggle-password').forEach(btn => {
-    const wrapper = btn.closest('.input-wrapper');
+  document.querySelectorAll(".toggle-password").forEach((btn) => {
+    const wrapper = btn.closest(".input-wrapper");
     if (!wrapper) return;
 
-    const input = wrapper.querySelector('input[type="password"], input[type="text"]');
+    const input = wrapper.querySelector(
+      'input[type="password"], input[type="text"]',
+    );
     if (!input) return;
 
-    btn.addEventListener('click', () => {
-      const isShown = input.type === 'text';
-      input.type = isShown ? 'password' : 'text';
-      btn.setAttribute('aria-pressed', String(!isShown));
+    btn.addEventListener("click", () => {
+      const isShown = input.type === "text";
+      input.type = isShown ? "password" : "text";
+      btn.setAttribute("aria-pressed", String(!isShown));
 
-      const svg = btn.querySelector('svg');
+      const svg = btn.querySelector("svg");
       if (!svg) return;
 
       if (isShown) {

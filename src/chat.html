@@ -1,296 +1,684 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ephemeral – Chat</title>
-  <link rel="stylesheet" href="css/reset.css" />
-  <link rel="stylesheet" href="css/variables.css" />
-  <link rel="stylesheet" href="css/components.css" />
-  <link rel="stylesheet" href="css/layout.css" />
-  <link rel="stylesheet" href="css/responsive.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-</head>
-<body data-page="chat">
-  <div class="chat-page">
-
-    <!-- ===== Sidebar ===== -->
-    <aside class="chat-sidebar" id="sidebar">
-
-      <!-- Sidebar Header -->
-      <div class="sidebar-header">
-        <div class="avatar avatar-md" style="background:linear-gradient(135deg,#2563EB,#7C3AED);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;">GN</div>
-        <div class="sidebar-user-info">
-          <div class="user-name">Gianluca Nesta</div>
-          <div class="user-role">Product Owner</div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ephemeral – Chat</title>
+    <link rel="stylesheet" href="css/reset.css" />
+    <link rel="stylesheet" href="css/variables.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/responsive.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body data-page="chat">
+    <div class="chat-page">
+      <!-- ===== Sidebar ===== -->
+      <aside class="chat-sidebar" id="sidebar">
+        <!-- Sidebar Header -->
+        <div class="sidebar-header">
+          <div
+            class="avatar avatar-md"
+            style="
+              background: linear-gradient(135deg, #2563eb, #7c3aed);
+              color: #fff;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 700;
+              font-size: 16px;
+            "
+          >
+            GN
+          </div>
+          <div class="sidebar-user-info">
+            <div class="user-name">Gianluca Nesta</div>
+            <div class="user-role">Product Owner</div>
+          </div>
+          <div class="sidebar-actions">
+            <a href="settings.html" class="icon-btn" aria-label="Settings">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path
+                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+                />
+              </svg>
+            </a>
+            <button class="icon-btn" aria-label="Edit">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                />
+                <path
+                  d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                />
+              </svg>
+            </button>
+            <button class="icon-btn" aria-label="Archive">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="2" y="4" width="20" height="5" rx="1" />
+                <path d="M4 9v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9" />
+                <line x1="10" y1="13" x2="14" y2="13" />
+              </svg>
+            </button>
+          </div>
         </div>
-        <div class="sidebar-actions">
-          <a href="settings.html" class="icon-btn" aria-label="Settings">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          </a>
-          <button class="icon-btn" aria-label="Edit">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+
+        <!-- Search + New Chat -->
+        <div class="sidebar-search">
+          <div class="search-input">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+            <input
+              type="text"
+              id="sidebar-search"
+              placeholder="Search conversations..."
+            />
+          </div>
+          <button
+            type="button"
+            id="new-chat-btn"
+            class="new-chat-btn"
+            aria-label="New chat"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
           </button>
-          <button class="icon-btn" aria-label="Archive">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="5" rx="1"/><path d="M4 9v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9"/><line x1="10" y1="13" x2="14" y2="13"/></svg>
+        </div>
+
+        <!-- Conversation List (populated by JS) -->
+        <div class="conversation-list">
+          <!-- Conversation 1 – active (static placeholder, replaced by JS) -->
+          <div class="conversation-item active">
+            <div class="avatar-wrapper">
+              <div
+                class="avatar avatar-md"
+                style="
+                  background: linear-gradient(135deg, #ec4899, #f97316);
+                  color: #fff;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-weight: 700;
+                  font-size: 14px;
+                "
+              >
+                ER
+              </div>
+              <span class="status-dot"></span>
+            </div>
+            <div class="conversation-content">
+              <div class="conversation-header">
+                <span class="conversation-name">Elena Rodriguez</span>
+                <span class="conversation-time">12:45 PM</span>
+              </div>
+              <div class="conversation-preview">
+                <span class="conversation-message"
+                  >That sounds perfect. See…</span
+                >
+                <span class="badge">3</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Conversation 2 -->
+          <div class="conversation-item">
+            <div class="avatar-wrapper">
+              <div
+                class="avatar avatar-md"
+                style="
+                  background: linear-gradient(135deg, #14b8a6, #22d3ee);
+                  color: #fff;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-weight: 700;
+                  font-size: 14px;
+                "
+              >
+                SB
+              </div>
+            </div>
+            <div class="conversation-content">
+              <div class="conversation-header">
+                <span class="conversation-name">Samuel Brooks</span>
+                <span class="conversation-time">Yesterday</span>
+              </div>
+              <div class="conversation-preview">
+                <span class="conversation-message"
+                  >Let's reschedule for tomorrow…</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Conversation 3 -->
+          <div class="conversation-item">
+            <div class="avatar-wrapper">
+              <div
+                class="avatar avatar-md"
+                style="
+                  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+                  color: #fff;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-weight: 700;
+                  font-size: 14px;
+                "
+              >
+                JV
+              </div>
+            </div>
+            <div class="conversation-content">
+              <div class="conversation-header">
+                <span class="conversation-name">Julian Voss</span>
+                <span class="conversation-time">Yesterday</span>
+              </div>
+              <div class="conversation-preview">
+                <span class="conversation-message"
+                  >Wait, did you see the update to…</span
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Conversation 4 -->
+          <div class="conversation-item">
+            <div class="avatar-wrapper">
+              <div
+                class="avatar avatar-md"
+                style="
+                  background: linear-gradient(135deg, #f59e0b, #ef4444);
+                  color: #fff;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-weight: 700;
+                  font-size: 14px;
+                "
+              >
+                SJ
+              </div>
+            </div>
+            <div class="conversation-content">
+              <div class="conversation-header">
+                <span class="conversation-name">Sarah Jenkins</span>
+                <span class="conversation-time">Mon</span>
+              </div>
+              <div class="conversation-preview">
+                <span class="conversation-message"
+                  >The presentation looks solid, G…</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ===== Chat Main ===== -->
+      <main class="chat-main">
+        <!-- Chat Header -->
+        <div class="chat-header">
+          <!-- Back button (mobile only) -->
+          <button class="back-btn icon-btn" aria-label="Back to list">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
           </button>
-        </div>
-      </div>
 
-      <!-- Search + New Chat -->
-      <div class="sidebar-search">
-        <div class="search-input">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" id="sidebar-search" placeholder="Search conversations..." />
-        </div>
-        <button type="button" id="new-chat-btn" class="new-chat-btn" aria-label="New chat">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        </button>
-      </div>
-
-      <!-- Conversation List (populated by JS) -->
-      <div class="conversation-list">
-
-        <!-- Conversation 1 – active (static placeholder, replaced by JS) -->
-        <div class="conversation-item active">
           <div class="avatar-wrapper">
-            <div class="avatar avatar-md" style="background:linear-gradient(135deg,#EC4899,#F97316);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">ER</div>
+            <div
+              class="avatar avatar-md"
+              style="
+                background: linear-gradient(135deg, #ec4899, #f97316);
+                color: #fff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 700;
+                font-size: 14px;
+              "
+            >
+              ER
+            </div>
             <span class="status-dot"></span>
           </div>
-          <div class="conversation-content">
-            <div class="conversation-header">
-              <span class="conversation-name">Elena Rodriguez</span>
-              <span class="conversation-time">12:45 PM</span>
+          <div class="chat-header-info">
+            <div class="chat-contact-name">Elena Rodriguez</div>
+            <div class="chat-status">
+              <span
+                class="status-dot"
+                style="position: static; width: 8px; height: 8px; border: none"
+              ></span>
+              Online
             </div>
-            <div class="conversation-preview">
-              <span class="conversation-message">That sounds perfect. See…</span>
-              <span class="badge">3</span>
-            </div>
+          </div>
+          <div class="chat-header-actions">
+            <button class="icon-btn" aria-label="Search">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+            </button>
+            <button class="icon-btn" aria-label="Video call">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polygon points="23 7 16 12 23 17 23 7" />
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+              </svg>
+            </button>
+            <button class="icon-btn" aria-label="Voice call">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.11 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"
+                />
+              </svg>
+            </button>
+            <button class="icon-btn" aria-label="More options">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="5" r="1" />
+                <circle cx="12" cy="12" r="1" />
+                <circle cx="12" cy="19" r="1" />
+              </svg>
+            </button>
           </div>
         </div>
 
-        <!-- Conversation 2 -->
-        <div class="conversation-item">
-          <div class="avatar-wrapper">
-            <div class="avatar avatar-md" style="background:linear-gradient(135deg,#14B8A6,#22D3EE);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">SB</div>
-          </div>
-          <div class="conversation-content">
-            <div class="conversation-header">
-              <span class="conversation-name">Samuel Brooks</span>
-              <span class="conversation-time">Yesterday</span>
-            </div>
-            <div class="conversation-preview">
-              <span class="conversation-message">Let's reschedule for tomorrow…</span>
-            </div>
-          </div>
-        </div>
+        <!-- Messages Area (populated by JS) -->
+        <div class="chat-messages" id="chat-messages" aria-live="polite">
+          <!-- Date Separator -->
+          <div class="date-separator"><span>TODAY</span></div>
 
-        <!-- Conversation 3 -->
-        <div class="conversation-item">
-          <div class="avatar-wrapper">
-            <div class="avatar avatar-md" style="background:linear-gradient(135deg,#8B5CF6,#6366F1);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">JV</div>
-          </div>
-          <div class="conversation-content">
-            <div class="conversation-header">
-              <span class="conversation-name">Julian Voss</span>
-              <span class="conversation-time">Yesterday</span>
-            </div>
-            <div class="conversation-preview">
-              <span class="conversation-message">Wait, did you see the update to…</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Conversation 4 -->
-        <div class="conversation-item">
-          <div class="avatar-wrapper">
-            <div class="avatar avatar-md" style="background:linear-gradient(135deg,#F59E0B,#EF4444);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">SJ</div>
-          </div>
-          <div class="conversation-content">
-            <div class="conversation-header">
-              <span class="conversation-name">Sarah Jenkins</span>
-              <span class="conversation-time">Mon</span>
-            </div>
-            <div class="conversation-preview">
-              <span class="conversation-message">The presentation looks solid, G…</span>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </aside>
-
-    <!-- ===== Chat Main ===== -->
-    <main class="chat-main">
-
-      <!-- Chat Header -->
-      <div class="chat-header">
-        <!-- Back button (mobile only) -->
-        <button class="back-btn icon-btn" aria-label="Back to list">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-
-        <div class="avatar-wrapper">
-          <div class="avatar avatar-md" style="background:linear-gradient(135deg,#EC4899,#F97316);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">ER</div>
-          <span class="status-dot"></span>
-        </div>
-        <div class="chat-header-info">
-          <div class="chat-contact-name">Elena Rodriguez</div>
-          <div class="chat-status">
-            <span class="status-dot" style="position:static;width:8px;height:8px;border:none;"></span>
-            Online
-          </div>
-        </div>
-        <div class="chat-header-actions">
-          <button class="icon-btn" aria-label="Search">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          </button>
-          <button class="icon-btn" aria-label="Video call">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-          </button>
-          <button class="icon-btn" aria-label="Voice call">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.11 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-          </button>
-          <button class="icon-btn" aria-label="More options">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-          </button>
-        </div>
-      </div>
-
-      <!-- Messages Area (populated by JS) -->
-      <div class="chat-messages" id="chat-messages" aria-live="polite">
-
-        <!-- Date Separator -->
-        <div class="date-separator"><span>TODAY</span></div>
-
-        <!-- Received message 1 -->
-        <div class="message-group-received">
-          <div class="message-avatar-row">
-            <div class="avatar avatar-sm" style="background:linear-gradient(135deg,#EC4899,#F97316);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;">ER</div>
-            <div>
-              <div class="message-bubble message-received">
-                Hey Gianluca! Hope your morning is going well. I've just finished the final iterations for the client dashboard.
+          <!-- Received message 1 -->
+          <div class="message-group-received">
+            <div class="message-avatar-row">
+              <div
+                class="avatar avatar-sm"
+                style="
+                  background: linear-gradient(135deg, #ec4899, #f97316);
+                  color: #fff;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-weight: 700;
+                  font-size: 11px;
+                "
+              >
+                ER
               </div>
-              <div class="message-time">12:42 PM</div>
+              <div>
+                <div class="message-bubble message-received">
+                  Hey Gianluca! Hope your morning is going well. I've just
+                  finished the final iterations for the client dashboard.
+                </div>
+                <div class="message-time">12:42 PM</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sent message -->
+          <div class="message-group-sent">
+            <div class="message-bubble message-sent">
+              Awesome work, Elena! I just saw the notification. The lighting
+              effects in the new hero section look incredibly cinematic.
+            </div>
+            <div class="message-time" style="text-align: right">12:44 PM</div>
+          </div>
+
+          <!-- Received message 2 -->
+          <div class="message-group-received">
+            <div class="message-avatar-row">
+              <div
+                class="avatar avatar-sm"
+                style="
+                  background: linear-gradient(135deg, #ec4899, #f97316);
+                  color: #fff;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-weight: 700;
+                  font-size: 11px;
+                "
+              >
+                ER
+              </div>
+              <div>
+                <div class="message-bubble message-received">
+                  That sounds perfect. See you then! 🚀
+                </div>
+                <div class="message-time">12:45 PM</div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Sent message -->
-        <div class="message-group-sent">
-          <div class="message-bubble message-sent">
-            Awesome work, Elena! I just saw the notification. The lighting effects in the new hero section look incredibly cinematic.
+        <!-- Chat Input Area -->
+        <div class="chat-input-area">
+          <div class="chat-input-row">
+            <button class="input-action-btn" aria-label="Add attachment">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+            <button class="input-action-btn" aria-label="Emoji">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+                <line x1="9" y1="9" x2="9.01" y2="9" />
+                <line x1="15" y1="9" x2="15.01" y2="9" />
+              </svg>
+            </button>
+            <div class="chat-input-field">
+              <input
+                type="text"
+                id="message-input"
+                placeholder="Type your message..."
+              />
+            </div>
+            <button class="input-action-btn" aria-label="Voice note">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+                />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" y1="19" x2="12" y2="23" />
+                <line x1="8" y1="23" x2="16" y2="23" />
+              </svg>
+            </button>
+            <button
+              class="send-btn"
+              aria-label="Send message"
+              disabled
+              style="opacity: 0.5"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+            </button>
           </div>
-          <div class="message-time" style="text-align:right;">12:44 PM</div>
+          <div class="chat-input-hint">
+            Enter to send, Shift + Enter for new line
+          </div>
         </div>
+      </main>
 
-        <!-- Received message 2 -->
-        <div class="message-group-received">
-          <div class="message-avatar-row">
-            <div class="avatar avatar-sm" style="background:linear-gradient(135deg,#EC4899,#F97316);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;">ER</div>
-            <div>
-              <div class="message-bubble message-received">
-                That sounds perfect. See you then! 🚀
-              </div>
-              <div class="message-time">12:45 PM</div>
+      <!-- ===== New Chat Modal (JS-controlled via .open class) ===== -->
+      <div
+        class="modal-overlay"
+        id="newChatModal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        aria-hidden="true"
+      >
+        <div class="modal-card">
+          <!-- Modal Header -->
+          <div class="modal-header">
+            <h2 id="modal-title">Start New Conversation</h2>
+            <button
+              type="button"
+              id="modal-close-btn"
+              class="modal-close"
+              aria-label="Close modal"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Tabs -->
+          <div class="modal-tabs">
+            <div id="tab-private" class="modal-tab active">
+              New Private Chat
+            </div>
+            <div id="tab-group" class="modal-tab">New Group</div>
+          </div>
+
+          <!-- Body -->
+          <div class="modal-body">
+            <!-- Search -->
+            <div
+              class="input-wrapper"
+              style="
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-md);
+              "
+            >
+              <svg
+                class="input-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+              <input
+                type="text"
+                id="modal-contact-search"
+                placeholder="Search contacts..."
+              />
+            </div>
+
+            <!-- Contact list (populated by JS) -->
+            <div class="contact-list">
+              <label class="contact-row">
+                <div
+                  class="avatar avatar-md"
+                  style="
+                    background: linear-gradient(135deg, #14b8a6, #22d3ee);
+                    color: #fff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 700;
+                    font-size: 14px;
+                  "
+                >
+                  SB
+                </div>
+                <div class="contact-info">
+                  <div class="contact-name">Samuel Brooks</div>
+                  <div class="contact-email">Full Stack Developer</div>
+                </div>
+                <input
+                  type="checkbox"
+                  class="contact-check"
+                  value="usr_mock_003"
+                />
+              </label>
+              <label class="contact-row">
+                <div
+                  class="avatar avatar-md"
+                  style="
+                    background: linear-gradient(135deg, #8b5cf6, #6366f1);
+                    color: #fff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 700;
+                    font-size: 14px;
+                  "
+                >
+                  JV
+                </div>
+                <div class="contact-info">
+                  <div class="contact-name">Julian Voss</div>
+                  <div class="contact-email">UX Researcher</div>
+                </div>
+                <input
+                  type="checkbox"
+                  class="contact-check"
+                  value="usr_mock_004"
+                />
+              </label>
+              <label class="contact-row">
+                <div
+                  class="avatar avatar-md"
+                  style="
+                    background: linear-gradient(135deg, #f59e0b, #ef4444);
+                    color: #fff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 700;
+                    font-size: 14px;
+                  "
+                >
+                  SJ
+                </div>
+                <div class="contact-info">
+                  <div class="contact-name">Sarah Jenkins</div>
+                  <div class="contact-email">Project Manager</div>
+                </div>
+                <input
+                  type="checkbox"
+                  class="contact-check"
+                  value="usr_mock_005"
+                />
+              </label>
             </div>
           </div>
-        </div>
 
-      </div>
-
-      <!-- Chat Input Area -->
-      <div class="chat-input-area">
-        <div class="chat-input-row">
-          <button class="input-action-btn" aria-label="Add attachment">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </button>
-          <button class="input-action-btn" aria-label="Emoji">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-          </button>
-          <div class="chat-input-field">
-            <input type="text" id="message-input" placeholder="Type your message..." />
-          </div>
-          <button class="input-action-btn" aria-label="Voice note">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-          </button>
-          <button class="send-btn" aria-label="Send message" disabled style="opacity:0.5;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          </button>
-        </div>
-        <div class="chat-input-hint">Enter to send, Shift + Enter for new line</div>
-      </div>
-    </main>
-
-    <!-- ===== New Chat Modal (JS-controlled via .open class) ===== -->
-    <div class="modal-overlay" id="newChatModal" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-hidden="true">
-      <div class="modal-card">
-
-        <!-- Modal Header -->
-        <div class="modal-header">
-          <h2 id="modal-title">Start New Conversation</h2>
-          <button type="button" id="modal-close-btn" class="modal-close" aria-label="Close modal">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>
-
-        <!-- Tabs -->
-        <div class="modal-tabs">
-          <div id="tab-private" class="modal-tab active">New Private Chat</div>
-          <div id="tab-group" class="modal-tab">New Group</div>
-        </div>
-
-        <!-- Body -->
-        <div class="modal-body">
-
-          <!-- Search -->
-          <div class="input-wrapper" style="border:1px solid var(--color-border);border-radius:var(--radius-md);">
-            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input type="text" id="modal-contact-search" placeholder="Search contacts..." />
-          </div>
-
-          <!-- Contact list (populated by JS) -->
-          <div class="contact-list">
-            <label class="contact-row">
-              <div class="avatar avatar-md" style="background:linear-gradient(135deg,#14B8A6,#22D3EE);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">SB</div>
-              <div class="contact-info">
-                <div class="contact-name">Samuel Brooks</div>
-                <div class="contact-email">Full Stack Developer</div>
-              </div>
-              <input type="checkbox" class="contact-check" value="usr_mock_003" />
-            </label>
-            <label class="contact-row">
-              <div class="avatar avatar-md" style="background:linear-gradient(135deg,#8B5CF6,#6366F1);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">JV</div>
-              <div class="contact-info">
-                <div class="contact-name">Julian Voss</div>
-                <div class="contact-email">UX Researcher</div>
-              </div>
-              <input type="checkbox" class="contact-check" value="usr_mock_004" />
-            </label>
-            <label class="contact-row">
-              <div class="avatar avatar-md" style="background:linear-gradient(135deg,#F59E0B,#EF4444);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">SJ</div>
-              <div class="contact-info">
-                <div class="contact-name">Sarah Jenkins</div>
-                <div class="contact-email">Project Manager</div>
-              </div>
-              <input type="checkbox" class="contact-check" value="usr_mock_005" />
-            </label>
+          <!-- Modal Actions -->
+          <div class="modal-actions">
+            <button type="button" id="modal-cancel-btn" class="btn btn-outline">
+              Cancel
+            </button>
+            <button
+              type="button"
+              id="start-chat-btn"
+              class="btn btn-accent"
+              style="width: auto"
+            >
+              Start Chat
+            </button>
           </div>
         </div>
-
-        <!-- Modal Actions -->
-        <div class="modal-actions">
-          <button type="button" id="modal-cancel-btn" class="btn btn-outline">Cancel</button>
-          <button type="button" id="start-chat-btn" class="btn btn-accent" style="width:auto;">Start Chat</button>
-        </div>
-
       </div>
     </div>
 
-  </div>
-
-  <script type="module" src="js/main.js"></script>
-</body>
+    <script type="module" src="js/main.js"></script>
+  </body>
 </html>

@@ -16,10 +16,10 @@ A front-end prototype of a real-time chat application built with **Vanilla JS ES
 
 ## Demo Credentials
 
-| Field    | Value                  |
-| -------- | ---------------------- |
-| Email    | `demo@ephemeral.app`   |
-| Password | `Demo1234`             |
+| Field    | Value                |
+| -------- | -------------------- |
+| Email    | `demo@ephemeral.app` |
+| Password | `Demo1234`           |
 
 The demo account and all mock contacts are seeded automatically on first load.  
 You can also register a new account from the Sign Up page.
@@ -63,15 +63,15 @@ src/
 
 ## Key Concepts
 
-| Concept | Implementation |
-|---|---|
-| Auth | `localStorage` stores users; `sessionStorage` stores the active session |
-| Password hashing | `btoa(password + ':ephemeral-demo')` — demo only, not production-safe |
-| Page routing | `document.body.dataset.page` (`login`, `signup`, `chat`, `settings`) |
-| Protected pages | `guardRoute()` redirects unauthenticated users to `index.html` |
-| Modals | `.open` CSS class toggled by `openModal()` / `closeModal()` |
-| Theming | `localStorage['ephemeral_theme']` — `'dark'` (default) or `'light'` |
-| Message simulation | Incoming "replies" use a 400 ms + 1200–2000 ms random delay |
+| Concept            | Implementation                                                          |
+| ------------------ | ----------------------------------------------------------------------- |
+| Auth               | `localStorage` stores users; `sessionStorage` stores the active session |
+| Password hashing   | `btoa(password + ':ephemeral-demo')` — demo only, not production-safe   |
+| Page routing       | `document.body.dataset.page` (`login`, `signup`, `chat`, `settings`)    |
+| Protected pages    | `guardRoute()` redirects unauthenticated users to `index.html`          |
+| Modals             | `.open` CSS class toggled by `openModal()` / `closeModal()`             |
+| Theming            | `localStorage['ephemeral_theme']` — `'dark'` (default) or `'light'`     |
+| Message simulation | Incoming "replies" use a 400 ms + 1200–2000 ms random delay             |
 
 ---
 

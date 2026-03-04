@@ -1,4 +1,4 @@
-import { isAuthenticated } from './auth.js';
+import { isAuthenticated } from "./auth.js";
 
 /**
  * Redirects to the login page if the user is not authenticated.
@@ -6,6 +6,6 @@ import { isAuthenticated } from './auth.js';
  */
 export function guardRoute() {
   if (!isAuthenticated()) {
-    window.location.replace('index.html');
+    window.location.replace("index.html");
   }
 }
