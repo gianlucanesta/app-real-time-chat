@@ -61,7 +61,7 @@
     font-size: clamp(11px, 3.2vw, var(--font-size-base));
   }
 
-  /* Chat: stack layout */
+  /* ── Chat page ──────────────────────────────────────────── */
   .chat-page {
     flex-direction: column;
     height: 100vh;
@@ -82,6 +82,22 @@
   }
   .chat-sidebar.hidden {
     display: none;
+  }
+
+  /* Larger "Chat" title on mobile */
+  .sidebar-title {
+    font-size: 1.875rem;
+  }
+
+  /* Bigger conversation items on mobile */
+  .conversation-item {
+    padding: var(--space-3) var(--space-4);
+  }
+  .conversation-item .avatar-md {
+    width: 52px;
+    height: 52px;
+    min-width: 52px;
+    font-size: 16px;
   }
 
   /* Chat main fills viewport, flex column, no page scroll */
@@ -166,45 +182,205 @@
     height: 16px;
   }
 
-  /* Settings: stacked layout on mobile */
+  /* ── Settings page ──────────────────────────────────────── */
   .settings-page {
     flex-direction: column;
     height: 100vh;
     overflow: hidden;
+    position: relative; /* anchor for absolute settings-main overlay */
   }
+
+  /* Sidebar: full-screen, flex column, scroll wrapper handles overflow */
   .settings-sidebar {
     width: 100%;
     min-width: 100%;
-    flex-direction: column;
-    height: auto;
-    max-height: 50vh;
-    overflow-y: auto;
+    height: 100vh;
+    max-height: none;
     border-right: none;
+    border-bottom: none;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Scrollable content area inside sidebar */
+  .settings-sidebar-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  /* Hide elements that are redundant on mobile */
+  .settings-panel-header {
+    display: none;
+  }
+  .settings-search {
+    display: none;
+  }
+  .settings-nav-divider {
+    display: none;
+  }
+
+  /* Profile card: large, centered, like WhatsApp mobile */
+  .settings-profile-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: var(--space-8) var(--space-4) var(--space-5);
+    background: transparent;
+    border-radius: 0;
+    margin: 0;
+    gap: var(--space-3);
     border-bottom: 1px solid var(--color-border);
+    cursor: default;
+  }
+  .settings-profile-card:hover {
+    background: transparent;
+  }
+  #settings-sidebar-avatar {
+    width: 82px;
+    height: 82px;
+    min-width: 82px;
+    font-size: 26px;
+    border-radius: 50%;
+  }
+  .settings-profile-info {
+    align-items: center;
+  }
+  .settings-profile-name {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-bold);
+    white-space: normal;
+  }
+  .settings-profile-tagline {
+    font-size: var(--font-size-sm);
+    white-space: normal;
+  }
+
+  /* Nav items: grouped card style */
+  .settings-nav {
+    display: block;
+    padding: var(--space-4);
+    flex: none;
+  }
+  .settings-nav-item {
+    background-color: var(--color-input);
+    border-radius: 0;
+    padding: var(--space-4) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .settings-nav-item:first-child {
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+  .settings-nav-item:last-child {
+    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    border-bottom: none;
+  }
+  .settings-nav-item.active {
+    background-color: var(--color-input); /* no highlight on mobile */
+  }
+  .settings-nav-item.active svg {
+    color: var(--color-text-secondary);
+  }
+  .settings-nav-item.active .settings-nav-title {
+    color: var(--color-text);
+    font-weight: var(--font-medium);
+  }
+  /* Chevron on each nav item */
+  .settings-nav-item::after {
+    content: '';
+    display: block;
+    width: 7px;
+    height: 7px;
+    border-right: 2px solid var(--color-text-secondary);
+    border-top: 2px solid var(--color-text-secondary);
+    transform: rotate(45deg);
+    flex-shrink: 0;
+    margin-left: auto;
   }
   .settings-nav-sub {
     display: none;
   }
+
+  /* Logout button: show on mobile (override desktop display:none) */
   .settings-sidebar-footer {
-    display: none;
+    display: flex;
+    padding: var(--space-4);
+    margin-top: 0;
+    border-top: none;
+  }
+  .settings-logout-btn {
+    background-color: var(--color-input);
+    border-radius: var(--radius-xl);
+    padding: var(--space-4) var(--space-4);
+    width: 100%;
+    color: var(--color-danger);
+    justify-content: center;
   }
 
+  /* Settings main: slide-in overlay from the right */
   .settings-main {
-    flex: 1;
-    padding: var(--space-5) var(--space-4);
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    flex: none;
+    background-color: var(--color-bg);
+    transform: translateX(100%);
+    transition: transform 0.22s ease;
     overflow-y: auto;
+    padding: 0;
+  }
+  .settings-main.mobile-open {
+    transform: translateX(0);
   }
 
+  /* Mobile back navigation bar */
+  .settings-mobile-back {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    background-color: var(--color-card);
+    z-index: 1;
+  }
+  .settings-mobile-back h2 {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-bold);
+    color: var(--color-text);
+  }
+
+  /* Section padding inside the slide-in panel */
+  .settings-section.active {
+    padding: var(--space-4);
+  }
+  .settings-section-header {
+    margin-bottom: var(--space-6);
+  }
+  .settings-section-header h1 {
+    font-size: var(--font-size-2xl);
+  }
   .form-grid {
     grid-template-columns: 1fr;
   }
-
   .profile-section {
     flex-direction: column;
     text-align: center;
   }
   .profile-buttons {
     justify-content: center;
+  }
+
+  /* ── Mobile tab bar ─────────────────────────────────────── */
+  .mobile-tab-bar {
+    display: flex;
+    align-items: stretch;
+    border-top: 1px solid var(--color-border);
+    background-color: var(--color-card);
+    height: 57px;
+    flex-shrink: 0;
   }
 
   /* Modal */

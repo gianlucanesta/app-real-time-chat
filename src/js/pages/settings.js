@@ -16,6 +16,7 @@ export function initSettingsPage() {
   _initNav();
   _initLogout();
   _initNavAvatar();
+  _initMobileTabBar();
   initTogglePassword();
 }
 
@@ -29,12 +30,32 @@ function _loadUserProfile() {
   const sidebarName = document.getElementById("settings-sidebar-name");
   const sidebarTagline = document.getElementById("settings-sidebar-tagline");
   if (sidebarAv) {
-    sidebarAv.style.background =
-      user.avatarGradient || "linear-gradient(135deg,#2563EB,#7C3AED)";
-    sidebarAv.textContent = user.initials || "Me";
+    if (user.avatar) {
+      sidebarAv.style.backgroundImage = `url(${user.avatar})`;
+      sidebarAv.style.backgroundSize = "cover";
+      sidebarAv.textContent = "";
+    } else {
+      sidebarAv.style.background =
+        user.avatarGradient || "linear-gradient(135deg,#2563EB,#7C3AED)";
+      sidebarAv.textContent = user.initials || "Me";
+    }
   }
   if (sidebarName) sidebarName.textContent = user.displayName;
   if (sidebarTagline) sidebarTagline.textContent = user.role || "";
+
+  // Mobile bottom tab bar avatar
+  const mobileTabAv = document.getElementById("mobile-tab-avatar");
+  if (mobileTabAv) {
+    if (user.avatar) {
+      mobileTabAv.style.backgroundImage = `url(${user.avatar})`;
+      mobileTabAv.style.backgroundSize = "cover";
+      mobileTabAv.textContent = "";
+    } else {
+      mobileTabAv.style.background =
+        user.avatarGradient || "linear-gradient(135deg,#2563EB,#7C3AED)";
+      mobileTabAv.textContent = user.initials || "Me";
+    }
+  }
 
   // Profile section
   const profileAv = document.querySelector(".profile-section .avatar-lg");
@@ -222,11 +243,39 @@ function _initNav() {
       const target = document.getElementById("section-" + section);
       if (target) {
         target.classList.add("active");
+
+        // On mobile: slide in the settings-main overlay panel
+        if (window.innerWidth < 768) {
+          const main = document.querySelector(".settings-main");
+          main?.classList.add("mobile-open");
+          const titleEl = document.getElementById("mobile-section-title");
+          const navTitle = item.querySelector(".settings-nav-title")?.textContent?.trim() || "Settings";
+          if (titleEl) titleEl.textContent = navTitle;
+        }
       } else {
         const title = item.querySelector(".settings-nav-title")?.textContent?.trim() || section;
         showToast(`${title} settings: coming soon.`, "info");
       }
     });
+  });
+
+  // Mobile back button: close the slide-in panel
+  document.getElementById("settings-back-btn")?.addEventListener("click", () => {
+    document.querySelector(".settings-main")?.classList.remove("mobile-open");
+  });
+}
+
+// ── Mobile tab bar ─────────────────────────────────────────────
+function _initMobileTabBar() {
+  const mobileLabels = { calls: "Calls", community: "Community", updates: "Updates" };
+  document.querySelectorAll(".mobile-tab-item[data-tab]").forEach((item) => {
+    const tab = item.dataset.tab;
+    if (tab !== "chats" && tab !== "you") {
+      item.addEventListener("click", (e) => {
+        e.preventDefault();
+        showToast(`${mobileLabels[tab] ?? tab}: coming soon.`, "info");
+      });
+    }
   });
 }
 

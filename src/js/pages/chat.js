@@ -47,6 +47,20 @@ function _loadUserProfile() {
       navAv.textContent = user.initials || "Me";
     }
   }
+
+  // Populate mobile bottom tab bar avatar
+  const mobileTabAv = document.getElementById("mobile-tab-avatar");
+  if (mobileTabAv) {
+    if (user.avatar) {
+      mobileTabAv.style.backgroundImage = `url(${user.avatar})`;
+      mobileTabAv.style.backgroundSize = "cover";
+      mobileTabAv.textContent = "";
+    } else {
+      mobileTabAv.style.background =
+        user.avatarGradient || "linear-gradient(135deg,#2563EB,#7C3AED)";
+      mobileTabAv.textContent = user.initials || "Me";
+    }
+  }
 }
 
 // ── Conversation list ──────────────────────────────────────────
@@ -612,6 +626,18 @@ function _initNavBar() {
       btn.addEventListener("click", () =>
         showToast(`${labels[key] ?? key}: coming soon.`, "info"),
       );
+    }
+  });
+
+  // Mobile bottom tab bar
+  const mobileLabels = { calls: "Calls", community: "Community", updates: "Updates" };
+  document.querySelectorAll(".mobile-tab-item[data-tab]").forEach((item) => {
+    const tab = item.dataset.tab;
+    if (tab !== "chats" && tab !== "you") {
+      item.addEventListener("click", (e) => {
+        e.preventDefault();
+        showToast(`${mobileLabels[tab] ?? tab}: coming soon.`, "info");
+      });
     }
   });
 }
