@@ -10,8 +10,16 @@
 
   /* Chat: narrower sidebar on tablet */
   .chat-sidebar {
-    width: 260px;
-    min-width: 260px;
+    width: 300px;
+    min-width: 300px;
+  }
+  .chat-nav {
+    width: 56px;
+    min-width: 56px;
+  }
+  .chat-nav-item {
+    width: 40px;
+    height: 40px;
   }
 
   /* Settings: hide sidebar text, icon-only */
@@ -76,6 +84,9 @@
     height: 100vh;
     max-height: 100vh;
     overflow: hidden;
+  }
+  .chat-nav {
+    display: none;
   }
   .chat-sidebar {
     width: 100%;
