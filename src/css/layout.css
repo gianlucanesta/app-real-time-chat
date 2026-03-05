@@ -2089,22 +2089,68 @@
   background: var(--color-accent);
   animation: call-wave 1.3s ease-in-out infinite;
 }
-.call-waveform span:nth-child(1)  { height: 6px;  animation-delay: 0.0s; }
-.call-waveform span:nth-child(2)  { height: 10px; animation-delay: 0.1s; }
-.call-waveform span:nth-child(3)  { height: 16px; animation-delay: 0.2s; }
-.call-waveform span:nth-child(4)  { height: 22px; animation-delay: 0.3s; }
-.call-waveform span:nth-child(5)  { height: 28px; animation-delay: 0.4s; }
-.call-waveform span:nth-child(6)  { height: 22px; animation-delay: 0.5s; }
-.call-waveform span:nth-child(7)  { height: 28px; animation-delay: 0.4s; }
-.call-waveform span:nth-child(8)  { height: 22px; animation-delay: 0.3s; }
-.call-waveform span:nth-child(9)  { height: 16px; animation-delay: 0.2s; }
-.call-waveform span:nth-child(10) { height: 10px; animation-delay: 0.1s; }
-.call-waveform span:nth-child(11) { height: 6px;  animation-delay: 0.0s; }
-.call-waveform span:nth-child(12) { height: 10px; animation-delay: 0.1s; }
-.call-waveform span:nth-child(13) { height: 6px;  animation-delay: 0.2s; }
+.call-waveform span:nth-child(1) {
+  height: 6px;
+  animation-delay: 0s;
+}
+.call-waveform span:nth-child(2) {
+  height: 10px;
+  animation-delay: 0.1s;
+}
+.call-waveform span:nth-child(3) {
+  height: 16px;
+  animation-delay: 0.2s;
+}
+.call-waveform span:nth-child(4) {
+  height: 22px;
+  animation-delay: 0.3s;
+}
+.call-waveform span:nth-child(5) {
+  height: 28px;
+  animation-delay: 0.4s;
+}
+.call-waveform span:nth-child(6) {
+  height: 22px;
+  animation-delay: 0.5s;
+}
+.call-waveform span:nth-child(7) {
+  height: 28px;
+  animation-delay: 0.4s;
+}
+.call-waveform span:nth-child(8) {
+  height: 22px;
+  animation-delay: 0.3s;
+}
+.call-waveform span:nth-child(9) {
+  height: 16px;
+  animation-delay: 0.2s;
+}
+.call-waveform span:nth-child(10) {
+  height: 10px;
+  animation-delay: 0.1s;
+}
+.call-waveform span:nth-child(11) {
+  height: 6px;
+  animation-delay: 0s;
+}
+.call-waveform span:nth-child(12) {
+  height: 10px;
+  animation-delay: 0.1s;
+}
+.call-waveform span:nth-child(13) {
+  height: 6px;
+  animation-delay: 0.2s;
+}
 @keyframes call-wave {
-  0%, 100% { transform: scaleY(0.4); opacity: 0.5; }
-  50%       { transform: scaleY(1);   opacity: 1; }
+  0%,
+  100% {
+    transform: scaleY(0.4);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
 }
 
 /* Bottom action bar */
@@ -2122,7 +2168,7 @@
 .call-bar-group {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 9999px;
   padding: 4px 8px 4px 4px;
   gap: 2px;
@@ -2147,14 +2193,16 @@
   border-radius: 50%;
   transition: color 0.15s;
 }
-.call-bar-chevron:hover { color: #fff; }
+.call-bar-chevron:hover {
+  color: #fff;
+}
 
 /* Individual action button */
 .call-bar-btn {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.1);
   border: none;
   color: #fff;
   display: flex;
@@ -2195,7 +2243,9 @@
   cursor: pointer;
   flex-shrink: 0;
   margin-left: 6px;
-  transition: background 0.15s, transform 0.12s;
+  transition:
+    background 0.15s,
+    transform 0.12s;
 }
 .call-end-btn:hover {
   background: #dc2626;

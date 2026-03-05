@@ -1241,7 +1241,8 @@ function _initCallScreen() {
 
   const openCall = () => {
     // pull name + initials from the active contact panel (already populated)
-    const name = document.querySelector(".chat-contact-name")?.textContent || "Unknown";
+    const name =
+      document.querySelector(".chat-contact-name")?.textContent || "Unknown";
     const initials = document.getElementById("cip-avatar")?.textContent || "?";
     const avatarEl = document.getElementById("call-screen-avatar");
     const nameEl = document.getElementById("call-screen-name");
@@ -1291,9 +1292,11 @@ function _initCallScreen() {
   });
 
   // Other call bar buttons
-  screen.querySelectorAll(
-    ".call-bar-btn:not(#call-camera-btn):not(#call-mic-btn), .call-bar-chevron"
-  ).forEach((btn) => {
-    btn.addEventListener("click", () => showToast("Coming soon.", "info"));
-  });
+  screen
+    .querySelectorAll(
+      ".call-bar-btn:not(#call-camera-btn):not(#call-mic-btn), .call-bar-chevron",
+    )
+    .forEach((btn) => {
+      btn.addEventListener("click", () => showToast("Coming soon.", "info"));
+    });
 }
