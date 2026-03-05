@@ -868,8 +868,27 @@ function _initContactPanel() {
 
   document.getElementById("contact-info-trigger")?.addEventListener("click", openPanel);
   document.getElementById("cip-back-btn")?.addEventListener("click", closePanel);
-  document.getElementById("cip-edit-btn")?.addEventListener("click", () =>
-    showToast("Edit contact: coming soon.", "info"),
+  const editPanel = document.getElementById("edit-contact-panel");
+  const openEditPanel = () => {
+    panel.classList.remove("open");
+    panel.setAttribute("aria-hidden", "true");
+    editPanel?.classList.add("open");
+    editPanel?.setAttribute("aria-hidden", "false");
+  };
+  const closeEditPanel = () => {
+    editPanel?.classList.remove("open");
+    editPanel?.setAttribute("aria-hidden", "true");
+    panel.classList.add("open");
+    panel.setAttribute("aria-hidden", "false");
+  };
+  document.getElementById("cip-edit-btn")?.addEventListener("click", openEditPanel);
+  document.getElementById("ecp-back-btn")?.addEventListener("click", closeEditPanel);
+  document.getElementById("ecp-save-btn")?.addEventListener("click", () => {
+    showToast("Contact saved.", "success");
+    closeEditPanel();
+  });
+  document.getElementById("ecp-delete-btn")?.addEventListener("click", () =>
+    showToast("Delete contact: coming soon.", "info"),
   );
   document.getElementById("cip-call-btn")?.addEventListener("click", () =>
     showToast("Voice call is not available in demo mode.", "info"),
