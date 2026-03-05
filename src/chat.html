@@ -1593,6 +1593,132 @@
       </main>
     </div>
 
+    <!-- ── Call Screen Overlay ─────────────────────────────── -->
+    <div class="call-screen" id="call-screen" aria-hidden="true" role="dialog" aria-label="Active call">
+
+      <div class="call-screen-content">
+        <div class="call-avatar" id="call-screen-avatar">ER</div>
+        <div class="call-name" id="call-screen-name">Elena Rodriguez</div>
+        <!-- animated waveform -->
+        <div class="call-waveform" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+        </div>
+        <div class="call-timer" id="call-timer">00:00</div>
+      </div>
+
+      <!-- Bottom action bar -->
+      <div class="call-screen-bar">
+
+        <!-- Camera -->
+        <div class="call-bar-group">
+          <button type="button" class="call-bar-btn call-bar-camera" id="call-camera-btn"
+            data-active="false" aria-label="Toggle camera">
+            <!-- camera-off -->
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="1" y1="1" x2="23" y2="23"/>
+              <path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h2a2 2 0 0 1 2 2v9.34"/>
+              <circle cx="12" cy="13" r="3"/>
+            </svg>
+          </button>
+          <button type="button" class="call-bar-chevron" aria-label="Camera options">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Mic -->
+        <div class="call-bar-group">
+          <button type="button" class="call-bar-btn call-bar-mic" id="call-mic-btn"
+            data-active="true" aria-label="Toggle microphone">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8" y1="23" x2="16" y2="23"/>
+            </svg>
+          </button>
+          <button type="button" class="call-bar-chevron" aria-label="Mic options">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Emoji reaction -->
+        <button type="button" class="call-bar-btn" aria-label="Send reaction">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M8 13s1.5 2 4 2 4-2 4-2"/>
+            <line x1="9" y1="9" x2="9.01" y2="9"/>
+            <line x1="15" y1="9" x2="15.01" y2="9"/>
+          </svg>
+        </button>
+
+        <!-- Raise hand -->
+        <button type="button" class="call-bar-btn" aria-label="Raise hand">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"/>
+            <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"/>
+            <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/>
+            <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
+          </svg>
+        </button>
+
+        <!-- Share screen -->
+        <button type="button" class="call-bar-btn" aria-label="Share screen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+        </button>
+
+        <!-- Add participant -->
+        <button type="button" class="call-bar-btn" aria-label="Add participant">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <line x1="19" y1="8" x2="19" y2="14"/>
+            <line x1="16" y1="11" x2="22" y2="11"/>
+          </svg>
+        </button>
+
+        <!-- Captions -->
+        <button type="button" class="call-bar-btn" aria-label="Captions">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="5" width="20" height="14" rx="2"/>
+            <line x1="6" y1="10" x2="14" y2="10"/>
+            <line x1="6" y1="14" x2="18" y2="14"/>
+          </svg>
+        </button>
+
+        <!-- End call -->
+        <button type="button" class="call-end-btn" id="call-end-btn" aria-label="End call">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45c.927.346
+              1.888.58 2.84.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2C6.61 20.73.39 14.51.09
+              3.18A2 2 0 0 1 2.08 1h3a2 2 0 0 1 2 1.72c.12.96.354 1.9.7 2.81a2 2 0 0 1-.45
+              2.11L6.06 8.91a16 16 0 0 0 2.59 3.41"/>
+            <line x1="1" y1="1" x2="23" y2="23"/>
+          </svg>
+        </button>
+
+      </div><!-- /.call-screen-bar -->
+    </div><!-- /.call-screen -->
+
     <script type="module" src="js/main.js"></script>
   </body>
 </html>

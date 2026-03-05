@@ -14,6 +14,9 @@ let activeFilterType = "all";
 // the imported source object.
 const conversations = JSON.parse(JSON.stringify(MOCK_CONVERSATIONS));
 
+// Call screen opener — assigned by _initCallScreen
+let _openCall = () => {};
+
 // ── Entry point ────────────────────────────────────────────────
 export function initChatPage() {
   _loadUserProfile();
@@ -30,6 +33,7 @@ export function initChatPage() {
   _initContactPanel();
   _initMobileSidebar();
   _initNavBar();
+  _initCallScreen();
 }
 
 // ── User profile ───────────────────────────────────────────────
@@ -669,17 +673,19 @@ function _initHeaderActions() {
       if (!btn) return;
       e.stopPropagation();
       const action = btn.dataset.call;
+      callDropdown.classList.remove("open");
+      callDropdown.setAttribute("aria-hidden", "true");
+      callBtn.setAttribute("aria-expanded", "false");
+      if (action === "voice" || action === "video") {
+        _openCall();
+        return;
+      }
       const msgs = {
-        voice: "Voice call: not available in demo mode.",
-        video: "Video call: not available in demo mode.",
         group: "New group call: coming soon.",
         link: "Call link: coming soon.",
         schedule: "Schedule a call: coming soon.",
       };
       showToast(msgs[action] || "Coming soon.", "info");
-      callDropdown.classList.remove("open");
-      callDropdown.setAttribute("aria-hidden", "true");
-      callBtn.setAttribute("aria-expanded", "false");
     });
 
     document.addEventListener("click", (e) => {
@@ -982,14 +988,10 @@ function _initContactPanel() {
     );
   document
     .getElementById("cip-call-btn")
-    ?.addEventListener("click", () =>
-      showToast("Voice call is not available in demo mode.", "info"),
-    );
+    ?.addEventListener("click", () => _openCall());
   document
     .getElementById("cip-video-btn")
-    ?.addEventListener("click", () =>
-      showToast("Video call is not available in demo mode.", "info"),
-    );
+    ?.addEventListener("click", () => _openCall());
   document
     .getElementById("cip-search-btn")
     ?.addEventListener("click", () =>
@@ -1222,4 +1224,76 @@ function _handleMsgAction(action, text) {
     default:
       showToast("Coming soon.", "info");
   }
+}
+
+// ── Call Screen ────────────────────────────────────────────────
+function _initCallScreen() {
+  const screen = document.getElementById("call-screen");
+  if (!screen) return;
+
+  let timerInterval = null;
+  let elapsed = 0;
+
+  const fmt = (s) => {
+    const m = String(Math.floor(s / 60)).padStart(2, "0");
+    return `${m}:${String(s % 60).padStart(2, "0")}`;
+  };
+
+  const openCall = () => {
+    // pull name + initials from the active contact panel (already populated)
+    const name = document.querySelector(".chat-contact-name")?.textContent || "Unknown";
+    const initials = document.getElementById("cip-avatar")?.textContent || "?";
+    const avatarEl = document.getElementById("call-screen-avatar");
+    const nameEl = document.getElementById("call-screen-name");
+    if (avatarEl) avatarEl.textContent = initials;
+    if (nameEl) nameEl.textContent = name;
+    // reset timer
+    elapsed = 0;
+    const timerEl = document.getElementById("call-timer");
+    if (timerEl) timerEl.textContent = "00:00";
+    // show screen
+    screen.classList.add("open");
+    screen.setAttribute("aria-hidden", "false");
+    timerInterval = setInterval(() => {
+      elapsed++;
+      if (timerEl) timerEl.textContent = fmt(elapsed);
+    }, 1000);
+  };
+
+  const closeCall = () => {
+    screen.classList.remove("open");
+    screen.setAttribute("aria-hidden", "true");
+    clearInterval(timerInterval);
+    timerInterval = null;
+    elapsed = 0;
+  };
+
+  // expose to module
+  _openCall = openCall;
+
+  // End call
+  document.getElementById("call-end-btn")?.addEventListener("click", closeCall);
+
+  // Camera toggle
+  const cameraBtn = document.getElementById("call-camera-btn");
+  cameraBtn?.addEventListener("click", () => {
+    const on = cameraBtn.dataset.active === "true";
+    cameraBtn.dataset.active = String(!on);
+    showToast(on ? "Camera off" : "Camera on", "info");
+  });
+
+  // Mic toggle
+  const micBtn = document.getElementById("call-mic-btn");
+  micBtn?.addEventListener("click", () => {
+    const on = micBtn.dataset.active === "true";
+    micBtn.dataset.active = String(!on);
+    showToast(on ? "Microphone muted" : "Microphone on", "info");
+  });
+
+  // Other call bar buttons
+  screen.querySelectorAll(
+    ".call-bar-btn:not(#call-camera-btn):not(#call-mic-btn), .call-bar-chevron"
+  ).forEach((btn) => {
+    btn.addEventListener("click", () => showToast("Coming soon.", "info"));
+  });
 }
