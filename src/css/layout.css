@@ -1059,8 +1059,8 @@
   color: var(--color-text-secondary);
 }
 .send-btn {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-full);
   background-color: var(--color-accent);
   display: flex;
@@ -1080,8 +1080,8 @@
   transform: scale(0.95);
 }
 .send-btn svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
 }
 .chat-input-hint {
   text-align: center;
@@ -1090,8 +1090,8 @@
   margin-top: var(--space-1);
 }
 .input-action-btn {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border-radius: var(--radius-full);
   background-color: transparent;
   display: flex;
@@ -1117,8 +1117,8 @@
   transform: scale(0.92);
 }
 .input-action-btn svg {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
 }
 
 /* --- Modal --- */
