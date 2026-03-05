@@ -977,7 +977,10 @@ function _initMessageActions() {
           const expanded = document.getElementById(baseId + "-expanded");
           if (expanded) {
             _closeAllMsgMenus();
-            _openMenu(expanded, emojiPick);
+            // Anchor to the message row (bubble), not the tiny + inside the popup
+            const grp = miniPopup.parentElement;
+            const anchor = grp ? (grp.querySelector(".message-row") || grp) : emojiPick;
+            _openMenu(expanded, anchor);
           }
         }
         return;
