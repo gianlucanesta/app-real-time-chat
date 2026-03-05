@@ -215,7 +215,7 @@
   flex-direction: column;
   border-right: 1px solid var(--color-border);
   position: relative; /* anchor for absolute new-chat-panel */
-  overflow: hidden;   /* clip the slide-in panel */
+  overflow: hidden; /* clip the slide-in panel */
 }
 
 /* Sidebar header: "Chat" title + action buttons */
@@ -640,9 +640,18 @@
   white-space: nowrap;
   transition: background-color var(--transition-fast);
 }
-.chat-call-btn:hover { background-color: var(--color-input); }
-.chat-call-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
-.chat-call-btn .call-chevron { width: 12px; height: 12px; }
+.chat-call-btn:hover {
+  background-color: var(--color-input);
+}
+.chat-call-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.chat-call-btn .call-chevron {
+  width: 12px;
+  height: 12px;
+}
 
 /* Call dropdown */
 .call-btn-wrapper {
@@ -795,7 +804,10 @@
   align-self: flex-end;
   margin-bottom: 4px;
 }
-.msg-react-btn svg { width: 18px; height: 18px; }
+.msg-react-btn svg {
+  width: 18px;
+  height: 18px;
+}
 .message-row:hover .msg-react-btn,
 .message-group-received:has(.msg-context-menu.open) .msg-react-btn,
 .message-group-sent:has(.msg-context-menu.open) .msg-react-btn,
@@ -804,7 +816,9 @@
   opacity: 1;
   pointer-events: auto;
 }
-.msg-react-btn:hover { color: var(--color-text); }
+.msg-react-btn:hover {
+  color: var(--color-text);
+}
 
 /* Inside-bubble chevron button */
 .msg-chevron-inside {
@@ -826,7 +840,11 @@
   border-radius: var(--radius-full);
   padding: 0;
 }
-.msg-chevron-inside svg { width: 12px; height: 12px; pointer-events: none; }
+.msg-chevron-inside svg {
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+}
 .message-row:hover .msg-chevron-inside,
 .message-group-received:has(.msg-context-menu.open) .msg-chevron-inside,
 .message-group-sent:has(.msg-context-menu.open) .msg-chevron-inside,
@@ -835,7 +853,9 @@
   opacity: 0.75;
   pointer-events: auto;
 }
-.msg-chevron-inside:hover { opacity: 1 !important; }
+.msg-chevron-inside:hover {
+  opacity: 1 !important;
+}
 
 /* Emoji reaction popup (standalone bar, triggered by react btn) */
 .msg-emoji-popup {
@@ -1814,7 +1834,7 @@
   transition: background-color 0.2s ease;
 }
 .ecp-toggle-slider::after {
-  content: '';
+  content: "";
   position: absolute;
   width: 18px;
   height: 18px;
@@ -1848,7 +1868,9 @@
   align-items: center;
   justify-content: center;
   box-shadow: 0 4px 16px var(--color-accent-subtle);
-  transition: background-color var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    transform var(--transition-fast);
   z-index: 10;
 }
 .ecp-save-fab:hover {
@@ -1998,4 +2020,3 @@
   width: 20px;
   height: 20px;
 }
-

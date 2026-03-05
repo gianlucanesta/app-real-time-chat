@@ -298,11 +298,31 @@ function _createMsgEmojiPopup(menuId) {
 
 function _createMsgEmojiExpandedPicker(menuId) {
   const EMOJIS = [
-    "😀","😂","😍","🤗","😎",
-    "🤩","😜","🙄","😭","😤",
-    "🎉","🔥","💯","✅","🚀",
-    "💪","👏","🙌","🤝","🥰",
-    "⭐","💫","😊","🥳","🤑",
+    "😀",
+    "😂",
+    "😍",
+    "🤗",
+    "😎",
+    "🤩",
+    "😜",
+    "🙄",
+    "😭",
+    "😤",
+    "🎉",
+    "🔥",
+    "💯",
+    "✅",
+    "🚀",
+    "💪",
+    "👏",
+    "🙌",
+    "🤝",
+    "🥰",
+    "⭐",
+    "💫",
+    "😊",
+    "🥳",
+    "🤑",
   ];
   const picker = document.createElement("div");
   picker.className = "msg-emoji-expanded";
@@ -332,14 +352,54 @@ function _createMsgContextMenu(msg, menuId) {
 
   // Action items list
   const actions = [
-    ...(isSent ? [{ action: "info", label: "Message info", icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>` }] : []),
-    { action: "reply",   label: "Reply",         icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>` },
-    { action: "copy",    label: "Copy",           icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>` },
-    { action: "forward", label: "Forward",        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>` },
-    { action: "pin",     label: "Pin",            icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>` },
-    { action: "star",    label: "Star",           icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>` },
-    { action: "select",  label: "Select",         icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>` },
-    ...(!isSent ? [{ action: "report", label: "Report", icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>` }] : []),
+    ...(isSent
+      ? [
+          {
+            action: "info",
+            label: "Message info",
+            icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+          },
+        ]
+      : []),
+    {
+      action: "reply",
+      label: "Reply",
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>`,
+    },
+    {
+      action: "copy",
+      label: "Copy",
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
+    },
+    {
+      action: "forward",
+      label: "Forward",
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>`,
+    },
+    {
+      action: "pin",
+      label: "Pin",
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>`,
+    },
+    {
+      action: "star",
+      label: "Star",
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+    },
+    {
+      action: "select",
+      label: "Select",
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`,
+    },
+    ...(!isSent
+      ? [
+          {
+            action: "report",
+            label: "Report",
+            icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+          },
+        ]
+      : []),
   ];
   actions.forEach(({ action, label, icon }) => {
     const btn = document.createElement("button");
@@ -661,21 +721,29 @@ function _initNewChatPanel() {
   };
 
   document.getElementById("new-chat-btn")?.addEventListener("click", openPanel);
-  document.getElementById("new-chat-back-btn")?.addEventListener("click", closePanel);
+  document
+    .getElementById("new-chat-back-btn")
+    ?.addEventListener("click", closePanel);
 
   document.getElementById("new-chat-search")?.addEventListener(
     "input",
     debounce((e) => _renderNewChatContactList(e.target.value)),
   );
 
-  document.getElementById("new-chat-options-btn")?.addEventListener("click", () =>
-    showToast("Options: coming soon.", "info"),
-  );
+  document
+    .getElementById("new-chat-options-btn")
+    ?.addEventListener("click", () =>
+      showToast("Options: coming soon.", "info"),
+    );
 
   panel.querySelectorAll(".new-chat-action-item").forEach((btn) => {
     btn.addEventListener("click", () => {
       const action = btn.dataset.ncAction;
-      const labels = { group: "New group", contact: "New contact", community: "New community" };
+      const labels = {
+        group: "New group",
+        contact: "New contact",
+        community: "New community",
+      };
       showToast(`${labels[action] ?? "Action"}: coming soon.`, "info");
     });
   });
@@ -742,7 +810,9 @@ function _initFilterChips() {
         return;
       }
       // Update active state
-      document.querySelectorAll(".filter-chip").forEach((c) => c.classList.remove("active"));
+      document
+        .querySelectorAll(".filter-chip")
+        .forEach((c) => c.classList.remove("active"));
       chip.classList.add("active");
       activeFilterType = filter;
       _renderConversationList(
@@ -782,8 +852,8 @@ function _initSidebarMenu() {
       }
       const labels = {
         "new-group": "New group",
-        "important": "Important messages",
-        "select": "Select chat",
+        important: "Important messages",
+        select: "Select chat",
         "mark-read": "Mark all as read",
       };
       showToast(`${labels[action] ?? "Action"}: coming soon.`, "info");
@@ -793,7 +863,13 @@ function _initSidebarMenu() {
 
 // ── Left nav bar ──────────────────────────────────────────────
 function _initNavBar() {
-  const labels = { calls: "Calls", communities: "Communities", status: "Status", starred: "Starred", archived: "Archived" };
+  const labels = {
+    calls: "Calls",
+    communities: "Communities",
+    status: "Status",
+    starred: "Starred",
+    archived: "Archived",
+  };
   document.querySelectorAll(".chat-nav-item[data-nav]").forEach((btn) => {
     const key = btn.dataset.nav;
     if (key && key !== "chats") {
@@ -804,7 +880,11 @@ function _initNavBar() {
   });
 
   // Mobile bottom tab bar
-  const mobileLabels = { calls: "Calls", community: "Community", updates: "Updates" };
+  const mobileLabels = {
+    calls: "Calls",
+    community: "Community",
+    updates: "Updates",
+  };
   document.querySelectorAll(".mobile-tab-item[data-tab]").forEach((item) => {
     const tab = item.dataset.tab;
     if (tab !== "chats" && tab !== "you") {
@@ -866,8 +946,12 @@ function _initContactPanel() {
     panel.setAttribute("aria-hidden", "true");
   };
 
-  document.getElementById("contact-info-trigger")?.addEventListener("click", openPanel);
-  document.getElementById("cip-back-btn")?.addEventListener("click", closePanel);
+  document
+    .getElementById("contact-info-trigger")
+    ?.addEventListener("click", openPanel);
+  document
+    .getElementById("cip-back-btn")
+    ?.addEventListener("click", closePanel);
   const editPanel = document.getElementById("edit-contact-panel");
   const openEditPanel = () => {
     panel.classList.remove("open");
@@ -881,36 +965,54 @@ function _initContactPanel() {
     panel.classList.add("open");
     panel.setAttribute("aria-hidden", "false");
   };
-  document.getElementById("cip-edit-btn")?.addEventListener("click", openEditPanel);
-  document.getElementById("ecp-back-btn")?.addEventListener("click", closeEditPanel);
+  document
+    .getElementById("cip-edit-btn")
+    ?.addEventListener("click", openEditPanel);
+  document
+    .getElementById("ecp-back-btn")
+    ?.addEventListener("click", closeEditPanel);
   document.getElementById("ecp-save-btn")?.addEventListener("click", () => {
     showToast("Contact saved.", "success");
     closeEditPanel();
   });
-  document.getElementById("ecp-delete-btn")?.addEventListener("click", () =>
-    showToast("Delete contact: coming soon.", "info"),
-  );
-  document.getElementById("cip-call-btn")?.addEventListener("click", () =>
-    showToast("Voice call is not available in demo mode.", "info"),
-  );
-  document.getElementById("cip-video-btn")?.addEventListener("click", () =>
-    showToast("Video call is not available in demo mode.", "info"),
-  );
-  document.getElementById("cip-search-btn")?.addEventListener("click", () =>
-    showToast("In-chat search: coming soon.", "info"),
-  );
-  document.getElementById("cip-block-btn")?.addEventListener("click", () =>
-    showToast("Block contact: coming soon.", "info"),
-  );
-  document.getElementById("cip-media-row")?.addEventListener("click", () =>
-    showToast("Media: coming soon.", "info"),
-  );
-  document.getElementById("cip-important-row")?.addEventListener("click", () =>
-    showToast("Important messages: coming soon.", "info"),
-  );
-  panel.querySelectorAll(".cip-row:not(#cip-media-row):not(#cip-important-row)").forEach((row) => {
-    row.addEventListener("click", () => showToast("Coming soon.", "info"));
-  });
+  document
+    .getElementById("ecp-delete-btn")
+    ?.addEventListener("click", () =>
+      showToast("Delete contact: coming soon.", "info"),
+    );
+  document
+    .getElementById("cip-call-btn")
+    ?.addEventListener("click", () =>
+      showToast("Voice call is not available in demo mode.", "info"),
+    );
+  document
+    .getElementById("cip-video-btn")
+    ?.addEventListener("click", () =>
+      showToast("Video call is not available in demo mode.", "info"),
+    );
+  document
+    .getElementById("cip-search-btn")
+    ?.addEventListener("click", () =>
+      showToast("In-chat search: coming soon.", "info"),
+    );
+  document
+    .getElementById("cip-block-btn")
+    ?.addEventListener("click", () =>
+      showToast("Block contact: coming soon.", "info"),
+    );
+  document
+    .getElementById("cip-media-row")
+    ?.addEventListener("click", () => showToast("Media: coming soon.", "info"));
+  document
+    .getElementById("cip-important-row")
+    ?.addEventListener("click", () =>
+      showToast("Important messages: coming soon.", "info"),
+    );
+  panel
+    .querySelectorAll(".cip-row:not(#cip-media-row):not(#cip-important-row)")
+    .forEach((row) => {
+      row.addEventListener("click", () => showToast("Coming soon.", "info"));
+    });
 }
 
 // ── Message hover actions & context menu ───────────────────────
@@ -929,10 +1031,10 @@ function _openMenu(menu, triggerEl) {
 
   if (triggerRect.top > estimatedH) {
     // Enough space above: anchor bottom of menu to top of trigger
-    menu.style.bottom = (groupRect.bottom - triggerRect.top + 6) + "px";
+    menu.style.bottom = groupRect.bottom - triggerRect.top + 6 + "px";
   } else {
     // Not enough: anchor top of menu to bottom of trigger
-    menu.style.top = (triggerRect.bottom - groupRect.top + 6) + "px";
+    menu.style.top = triggerRect.bottom - groupRect.top + 6 + "px";
   }
 
   menu.classList.add("open");
@@ -941,23 +1043,34 @@ function _openMenu(menu, triggerEl) {
 
 function _initStaticMessageMenus() {
   // Inject emoji popups + context menus for pre-rendered static messages
-  document.querySelectorAll(".message-group-received, .message-group-sent").forEach((group) => {
-    const chevron = group.querySelector(".msg-chevron-inside");
-    const reactBtn = group.querySelector(".msg-react-btn");
-    if (!chevron || !reactBtn) return;
+  document
+    .querySelectorAll(".message-group-received, .message-group-sent")
+    .forEach((group) => {
+      const chevron = group.querySelector(".msg-chevron-inside");
+      const reactBtn = group.querySelector(".msg-react-btn");
+      if (!chevron || !reactBtn) return;
 
-    const menuId = chevron.dataset.menu;
-    if (!menuId || document.getElementById(menuId)) return; // already injected
+      const menuId = chevron.dataset.menu;
+      if (!menuId || document.getElementById(menuId)) return; // already injected
 
-    const isSent = group.classList.contains("message-group-sent");
-    const fakeMsg = { id: menuId, from: isSent ? "me" : "other", text: "" };
-    group.insertBefore(_createMsgEmojiPopup(menuId), group.querySelector(".message-time"));
-    group.insertBefore(_createMsgEmojiExpandedPicker(menuId), group.querySelector(".message-time"));
-    group.insertBefore(_createMsgContextMenu(fakeMsg, menuId), group.querySelector(".message-time"));
+      const isSent = group.classList.contains("message-group-sent");
+      const fakeMsg = { id: menuId, from: isSent ? "me" : "other", text: "" };
+      group.insertBefore(
+        _createMsgEmojiPopup(menuId),
+        group.querySelector(".message-time"),
+      );
+      group.insertBefore(
+        _createMsgEmojiExpandedPicker(menuId),
+        group.querySelector(".message-time"),
+      );
+      group.insertBefore(
+        _createMsgContextMenu(fakeMsg, menuId),
+        group.querySelector(".message-time"),
+      );
 
-    // Redirect react btn to the emoji popup
-    reactBtn.dataset.menu = menuId + "-emoji";
-  });
+      // Redirect react btn to the emoji popup
+      reactBtn.dataset.menu = menuId + "-emoji";
+    });
 }
 
 function _initMessageActions() {
@@ -998,14 +1111,18 @@ function _initMessageActions() {
             _closeAllMsgMenus();
             // Anchor to the message row (bubble), not the tiny + inside the popup
             const grp = miniPopup.parentElement;
-            const anchor = grp ? (grp.querySelector(".message-row") || grp) : emojiPick;
+            const anchor = grp
+              ? grp.querySelector(".message-row") || grp
+              : emojiPick;
             _openMenu(expanded, anchor);
           }
         }
         return;
       }
       const popup = emojiPick.closest(".msg-emoji-popup, .msg-emoji-expanded");
-      const group = popup ? popup.closest(".message-group-received, .message-group-sent") : null;
+      const group = popup
+        ? popup.closest(".message-group-received, .message-group-sent")
+        : null;
       if (group) {
         let strip = group.querySelector(".msg-reaction-strip");
         const existing = strip ? strip.querySelector("[data-emoji]") : null;
@@ -1034,13 +1151,20 @@ function _initMessageActions() {
     // Tapped a context-menu action item
     if (contextItem) {
       e.stopPropagation();
-      _handleMsgAction(contextItem.dataset.action, contextItem.dataset.msgText || "");
+      _handleMsgAction(
+        contextItem.dataset.action,
+        contextItem.dataset.msgText || "",
+      );
       _closeAllMsgMenus();
       return;
     }
 
     // Tapped inside open menu but not on a button — keep open
-    if (menuEl || e.target.closest(".msg-emoji-popup") || e.target.closest(".msg-emoji-expanded")) {
+    if (
+      menuEl ||
+      e.target.closest(".msg-emoji-popup") ||
+      e.target.closest(".msg-emoji-expanded")
+    ) {
       e.stopPropagation();
       return;
     }
@@ -1051,12 +1175,16 @@ function _initMessageActions() {
 }
 
 function _closeAllMsgMenus() {
-  document.querySelectorAll(".msg-context-menu.open, .msg-emoji-popup.open, .msg-emoji-expanded.open").forEach((m) => {
-    m.classList.remove("open");
-    m.setAttribute("aria-hidden", "true");
-    m.style.top = "";
-    m.style.bottom = "";
-  });
+  document
+    .querySelectorAll(
+      ".msg-context-menu.open, .msg-emoji-popup.open, .msg-emoji-expanded.open",
+    )
+    .forEach((m) => {
+      m.classList.remove("open");
+      m.setAttribute("aria-hidden", "true");
+      m.style.top = "";
+      m.style.bottom = "";
+    });
 }
 
 function _handleMsgAction(action, text) {
@@ -1067,14 +1195,31 @@ function _handleMsgAction(action, text) {
         .then(() => showToast("Message copied.", "success"))
         .catch(() => showToast("Could not copy message.", "error"));
       break;
-    case "reply":    showToast("Reply: coming soon.", "info");              break;
-    case "forward":  showToast("Forward: coming soon.", "info");            break;
-    case "pin":      showToast("Message pinned.", "success");               break;
-    case "star":     showToast("Added to starred messages.", "success");    break;
-    case "select":   showToast("Select: coming soon.", "info");             break;
-    case "info":     showToast("Message info: coming soon.", "info");       break;
-    case "report":   showToast("Message reported.", "info");                break;
-    case "delete":   showToast("Message deleted.", "info");                 break;
-    default:         showToast("Coming soon.", "info");
+    case "reply":
+      showToast("Reply: coming soon.", "info");
+      break;
+    case "forward":
+      showToast("Forward: coming soon.", "info");
+      break;
+    case "pin":
+      showToast("Message pinned.", "success");
+      break;
+    case "star":
+      showToast("Added to starred messages.", "success");
+      break;
+    case "select":
+      showToast("Select: coming soon.", "info");
+      break;
+    case "info":
+      showToast("Message info: coming soon.", "info");
+      break;
+    case "report":
+      showToast("Message reported.", "info");
+      break;
+    case "delete":
+      showToast("Message deleted.", "info");
+      break;
+    default:
+      showToast("Coming soon.", "info");
   }
 }

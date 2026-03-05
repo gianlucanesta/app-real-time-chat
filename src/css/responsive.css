@@ -347,7 +347,7 @@
   }
   /* Chevron on each nav item */
   .settings-nav-item::after {
-    content: '';
+    content: "";
     display: block;
     width: 7px;
     height: 7px;

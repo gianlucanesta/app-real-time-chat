@@ -239,7 +239,9 @@ function _initNav() {
       const section = item.dataset.section || "general";
 
       // Hide all sections, show target
-      document.querySelectorAll(".settings-section").forEach((s) => s.classList.remove("active"));
+      document
+        .querySelectorAll(".settings-section")
+        .forEach((s) => s.classList.remove("active"));
       const target = document.getElementById("section-" + section);
       if (target) {
         target.classList.add("active");
@@ -249,25 +251,35 @@ function _initNav() {
           const main = document.querySelector(".settings-main");
           main?.classList.add("mobile-open");
           const titleEl = document.getElementById("mobile-section-title");
-          const navTitle = item.querySelector(".settings-nav-title")?.textContent?.trim() || "Settings";
+          const navTitle =
+            item.querySelector(".settings-nav-title")?.textContent?.trim() ||
+            "Settings";
           if (titleEl) titleEl.textContent = navTitle;
         }
       } else {
-        const title = item.querySelector(".settings-nav-title")?.textContent?.trim() || section;
+        const title =
+          item.querySelector(".settings-nav-title")?.textContent?.trim() ||
+          section;
         showToast(`${title} settings: coming soon.`, "info");
       }
     });
   });
 
   // Mobile back button: close the slide-in panel
-  document.getElementById("settings-back-btn")?.addEventListener("click", () => {
-    document.querySelector(".settings-main")?.classList.remove("mobile-open");
-  });
+  document
+    .getElementById("settings-back-btn")
+    ?.addEventListener("click", () => {
+      document.querySelector(".settings-main")?.classList.remove("mobile-open");
+    });
 }
 
 // ── Mobile tab bar ─────────────────────────────────────────────
 function _initMobileTabBar() {
-  const mobileLabels = { calls: "Calls", community: "Community", updates: "Updates" };
+  const mobileLabels = {
+    calls: "Calls",
+    community: "Community",
+    updates: "Updates",
+  };
   document.querySelectorAll(".mobile-tab-item[data-tab]").forEach((item) => {
     const tab = item.dataset.tab;
     if (tab !== "chats" && tab !== "you") {
