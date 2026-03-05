@@ -1045,17 +1045,17 @@ function _handleMsgAction(action, text) {
     case "copy":
       navigator.clipboard
         .writeText(text)
-        .then(() => showToast("Messaggio copiato.", "success"))
-        .catch(() => showToast("Impossibile copiare il messaggio.", "error"));
+        .then(() => showToast("Message copied.", "success"))
+        .catch(() => showToast("Could not copy message.", "error"));
       break;
-    case "reply":    showToast("Rispondi: presto disponibile.", "info");           break;
-    case "forward":  showToast("Inoltra: presto disponibile.", "info");             break;
-    case "pin":      showToast("Messaggio fissato.", "success");                    break;
-    case "star":     showToast("Aggiunto ai messaggi importanti.", "success");      break;
-    case "select":   showToast("Seleziona: presto disponibile.", "info");           break;
-    case "info":     showToast("Info messaggio: presto disponibile.", "info");      break;
-    case "report":   showToast("Messaggio segnalato.", "info");                     break;
-    case "delete":   showToast("Messaggio eliminato.", "info");                     break;
-    default:         showToast("Presto disponibile.", "info");
+    case "reply":    showToast("Reply: coming soon.", "info");              break;
+    case "forward":  showToast("Forward: coming soon.", "info");            break;
+    case "pin":      showToast("Message pinned.", "success");               break;
+    case "star":     showToast("Added to starred messages.", "success");    break;
+    case "select":   showToast("Select: coming soon.", "info");             break;
+    case "info":     showToast("Message info: coming soon.", "info");       break;
+    case "report":   showToast("Message reported.", "info");                break;
+    case "delete":   showToast("Message deleted.", "info");                 break;
+    default:         showToast("Coming soon.", "info");
   }
 }
