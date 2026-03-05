@@ -688,8 +688,8 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  background: #25d366;
-  color: #000;
+  background: var(--color-accent);
+  color: #fff;
   border: none;
   border-radius: 9999px;
   padding: var(--space-3) var(--space-4);
@@ -699,7 +699,7 @@
   transition: background 0.15s ease;
 }
 .call-dropdown-primary-btn:hover {
-  background: #20bd5a;
+  background: var(--color-accent-hover);
 }
 .call-dropdown-list {
   border-top: 1px solid var(--color-border);
@@ -1109,7 +1109,7 @@
   color: var(--color-text);
 }
 .input-action-btn[aria-label="Voice note"]:hover {
-  background-color: #25d366;
+  background-color: var(--color-accent);
   color: #fff;
   transform: none;
 }
