@@ -1749,7 +1749,7 @@
 .ecp-phone-verified {
   display: flex;
   align-items: center;
-  color: #22c55e;
+  color: var(--color-accent);
   flex-shrink: 0;
 }
 .ecp-phone-verified svg {
@@ -1825,7 +1825,7 @@
   transition: transform 0.2s ease;
 }
 .ecp-toggle input:checked + .ecp-toggle-slider {
-  background-color: #22c55e;
+  background-color: var(--color-accent);
 }
 .ecp-toggle input:checked + .ecp-toggle-slider::after {
   transform: translateX(20px);
@@ -1840,19 +1840,19 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background-color: #22c55e;
+  background-color: var(--color-accent);
   color: #fff;
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.35);
+  box-shadow: 0 4px 16px var(--color-accent-subtle);
   transition: background-color var(--transition-fast), transform var(--transition-fast);
   z-index: 10;
 }
 .ecp-save-fab:hover {
-  background-color: #16a34a;
+  background-color: var(--color-accent-hover);
   transform: translateX(-50%) scale(1.06);
 }
 .ecp-save-fab svg {
