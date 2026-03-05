@@ -203,6 +203,7 @@ function _createMessageEl(msg) {
 
     group.appendChild(row);
     group.appendChild(_createMsgEmojiPopup(menuId));
+    group.appendChild(_createMsgEmojiExpandedPicker(menuId));
     group.appendChild(_createMsgContextMenu(msg, menuId));
     group.appendChild(time);
   } else {
@@ -227,6 +228,7 @@ function _createMessageEl(msg) {
 
     group.appendChild(row);
     group.appendChild(_createMsgEmojiPopup(menuId));
+    group.appendChild(_createMsgEmojiExpandedPicker(menuId));
     group.appendChild(_createMsgContextMenu(msg, menuId));
     group.appendChild(time);
   }
@@ -292,6 +294,32 @@ function _createMsgEmojiPopup(menuId) {
   row.appendChild(morePick);
   popup.appendChild(row);
   return popup;
+}
+
+function _createMsgEmojiExpandedPicker(menuId) {
+  const EMOJIS = [
+    "😀","😂","😍","🤗","😎",
+    "🤩","😜","🙄","😭","😤",
+    "🎉","🔥","💯","✅","🚀",
+    "💪","👏","🙌","🤝","🥰",
+    "⭐","💫","😊","🥳","🤑",
+  ];
+  const picker = document.createElement("div");
+  picker.className = "msg-emoji-expanded";
+  picker.id = menuId + "-expanded";
+  picker.setAttribute("aria-hidden", "true");
+  const grid = document.createElement("div");
+  grid.className = "msg-emoji-expanded-grid";
+  EMOJIS.forEach((emoji) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "msg-emoji-pick";
+    btn.textContent = emoji;
+    btn.dataset.emoji = emoji;
+    grid.appendChild(btn);
+  });
+  picker.appendChild(grid);
+  return picker;
 }
 
 function _createMsgContextMenu(msg, menuId) {
@@ -874,7 +902,8 @@ function _openMenu(menu, triggerEl) {
   const groupRect = group.getBoundingClientRect();
   const triggerRect = triggerEl.getBoundingClientRect();
   const isEmojiPopup = menu.classList.contains("msg-emoji-popup");
-  const estimatedH = isEmojiPopup ? 64 : 370;
+  const isExpanded = menu.classList.contains("msg-emoji-expanded");
+  const estimatedH = isEmojiPopup ? 64 : isExpanded ? 220 : 370;
 
   menu.style.top = "";
   menu.style.bottom = "";
@@ -904,6 +933,7 @@ function _initStaticMessageMenus() {
     const isSent = group.classList.contains("message-group-sent");
     const fakeMsg = { id: menuId, from: isSent ? "me" : "other", text: "" };
     group.insertBefore(_createMsgEmojiPopup(menuId), group.querySelector(".message-time"));
+    group.insertBefore(_createMsgEmojiExpandedPicker(menuId), group.querySelector(".message-time"));
     group.insertBefore(_createMsgContextMenu(fakeMsg, menuId), group.querySelector(".message-time"));
 
     // Redirect react btn to the emoji popup
@@ -940,11 +970,19 @@ function _initMessageActions() {
       e.stopPropagation();
       const emoji = emojiPick.dataset.emoji;
       if (!emoji) {
-        showToast("Altre reazioni: presto disponibile.", "info");
-        _closeAllMsgMenus();
+        // "+" button — open expanded emoji picker
+        const miniPopup = emojiPick.closest(".msg-emoji-popup");
+        if (miniPopup) {
+          const baseId = miniPopup.id.replace("-emoji", "");
+          const expanded = document.getElementById(baseId + "-expanded");
+          if (expanded) {
+            _closeAllMsgMenus();
+            _openMenu(expanded, emojiPick);
+          }
+        }
         return;
       }
-      const popup = emojiPick.closest(".msg-emoji-popup");
+      const popup = emojiPick.closest(".msg-emoji-popup, .msg-emoji-expanded");
       const group = popup ? popup.closest(".message-group-received, .message-group-sent") : null;
       if (group) {
         let strip = group.querySelector(".msg-reaction-strip");
@@ -980,7 +1018,7 @@ function _initMessageActions() {
     }
 
     // Tapped inside open menu but not on a button — keep open
-    if (menuEl || e.target.closest(".msg-emoji-popup")) {
+    if (menuEl || e.target.closest(".msg-emoji-popup") || e.target.closest(".msg-emoji-expanded")) {
       e.stopPropagation();
       return;
     }
@@ -991,7 +1029,7 @@ function _initMessageActions() {
 }
 
 function _closeAllMsgMenus() {
-  document.querySelectorAll(".msg-context-menu.open, .msg-emoji-popup.open").forEach((m) => {
+  document.querySelectorAll(".msg-context-menu.open, .msg-emoji-popup.open, .msg-emoji-expanded.open").forEach((m) => {
     m.classList.remove("open");
     m.setAttribute("aria-hidden", "true");
     m.style.top = "";

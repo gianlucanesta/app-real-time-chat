@@ -860,6 +860,48 @@
   border-bottom: none;
 }
 
+/* Expanded emoji picker */
+.msg-emoji-expanded {
+  position: absolute;
+  z-index: 32;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  display: none;
+  padding: var(--space-3);
+}
+.msg-emoji-expanded.open {
+  display: block;
+}
+.message-group-received .msg-emoji-expanded {
+  left: 0;
+}
+.message-group-sent .msg-emoji-expanded {
+  right: 0;
+}
+.msg-emoji-expanded-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-1);
+}
+.msg-emoji-expanded-grid .msg-emoji-pick {
+  width: 40px;
+  height: 40px;
+  font-size: 22px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.msg-emoji-expanded-grid .msg-emoji-pick:hover {
+  background: var(--color-input);
+}
+
 /* Context menu */
 .msg-context-menu {
   position: absolute;
@@ -1061,7 +1103,13 @@
     transform var(--transition-fast);
 }
 .input-action-btn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
   color: var(--color-text);
+}
+.input-action-btn[aria-label="Voice note"]:hover {
+  background-color: #25d366;
+  color: #fff;
+  transform: none;
 }
 .input-action-btn:active {
   transform: scale(0.92);
