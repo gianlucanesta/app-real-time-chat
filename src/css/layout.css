@@ -2220,13 +2220,42 @@
   height: 22px;
 }
 
-/* Camera-off indicator – slightly dimmed */
+/* Camera-off indicator – dimmed + red tint */
 .call-bar-camera[data-active="false"] {
-  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.55);
 }
-/* Mic muted – highlighted bg */
+/* Camera-on – bright */
+.call-bar-camera[data-active="true"] {
+  color: #fff;
+}
+/* Mic muted – dimmed, same treatment as camera-off */
 .call-bar-mic[data-active="false"] {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.55);
+}
+/* Mic active – bright */
+.call-bar-mic[data-active="true"] {
+  color: #fff;
+}
+
+/* Icon-on / icon-off toggle */
+.call-bar-camera[data-active="false"] .icon-on,
+.call-bar-camera[data-active="true"] .icon-off,
+.call-bar-mic[data-active="true"] .icon-off,
+.call-bar-mic[data-active="false"] .icon-on {
+  display: none;
+}
+.call-bar-camera[data-active="false"] .icon-off,
+.call-bar-camera[data-active="true"] .icon-on,
+.call-bar-mic[data-active="true"] .icon-on,
+.call-bar-mic[data-active="false"] .icon-off {
+  display: block;
+}
+
+/* Mobile end-call container: hidden on desktop */
+.call-mobile-end {
+  display: none;
 }
 
 /* End call button */

@@ -1272,24 +1272,43 @@ function _initCallScreen() {
   // expose to module
   _openCall = openCall;
 
-  // End call
+  // End call (desktop bar + mobile floating button)
   document.getElementById("call-end-btn")?.addEventListener("click", closeCall);
+  document
+    .getElementById("call-end-btn-mobile")
+    ?.addEventListener("click", closeCall);
+
+  // Helper: update icon visibility directly on the button element
+  const _syncIcons = (btn, isOn) => {
+    const svgOn = btn.querySelector(".icon-on");
+    const svgOff = btn.querySelector(".icon-off");
+    if (svgOn) svgOn.style.display = isOn ? "block" : "none";
+    if (svgOff) svgOff.style.display = isOn ? "none" : "block";
+  };
 
   // Camera toggle
   const cameraBtn = document.getElementById("call-camera-btn");
-  cameraBtn?.addEventListener("click", () => {
-    const on = cameraBtn.dataset.active === "true";
-    cameraBtn.dataset.active = String(!on);
-    showToast(on ? "Camera off" : "Camera on", "info");
-  });
+  if (cameraBtn) {
+    _syncIcons(cameraBtn, cameraBtn.dataset.active === "true"); // init
+    cameraBtn.addEventListener("click", () => {
+      const nowOn = cameraBtn.dataset.active !== "true";
+      cameraBtn.dataset.active = String(nowOn);
+      _syncIcons(cameraBtn, nowOn);
+      showToast(nowOn ? "Camera on" : "Camera off", "info");
+    });
+  }
 
   // Mic toggle
   const micBtn = document.getElementById("call-mic-btn");
-  micBtn?.addEventListener("click", () => {
-    const on = micBtn.dataset.active === "true";
-    micBtn.dataset.active = String(!on);
-    showToast(on ? "Microphone muted" : "Microphone on", "info");
-  });
+  if (micBtn) {
+    _syncIcons(micBtn, micBtn.dataset.active === "true"); // init
+    micBtn.addEventListener("click", () => {
+      const nowOn = micBtn.dataset.active !== "true";
+      micBtn.dataset.active = String(nowOn);
+      _syncIcons(micBtn, nowOn);
+      showToast(nowOn ? "Microphone on" : "Microphone muted", "info");
+    });
+  }
 
   // Other call bar buttons
   screen

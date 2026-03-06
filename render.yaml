@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: app-real-time-chat
+    env: static
+    staticPublishPath: src
+    buildCommand: ""
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

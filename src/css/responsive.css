@@ -128,7 +128,7 @@
   .chat-header-trigger:active {
     background-color: var(--color-input);
   }
-  /* Chiama button: icon only on mobile */
+  /* Call button: icon only on mobile */
   .chat-call-btn .call-text,
   .chat-call-btn .call-chevron {
     display: none;
@@ -450,5 +450,59 @@
     padding: var(--space-5);
     margin: var(--space-3);
     border-radius: var(--radius-md);
+  }
+
+  /* ── Call screen: mobile layout ──────────────────────────── */
+  .call-screen {
+    padding: 48px 12px 28px;
+    gap: 12px;
+  }
+
+  /* Single row, no wrapping – flatten group pills, hide chevrons */
+  .call-screen-bar {
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+  }
+  /* Remove pill background and padding from groups */
+  .call-bar-group {
+    background: transparent;
+    padding: 0;
+    gap: 0;
+  }
+  /* Hide the chevron "options" buttons – not needed on mobile */
+  .call-bar-chevron {
+    display: none;
+  }
+  /* Shrink all action buttons to 44 px so they fit in one row */
+  .call-screen-bar .call-bar-btn {
+    width: 44px;
+    height: 44px;
+  }
+  .call-screen-bar .call-bar-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+  /* Hide the pill end-call button that lives inside the bar */
+  #call-end-btn {
+    display: none;
+  }
+  /* Show the dedicated mobile end-call button below the bar */
+  .call-mobile-end {
+    display: flex;
+    justify-content: center;
+    padding: 4px 0 0;
+  }
+  /* Large circular end-call button */
+  .call-end-mobile-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    margin-left: 0;
+  }
+  .call-end-mobile-btn svg {
+    width: 24px;
+    height: 24px;
   }
 }
