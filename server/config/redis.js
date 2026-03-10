@@ -33,7 +33,15 @@ sub.on("error", (e) => console.error("[redis] subscriber error:", e.message));
  */
 async function initKeyspaceExpiry(io, Message) {
   // Enable keyspace events: K = keyspace, E = keyevent, x = expired
-  await redis.config("SET", "notify-keyspace-events", "KEx");
+  // Managed Redis (e.g. Render) may forbid CONFIG SET — warn but don't crash.
+  try {
+    await redis.config("SET", "notify-keyspace-events", "KEx");
+  } catch (err) {
+    console.warn(
+      "[redis] CONFIG SET not permitted (managed Redis?) – keyspace notifications must be pre-configured:",
+      err.message,
+    );
+  }
 
   // Subscribe to the expired keyevent channel on DB 0
   await sub.subscribe("__keyevent@0__:expired");
