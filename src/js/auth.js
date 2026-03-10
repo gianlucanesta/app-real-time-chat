@@ -12,13 +12,13 @@
 // Set to false to fall back to the localStorage demo (e.g. static Render site).
 const USE_API = true;
 
-// In production both frontend and backend are served from the same Render
-// service, so relative paths work. For local dev, point to localhost:3001.
+// In production the frontend and backend are on separate Render services.
+// For local dev, point to localhost:3001.
 const API_BASE =
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1"
     ? "http://localhost:3001/api"
-    : "/api";
+    : "https://app-real-time-chat-backend.onrender.com/api";
 
 const STORAGE_USERS = "ephemeral_users";
 const SESSION_TOKEN = "ephemeral_session";

@@ -15,7 +15,7 @@ const SERVER_URL =
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1"
     ? "http://localhost:3001"
-    : window.location.origin;
+    : "https://app-real-time-chat-backend.onrender.com";
 
 /** @type {import('socket.io-client').Socket|null} */
 let _socket = null;
