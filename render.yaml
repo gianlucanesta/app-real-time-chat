@@ -5,7 +5,6 @@ services:
   - type: web
     name: app-real-time-chat-frontend
     env: static
-    plan: free
     staticPublishPath: src
     buildCommand: ""
     routes:
