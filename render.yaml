@@ -5,6 +5,7 @@ services:
   - type: web
     name: app-real-time-chat-frontend
     env: static
+    plan: free
     staticPublishPath: src
     buildCommand: ""
     routes:
@@ -18,6 +19,7 @@ services:
   - type: web
     name: app-real-time-chat-backend
     env: node
+    plan: free
     rootDir: server
     buildCommand: npm install
     startCommand: node server.js
