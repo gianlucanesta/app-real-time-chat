@@ -1,4 +1,5 @@
 import { getCurrentUser, logout } from "../auth.js";
+import { getAccessToken, getCurrentUserAny } from "../auth.js";
 import { showToast } from "../ui/toast.js";
 import {
   MOCK_CONVERSATIONS,
@@ -6,6 +7,18 @@ import {
   getRandomReply,
 } from "../data/mock-data.js";
 import { debounce } from "../utils.js";
+
+// ── API / Socket.io configuration ─────────────────────────────────────────────
+// Mirrors USE_API in auth.js — set both to false for the offline static demo.
+const USE_API = true;
+const SERVER_URL =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+    ? "http://localhost:3001"
+    : window.location.origin;
+
+/** @type {import('socket.io-client').Socket|null} */
+let _socket = null;
 
 // ── Module state ───────────────────────────────────────────────
 let activeContactId = "usr_mock_002";
@@ -34,6 +47,7 @@ export function initChatPage() {
   _initMobileSidebar();
   _initNavBar();
   _initCallScreen();
+  if (USE_API) _initSocket();
 }
 
 // ── User profile ───────────────────────────────────────────────
@@ -1318,4 +1332,125 @@ function _initCallScreen() {
     .forEach((btn) => {
       btn.addEventListener("click", () => showToast("Coming soon.", "info"));
     });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Socket.io real-time integration (PA7+)
+// Only active when USE_API = true. Uses CDN socket.io-client loaded in chat.html.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Connect to the backend Socket.io server and register event listeners.
+ * Called once by initChatPage() when USE_API is true.
+ */
+function _initSocket() {
+  const token = getAccessToken();
+  if (!token || typeof window.io === "undefined") return;
+
+  _socket = window.io(SERVER_URL, {
+    auth: { token },
+    transports: ["websocket"],
+    reconnectionAttempts: 5,
+    reconnectionDelay: 2000,
+  });
+
+  _socket.on("connect", () => {
+    console.log("[socket] connected:", _socket.id);
+    // Re-join the current conversation room after reconnection
+    if (activeContactId) {
+      _socket.emit("join:conversation", activeContactId);
+    }
+  });
+
+  _socket.on("connect_error", (err) => {
+    console.warn("[socket] connection error:", err.message);
+  });
+
+  // ── Incoming message from server ─────────────────────────────────────────
+  _socket.on("message:new", (msg) => {
+    if (msg.conversationId !== activeContactId) return;
+
+    const area = document.getElementById("chat-messages");
+    if (!area) return;
+
+    const bubble = _createMessageEl({
+      id: msg._id,
+      from: msg.sender === _getCurrentUserId() ? "me" : "them",
+      text: msg.text,
+      time: _formatTime(new Date(msg.createdAt)),
+    });
+    area.appendChild(bubble);
+    area.scrollTop = area.scrollHeight;
+  });
+
+  // ── TTL expiry: remove the bubble from the DOM ───────────────────────────
+  _socket.on("message:expired", ({ id }) => {
+    // Messages are wrapped in a .message-group-* div; find it by data attribute
+    const allGroups = document.querySelectorAll(
+      ".message-group-sent, .message-group-received",
+    );
+    allGroups.forEach((group) => {
+      const bubble = group.querySelector(
+        `[data-msg-id="${id}"], .message-bubble[data-id="${id}"]`,
+      );
+      if (bubble || group.dataset.msgId === id) {
+        group.remove();
+        console.log("[ttl] removed expired message from DOM:", id);
+      }
+    });
+  });
+
+  // ── Typing indicators ────────────────────────────────────────────────────
+  _socket.on("typing", ({ displayName, typing }) => {
+    const indicator = document.querySelector(".typing-indicator");
+    if (!indicator) return;
+    if (typing) {
+      indicator.textContent = `${displayName} is typing…`;
+      indicator.style.display = "block";
+    } else {
+      indicator.textContent = "";
+      indicator.style.display = "none";
+    }
+  });
+}
+
+/**
+ * Join the Socket.io room for a given conversation.
+ * Called by _selectConversation whenever the active chat changes.
+ */
+function _socketJoinConversation(conversationId) {
+  if (!_socket?.connected) return;
+  _socket.emit("join:conversation", conversationId);
+}
+
+/**
+ * Send a message via Socket.io instead of the mock reply system.
+ * Returns true if the message was sent via socket, false if API is disabled.
+ */
+function _socketSendMessage(conversationId, text) {
+  if (!USE_API || !_socket?.connected) return false;
+  _socket.emit("message:send", { conversationId, text });
+  return true;
+}
+
+/** Emit typing:start / typing:stop events for the active conversation. */
+function _socketTypingStart() {
+  if (_socket?.connected && activeContactId) {
+    _socket.emit("typing:start", activeContactId);
+  }
+}
+function _socketTypingStop() {
+  if (_socket?.connected && activeContactId) {
+    _socket.emit("typing:stop", activeContactId);
+  }
+}
+
+// ── Internal helpers ──────────────────────────────────────────────────────────
+function _getCurrentUserId() {
+  const user = getCurrentUserAny?.() || getCurrentUser?.();
+  return user?.id ?? null;
+}
+
+function _formatTime(date) {
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }

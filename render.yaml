@@ -1,6 +1,9 @@
 services:
+  # ──────────────────────────────────────────────
+  # 1.  Static frontend (vanilla JS, no build step)
+  # ──────────────────────────────────────────────
   - type: web
-    name: app-real-time-chat
+    name: app-real-time-chat-frontend
     env: static
     staticPublishPath: src
     buildCommand: ""
@@ -8,3 +11,66 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+
+  # ──────────────────────────────────────────────
+  # 2.  Node.js backend (pure node:http + Socket.io)
+  # ──────────────────────────────────────────────
+  - type: web
+    name: app-real-time-chat-backend
+    env: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    envVars:
+      # PostgreSQL — auto-bound from the database below
+      - key: DATABASE_URL
+        fromDatabase:
+          name: app-real-time-chat-db
+          property: connectionString
+
+      # Redis — auto-bound from the key-value store below
+      - key: REDIS_URL
+        fromService:
+          name: app-real-time-chat-redis
+          type: redis
+          property: connectionString
+
+      # MongoDB Atlas — set manually in the Render dashboard
+      # (Render does not host MongoDB natively; use Atlas M0 free tier)
+      - key: MONGO_URI
+        sync: false
+
+      # JWT secret — set manually in the Render dashboard
+      - key: JWT_SECRET
+        sync: false
+
+      # Runtime
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3001"
+
+      # CORS — update to match your deployed frontend URL after first deploy
+      - key: ALLOWED_ORIGIN
+        value: "*"
+
+# ──────────────────────────────────────────────
+# 3.  Render-managed PostgreSQL
+# ──────────────────────────────────────────────
+databases:
+  - name: app-real-time-chat-db
+    databaseName: chat
+    user: chat
+    plan: free
+
+  # ──────────────────────────────────────────────
+  # 4.  Render-managed Redis (Key-Value store)
+  # ──────────────────────────────────────────────
+  # Declared as a separate redis service so the backend
+  # can bind REDIS_URL via `fromService` above.
+  # Render's YAML syntax for Redis:
+  - type: redis
+    name: app-real-time-chat-redis
+    plan: free
+    maxmemoryPolicy: noeviction

@@ -1,0 +1,22 @@
+{
+  "name": "ephemeral-server",
+  "version": "1.0.0",
+  "description": "Ephemeral real-time chat – Node.js backend (no framework)",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "ioredis": "^5.3.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.3.4",
+    "pg": "^8.11.5",
+    "socket.io": "^4.7.5"
+  }
+}

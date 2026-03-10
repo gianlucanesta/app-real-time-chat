@@ -706,3 +706,247 @@ input[type="range"]::-moz-range-thumb {
   margin-top: 4px;
   display: block;
 }
+
+/* ────────────────────────────────────────────────────────────────
+   CALL SCREEN
+   Moved here from layout.css (PA7 CSS optimisation).
+   ──────────────────────────────────────────────────────────────── */
+.call-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  background: #0d1117;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 64px 16px 48px;
+  transform: translateY(100%);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.call-screen.open {
+  transform: translateY(0);
+}
+.call-screen-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  justify-content: center;
+}
+.call-avatar {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ec4899, #f97316);
+  color: #fff;
+  font-size: 44px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+.call-name {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.3px;
+}
+.call-timer {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.6px;
+}
+.call-waveform {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+}
+.call-waveform span {
+  display: block;
+  width: 3px;
+  border-radius: 9999px;
+  background: var(--color-accent);
+  animation: call-wave 1.3s ease-in-out infinite;
+}
+.call-waveform span:nth-child(1) {
+  height: 6px;
+  animation-delay: 0s;
+}
+.call-waveform span:nth-child(2) {
+  height: 10px;
+  animation-delay: 0.1s;
+}
+.call-waveform span:nth-child(3) {
+  height: 16px;
+  animation-delay: 0.2s;
+}
+.call-waveform span:nth-child(4) {
+  height: 22px;
+  animation-delay: 0.3s;
+}
+.call-waveform span:nth-child(5) {
+  height: 28px;
+  animation-delay: 0.4s;
+}
+.call-waveform span:nth-child(6) {
+  height: 22px;
+  animation-delay: 0.5s;
+}
+.call-waveform span:nth-child(7) {
+  height: 28px;
+  animation-delay: 0.4s;
+}
+.call-waveform span:nth-child(8) {
+  height: 22px;
+  animation-delay: 0.3s;
+}
+.call-waveform span:nth-child(9) {
+  height: 16px;
+  animation-delay: 0.2s;
+}
+.call-waveform span:nth-child(10) {
+  height: 10px;
+  animation-delay: 0.1s;
+}
+.call-waveform span:nth-child(11) {
+  height: 6px;
+  animation-delay: 0s;
+}
+.call-waveform span:nth-child(12) {
+  height: 10px;
+  animation-delay: 0.1s;
+}
+.call-waveform span:nth-child(13) {
+  height: 6px;
+  animation-delay: 0.2s;
+}
+@keyframes call-wave {
+  0%,
+  100% {
+    transform: scaleY(0.4);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+.call-screen-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 600px;
+  flex-wrap: nowrap;
+}
+.call-bar-group {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  padding: 4px 8px 4px 4px;
+  gap: 2px;
+}
+.call-bar-group .call-bar-btn {
+  width: 44px;
+  height: 44px;
+  background: transparent;
+}
+.call-bar-group .call-bar-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.call-bar-chevron {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.65);
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 0.15s;
+}
+.call-bar-chevron:hover {
+  color: #fff;
+}
+.call-bar-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.call-bar-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+.call-bar-btn svg {
+  width: 22px;
+  height: 22px;
+}
+.call-bar-camera[data-active="false"] {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.55);
+}
+.call-bar-camera[data-active="true"] {
+  color: #fff;
+}
+.call-bar-mic[data-active="false"] {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.55);
+}
+.call-bar-mic[data-active="true"] {
+  color: #fff;
+}
+.call-bar-camera[data-active="false"] .icon-on,
+.call-bar-camera[data-active="true"] .icon-off,
+.call-bar-mic[data-active="true"] .icon-off,
+.call-bar-mic[data-active="false"] .icon-on {
+  display: none;
+}
+.call-bar-camera[data-active="false"] .icon-off,
+.call-bar-camera[data-active="true"] .icon-on,
+.call-bar-mic[data-active="true"] .icon-on,
+.call-bar-mic[data-active="false"] .icon-off {
+  display: block;
+}
+.call-mobile-end {
+  display: none;
+}
+.call-end-btn {
+  width: 64px;
+  height: 52px;
+  border-radius: 9999px;
+  background: #ef4444;
+  border: none;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 6px;
+  transition:
+    background 0.15s,
+    transform 0.12s;
+}
+.call-end-btn:hover {
+  background: #dc2626;
+  transform: scale(1.06);
+}
+.call-end-btn svg {
+  width: 24px;
+  height: 24px;
+}
