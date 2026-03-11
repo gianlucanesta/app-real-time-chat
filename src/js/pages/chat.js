@@ -38,6 +38,7 @@ export function initChatPage() {
   _initMobileSidebar();
   _initNavBar();
   _initCallScreen();
+  _initEmptyStateActions();
   if (USE_API) _initSocket();
 }
 
@@ -133,6 +134,9 @@ function _selectConversation(contactId) {
   activeContactId = contactId;
   const conv = conversations[contactId];
   if (!conv) return;
+
+  // Show chat UI, hide empty state
+  document.querySelector(".chat-page")?.classList.add("has-chat");
 
   // Update chat header
   const nameEl = document.querySelector(".chat-contact-name");
@@ -910,6 +914,19 @@ function _initMobileSidebar() {
   document.querySelector(".back-btn")?.addEventListener("click", () => {
     const sidebar = document.getElementById("sidebar");
     if (sidebar) sidebar.classList.remove("hidden");
+  });
+}
+
+// ── Empty state quick-action buttons ──────────────────────────
+function _initEmptyStateActions() {
+  document.getElementById("empty-new-contact-btn")?.addEventListener("click", () => {
+    document.getElementById("new-chat-btn")?.click();
+  });
+  document.getElementById("empty-new-group-btn")?.addEventListener("click", () => {
+    showToast("New group: coming soon.", "info");
+  });
+  document.getElementById("empty-settings-btn")?.addEventListener("click", () => {
+    window.location.href = "settings.html";
   });
 }
 

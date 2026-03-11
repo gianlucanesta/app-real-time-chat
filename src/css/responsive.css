@@ -505,4 +505,16 @@
     width: 24px;
     height: 24px;
   }
+
+  /* Empty state: never show on mobile (sidebar covers the main area) */
+  .chat-empty-state {
+    display: none !important;
+  }
+
+  /* On mobile, chat UI is always shown when main is visible (contact already selected) */
+  .chat-page:not(.has-chat) .chat-header,
+  .chat-page:not(.has-chat) #chat-messages,
+  .chat-page:not(.has-chat) .chat-input-area {
+    display: flex;
+  }
 }
