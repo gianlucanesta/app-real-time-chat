@@ -53,11 +53,13 @@ export function initLoginPage() {
   // Form submit
   form.addEventListener("submit", (e) => {
     e.preventDefault();
-    _handleLogin(emailEl, passEl, form);
+    const keepLoggedIn = !!form.querySelector('input[name="remember"]')
+      ?.checked;
+    _handleLogin(emailEl, passEl, form, keepLoggedIn);
   });
 }
 
-async function _handleLogin(emailEl, passEl, form) {
+async function _handleLogin(emailEl, passEl, form, keepLoggedIn = false) {
   let valid = true;
 
   if (!validateEmail(emailEl.value)) {
@@ -76,6 +78,7 @@ async function _handleLogin(emailEl, passEl, form) {
   const result = await apiLogin({
     email: emailEl.value,
     password: passEl.value,
+    keepLoggedIn,
   });
 
   if (submitBtn) submitBtn.disabled = false;

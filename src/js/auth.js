@@ -114,7 +114,7 @@ export function signup({ email, phone, password, displayName }) {
  * @param {{ email: string, password: string }} params
  * @returns {{ ok: boolean, user?: object, error?: string }}
  */
-export function login({ email, password }) {
+export function login({ email, password, keepLoggedIn = false }) {
   const users = getUsers();
   const normalizedEmail = email.toLowerCase().trim();
   const user = users.find((u) => u.email === normalizedEmail);
@@ -123,7 +123,13 @@ export function login({ email, password }) {
     return { ok: false, error: "Invalid email or password." };
   }
 
-  sessionStorage.setItem(
+  const store = keepLoggedIn ? localStorage : sessionStorage;
+  if (keepLoggedIn) {
+    localStorage.setItem("ephemeral_remember", "1");
+  } else {
+    localStorage.removeItem("ephemeral_remember");
+  }
+  store.setItem(
     SESSION_TOKEN,
     JSON.stringify({ userId: user.id, ts: Date.now() }),
   );
@@ -132,14 +138,21 @@ export function login({ email, password }) {
 
 export function logout() {
   sessionStorage.removeItem(SESSION_TOKEN);
+  localStorage.removeItem(SESSION_TOKEN);
+  localStorage.removeItem("ephemeral_remember");
 }
 
 export function isAuthenticated() {
-  return !!sessionStorage.getItem(SESSION_TOKEN);
+  return (
+    !!sessionStorage.getItem(SESSION_TOKEN) ||
+    !!localStorage.getItem(SESSION_TOKEN)
+  );
 }
 
 export function getCurrentUser() {
-  const raw = sessionStorage.getItem(SESSION_TOKEN);
+  const raw =
+    sessionStorage.getItem(SESSION_TOKEN) ||
+    localStorage.getItem(SESSION_TOKEN);
   if (!raw) return null;
   try {
     const { userId } = JSON.parse(raw);
@@ -204,9 +217,9 @@ export async function apiSignup({ email, password, displayName, phone = "" }) {
  * @param {{ email: string, password: string }} params
  * @returns {Promise<{ ok: boolean, user?: object, accessToken?: string, error?: string }>}
  */
-export async function apiLogin({ email, password }) {
+export async function apiLogin({ email, password, keepLoggedIn = false }) {
   const useApi = await _detectApi();
-  if (!useApi) return login({ email, password });
+  if (!useApi) return login({ email, password, keepLoggedIn });
   try {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: "POST",
@@ -215,13 +228,19 @@ export async function apiLogin({ email, password }) {
     });
     const data = await res.json();
     if (!res.ok) return { ok: false, error: data.error || "Login failed" };
-    sessionStorage.setItem("ephemeral_token", data.accessToken);
-    sessionStorage.setItem("ephemeral_refresh", data.refreshToken);
-    sessionStorage.setItem("ephemeral_user_api", JSON.stringify(data.user));
+    const store = keepLoggedIn ? localStorage : sessionStorage;
+    if (keepLoggedIn) {
+      localStorage.setItem("ephemeral_remember", "1");
+    } else {
+      localStorage.removeItem("ephemeral_remember");
+    }
+    store.setItem("ephemeral_token", data.accessToken);
+    store.setItem("ephemeral_refresh", data.refreshToken);
+    store.setItem("ephemeral_user_api", JSON.stringify(data.user));
     return { ok: true, user: data.user, accessToken: data.accessToken };
   } catch {
     _apiAvailable = null; // reset so next call re-probes
-    return login({ email, password });
+    return login({ email, password, keepLoggedIn });
   }
 }
 
@@ -229,12 +248,20 @@ export async function apiLogin({ email, password }) {
  * Log out via the backend (invalidates the refresh token server-side).
  */
 export async function apiLogout() {
-  const refreshToken = sessionStorage.getItem("ephemeral_refresh");
-  const token = sessionStorage.getItem("ephemeral_token");
-  sessionStorage.removeItem("ephemeral_token");
-  sessionStorage.removeItem("ephemeral_refresh");
-  sessionStorage.removeItem("ephemeral_user_api");
-  logout(); // always clear local session too
+  const refreshToken =
+    sessionStorage.getItem("ephemeral_refresh") ||
+    localStorage.getItem("ephemeral_refresh");
+  const token =
+    sessionStorage.getItem("ephemeral_token") ||
+    localStorage.getItem("ephemeral_token");
+  // Clear tokens from both storages regardless of where they were stored
+  ["ephemeral_token", "ephemeral_refresh", "ephemeral_user_api"].forEach(
+    (k) => {
+      sessionStorage.removeItem(k);
+      localStorage.removeItem(k);
+    },
+  );
+  logout(); // also clears SESSION_TOKEN + ephemeral_remember
   if (!_apiAvailable || !token) return;
   try {
     await fetch(`${API_BASE}/auth/logout`, {
@@ -255,7 +282,10 @@ export async function apiLogout() {
  * @returns {string|null}
  */
 export function getAccessToken() {
-  return sessionStorage.getItem("ephemeral_token");
+  return (
+    sessionStorage.getItem("ephemeral_token") ||
+    localStorage.getItem("ephemeral_token")
+  );
 }
 
 /**
@@ -291,7 +321,9 @@ export async function apiUpdateUser(userId, fields) {
  * @returns {object|null}
  */
 export function getCurrentUserAny() {
-  const raw = sessionStorage.getItem("ephemeral_user_api");
+  const raw =
+    sessionStorage.getItem("ephemeral_user_api") ||
+    localStorage.getItem("ephemeral_user_api");
   if (raw) {
     try {
       return JSON.parse(raw);
@@ -307,5 +339,9 @@ export function getCurrentUserAny() {
  * @returns {boolean}
  */
 export function isAuthenticatedAny() {
-  return !!sessionStorage.getItem("ephemeral_token") || isAuthenticated();
+  return (
+    !!sessionStorage.getItem("ephemeral_token") ||
+    !!localStorage.getItem("ephemeral_token") ||
+    isAuthenticated()
+  );
 }
