@@ -32,15 +32,45 @@ The frontend auto-detects whether the backend is reachable. If not, it falls bac
 
 ## Environment Variables (`server/.env`)
 
-| Variable             | Description                                                            |
-| -------------------- | ---------------------------------------------------------------------- |
-| `PORT`               | HTTP server port (default `3001`)                                      |
-| `MONGO_URI`          | MongoDB connection string (for messages)                               |
-| `DATABASE_URL`       | PostgreSQL connection string (for users, contacts)                     |
-| `JWT_SECRET`         | Secret used to sign access tokens                                      |
-| `JWT_REFRESH_SECRET` | Secret used to sign refresh tokens                                     |
-| `REDIS_URL`          | Redis connection string (optional — gracefully skipped if unavailable) |
-| `ALLOWED_ORIGIN`     | Comma-separated list of allowed CORS origins                           |
+Copy `server/.env.example` to `server/.env` and fill in the values:
+
+```env
+# ─── Server ───────────────────────────────────────────────────────────────────
+PORT=3001
+
+# ─── Security ─────────────────────────────────────────────────────────────────
+# Generate with: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+JWT_SECRET=change_me_generate_a_real_64_char_hex_string
+JWT_EXPIRES_IN=15m
+REFRESH_EXPIRES_IN=7d
+
+# ─── CORS ─────────────────────────────────────────────────────────────────────
+# Frontend origin – in production set to your Render static site URL
+ALLOWED_ORIGIN=http://localhost:5500
+
+# ─── PostgreSQL (Render Postgres) ─────────────────────────────────────────────
+# Format: postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require
+DATABASE_URL=postgresql://postgres:password@localhost:5432/ephemeral
+
+# ─── MongoDB (MongoDB Atlas M0 free tier) ─────────────────────────────────────
+# Format: mongodb+srv://USER:PASSWORD@cluster.mongodb.net/ephemeral?retryWrites=true
+MONGO_URI=mongodb://localhost:27017/ephemeral
+
+# ─── Redis (Render Key-Value) ─────────────────────────────────────────────────
+# Format: redis://default:PASSWORD@HOST:PORT
+REDIS_URL=redis://localhost:6379
+```
+
+| Variable          | Description                                                                    |
+| ----------------- | ------------------------------------------------------------------------------ |
+| `PORT`            | HTTP server port (default `3001`)                                              |
+| `JWT_SECRET`      | Secret used to sign access tokens — generate a random 64-char hex string       |
+| `JWT_EXPIRES_IN`  | Access token lifetime (default `15m`)                                          |
+| `REFRESH_EXPIRES_IN` | Refresh token lifetime (default `7d`)                                       |
+| `ALLOWED_ORIGIN`  | Comma-separated list of allowed CORS origins                                   |
+| `DATABASE_URL`    | PostgreSQL connection string (users & contacts)                                |
+| `MONGO_URI`       | MongoDB connection string (messages with TTL)                                  |
+| `REDIS_URL`       | Redis connection string — optional, gracefully skipped if unavailable          |
 
 ---
 
