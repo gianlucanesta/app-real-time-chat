@@ -739,28 +739,100 @@ function _initNewContactPanel() {
   const panel = document.getElementById("new-contact-panel");
   if (!panel) return;
 
-  // Live avatar: show initials when name is typed
+  // ── Avatar live-initials ──────────────────────────────────────
   const _updateAvatar = () => {
     const first =
       document.getElementById("ncp-firstname")?.value.trim() ?? "";
     const last = document.getElementById("ncp-lastname")?.value.trim() ?? "";
     const icon = document.getElementById("ncp-avatar-icon");
-    const initials = document.getElementById("ncp-avatar-initials");
-    if (!icon || !initials) return;
+    const initialsEl = document.getElementById("ncp-avatar-initials");
+    if (!icon || !initialsEl) return;
     const text = [first.charAt(0), last.charAt(0)]
       .filter(Boolean)
       .join("")
       .toUpperCase();
     if (text) {
       icon.style.display = "none";
-      initials.style.display = "";
-      initials.textContent = text;
+      initialsEl.style.display = "";
+      initialsEl.textContent = text;
     } else {
       icon.style.display = "";
-      initials.style.display = "none";
+      initialsEl.style.display = "none";
     }
   };
 
+  // ── Inline validation helpers ─────────────────────────────────
+  const _setFieldError = (fieldId, errorId, message) => {
+    const field = document.getElementById(fieldId);
+    const err = document.getElementById(errorId);
+    if (!field || !err) return;
+    field.classList.add("ncp-invalid");
+    err.textContent = message;
+    err.classList.add("visible");
+    // shake the parent row
+    const row = field.closest(".ecp-field-row");
+    if (row) {
+      row.classList.remove("ncp-shake");
+      // force reflow to restart animation
+      void row.offsetWidth;
+      row.classList.add("ncp-shake");
+      row.addEventListener("animationend", () => row.classList.remove("ncp-shake"), { once: true });
+    }
+  };
+
+  const _clearFieldError = (fieldId, errorId) => {
+    const field = document.getElementById(fieldId);
+    const err = document.getElementById(errorId);
+    if (field) field.classList.remove("ncp-invalid");
+    if (err) { err.textContent = ""; err.classList.remove("visible"); }
+  };
+
+  // ── Phone lookup ──────────────────────────────────────────────
+  const _setPhoneStatus = (state, text) => {
+    const el = document.getElementById("ncp-phone-status");
+    if (!el) return;
+    el.className = "ncp-phone-status";
+    if (!state) return; // hide
+    const icons = {
+      checking: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>`,
+      found:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+      "not-found": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+    };
+    el.innerHTML = (icons[state] ?? "") + `<span>${text}</span>`;
+    el.classList.add(`status-${state}`, "visible");
+  };
+
+  const _lookupPhone = debounce(async (phone) => {
+    if (!phone || phone.replace(/\D/g, "").length < 5) {
+      _setPhoneStatus(null);
+      return;
+    }
+    const country = document.getElementById("ncp-country")?.value ?? "";
+    const full = country + phone.replace(/\s/g, "");
+    _setPhoneStatus("checking", "Checking…");
+    if (!USE_API) {
+      _setPhoneStatus(null);
+      return;
+    }
+    try {
+      const token = getAccessToken();
+      const res = await fetch(
+        `${SERVER_URL}/api/users/lookup-phone?phone=${encodeURIComponent(full)}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!res.ok) { _setPhoneStatus(null); return; }
+      const data = await res.json();
+      if (data.found) {
+        _setPhoneStatus("found", `On Ephemeral — can start chatting`);
+      } else {
+        _setPhoneStatus("not-found", "Not on Ephemeral — contact saved locally");
+      }
+    } catch {
+      _setPhoneStatus(null);
+    }
+  }, 600);
+
+  // ── Reset ─────────────────────────────────────────────────────
   const _resetPanel = () => {
     ["ncp-firstname", "ncp-lastname", "ncp-phone"].forEach((id) => {
       const el = document.getElementById(id);
@@ -768,6 +840,9 @@ function _initNewContactPanel() {
     });
     const syncEl = document.getElementById("ncp-sync");
     if (syncEl) syncEl.checked = false;
+    _clearFieldError("ncp-field-firstname", "ncp-error-firstname");
+    _clearFieldError("ncp-field-phone", "ncp-error-phone");
+    _setPhoneStatus(null);
     _updateAvatar();
   };
 
@@ -776,12 +851,25 @@ function _initNewContactPanel() {
     panel.setAttribute("aria-hidden", "true");
   };
 
-  document
-    .getElementById("ncp-firstname")
-    ?.addEventListener("input", _updateAvatar);
+  // ── Event listeners ───────────────────────────────────────────
+  document.getElementById("ncp-firstname")?.addEventListener("input", () => {
+    _updateAvatar();
+    const val = document.getElementById("ncp-firstname")?.value.trim();
+    if (val) _clearFieldError("ncp-field-firstname", "ncp-error-firstname");
+  });
   document
     .getElementById("ncp-lastname")
     ?.addEventListener("input", _updateAvatar);
+
+  document.getElementById("ncp-phone")?.addEventListener("input", (e) => {
+    const val = e.target.value.trim();
+    if (val) _clearFieldError("ncp-field-phone", "ncp-error-phone");
+    _lookupPhone(val);
+  });
+  document.getElementById("ncp-country")?.addEventListener("change", () => {
+    const phone = document.getElementById("ncp-phone")?.value.trim();
+    if (phone) _lookupPhone(phone);
+  });
 
   document
     .getElementById("ncp-photo-btn")
@@ -793,20 +881,25 @@ function _initNewContactPanel() {
     .getElementById("new-contact-back-btn")
     ?.addEventListener("click", closePanel);
 
+  // ── Save ──────────────────────────────────────────────────────
   document
     .getElementById("new-contact-save-btn")
     ?.addEventListener("click", () => {
       const first = document.getElementById("ncp-firstname")?.value.trim();
-      const last = document.getElementById("ncp-lastname")?.value.trim();
-      const country = document.getElementById("ncp-country")?.value ?? "";
       const phone = document.getElementById("ncp-phone")?.value.trim();
 
+      let hasError = false;
       if (!first) {
-        showToast("Please enter a first name.", "warning");
-        document.getElementById("ncp-firstname")?.focus();
-        return;
+        _setFieldError("ncp-field-firstname", "ncp-error-firstname", "First name is required.");
+        hasError = true;
       }
+      if (!phone) {
+        _setFieldError("ncp-field-phone", "ncp-error-phone", "Phone number is required.");
+        hasError = true;
+      }
+      if (hasError) return;
 
+      const last = document.getElementById("ncp-lastname")?.value.trim();
       const fullName = [first, last].filter(Boolean).join(" ");
       showToast(`Contact "${fullName}" saved!`, "success");
 

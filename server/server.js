@@ -12,7 +12,10 @@ const { dispatch } = require("./router/index");
 const { Message } = require("./models/Message");
 
 const PORT = Number(process.env.PORT) || 3001;
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "*";
+// Support comma-separated list of allowed origins (e.g. for local dev with Live Server)
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGIN || "*")
+  .split(",")
+  .map((o) => o.trim());
 
 // ── Security headers ─────────────────────────────────────────────────────────
 // Applied on every response before routing – no framework needed.
@@ -37,8 +40,14 @@ function applySecurityHeaders(res) {
 }
 
 // ── CORS headers ──────────────────────────────────────────────────────────────
-function applyCORSHeaders(res) {
-  res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
+function applyCORSHeaders(req, res) {
+  const origin = req.headers.origin || "";
+  const allowed = ALLOWED_ORIGINS.includes("*")
+    ? "*"
+    : ALLOWED_ORIGINS.includes(origin)
+      ? origin
+      : ALLOWED_ORIGINS[0];
+  res.setHeader("Access-Control-Allow-Origin", allowed);
   res.setHeader(
     "Access-Control-Allow-Methods",
     "GET, POST, PATCH, DELETE, OPTIONS",
@@ -51,7 +60,7 @@ function applyCORSHeaders(res) {
 // ── HTTP server ───────────────────────────────────────────────────────────────
 const httpServer = http.createServer((req, res) => {
   applySecurityHeaders(res);
-  applyCORSHeaders(res);
+  applyCORSHeaders(req, res);
 
   // OPTIONS pre-flight — handled globally here so the router doesn't need to
   if (req.method === "OPTIONS") {
@@ -73,7 +82,10 @@ const httpServer = http.createServer((req, res) => {
 // ── Socket.io ────────────────────────────────────────────────────────────────
 const io = new SocketIO(httpServer, {
   cors: {
-    origin: ALLOWED_ORIGIN,
+    origin:
+      ALLOWED_ORIGINS.length === 1 && ALLOWED_ORIGINS[0] === "*"
+        ? "*"
+        : ALLOWED_ORIGINS,
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -92,9 +104,13 @@ async function start() {
     // 2. MongoDB
     await connectMongo();
 
-    // 3. Redis – wait for ready signal before subscribing
-    await redis.ping();
-    await initKeyspaceExpiry(io, Message);
+    // 3. Redis – optional: message TTL expiry won't work if Redis is unavailable
+    try {
+      await redis.ping();
+      await initKeyspaceExpiry(io, Message);
+    } catch (err) {
+      console.warn("[redis] not available – TTL expiry disabled:", err.message);
+    }
 
     // 4. HTTP server
     httpServer.listen(PORT, () => {

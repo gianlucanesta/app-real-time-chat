@@ -546,8 +546,8 @@
                   </svg>
                 </div>
                 <div class="ecp-field-inputs">
-                  <div class="ecp-field">
-                    <label class="ecp-field-label" for="ncp-firstname">First name</label>
+                  <div class="ecp-field" id="ncp-field-firstname">
+                    <label class="ecp-field-label" for="ncp-firstname">First name <span class="ncp-required">*</span></label>
                     <input
                       id="ncp-firstname"
                       class="ecp-input"
@@ -555,6 +555,7 @@
                       placeholder="Enter first name"
                       autocomplete="off"
                     />
+                    <span class="ncp-field-error" id="ncp-error-firstname" aria-live="polite"></span>
                   </div>
                   <div class="ecp-field">
                     <label class="ecp-field-label" for="ncp-lastname">Last name</label>
@@ -585,8 +586,8 @@
                   </svg>
                 </div>
                 <div class="ecp-phone-fields">
-                  <div class="ecp-field">
-                    <label class="ecp-field-label">Phone</label>
+                  <div class="ecp-field" id="ncp-field-phone">
+                    <label class="ecp-field-label">Phone <span class="ncp-required">*</span></label>
                     <div class="ecp-phone-input-row">
                       <select id="ncp-country" class="ecp-select" style="max-width:90px;flex-shrink:0">
                         <option value="+1">+1 US</option>
@@ -615,6 +616,9 @@
                         autocomplete="off"
                       />
                     </div>
+                    <span class="ncp-field-error" id="ncp-error-phone" aria-live="polite"></span>
+                    <!-- ephemeral lookup status -->
+                    <div class="ncp-phone-status" id="ncp-phone-status" aria-live="polite"></div>
                   </div>
                 </div>
               </div>

@@ -9,9 +9,6 @@
  */
 
 // ── API configuration ──────────────────────────────────────────────────────
-// Set to false to fall back to the localStorage demo (e.g. static Render site).
-const USE_API = true;
-
 // In production the frontend and backend are on separate Render services.
 // For local dev, point to localhost:3001.
 const API_BASE =
@@ -19,6 +16,31 @@ const API_BASE =
   window.location.hostname === "127.0.0.1"
     ? "http://localhost:3001/api"
     : "https://app-real-time-chat-backend.onrender.com/api";
+
+// Auto-detection: null = not yet probed, true = reachable, false = offline/demo
+let _apiAvailable = null;
+
+/**
+ * Probe the backend once (GET /api/health, 1.5 s timeout).
+ * Caches the result for the entire page session.
+ * @returns {Promise<boolean>}
+ */
+async function _detectApi() {
+  if (_apiAvailable !== null) return _apiAvailable;
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 1500);
+    const res = await fetch(`${API_BASE}/health`, {
+      method: "GET",
+      signal: ctrl.signal,
+    });
+    clearTimeout(tid);
+    _apiAvailable = res.ok;
+  } catch {
+    _apiAvailable = false;
+  }
+  return _apiAvailable;
+}
 
 const STORAGE_USERS = "ephemeral_users";
 const SESSION_TOKEN = "ephemeral_session";
@@ -156,7 +178,8 @@ export function updateUser(updatedFields) {
  * @returns {Promise<{ ok: boolean, user?: object, accessToken?: string, error?: string }>}
  */
 export async function apiSignup({ email, password, displayName, phone = "" }) {
-  if (!USE_API) return signup({ email, password, displayName, phone });
+  const useApi = await _detectApi();
+  if (!useApi) return signup({ email, password, displayName, phone });
   try {
     const res = await fetch(`${API_BASE}/auth/register`, {
       method: "POST",
@@ -171,7 +194,8 @@ export async function apiSignup({ email, password, displayName, phone = "" }) {
     sessionStorage.setItem("ephemeral_user_api", JSON.stringify(data.user));
     return { ok: true, user: data.user, accessToken: data.accessToken };
   } catch {
-    return { ok: false, error: "Network error – could not reach the server" };
+    _apiAvailable = null; // reset so next call re-probes
+    return signup({ email, password, displayName, phone });
   }
 }
 
@@ -181,7 +205,8 @@ export async function apiSignup({ email, password, displayName, phone = "" }) {
  * @returns {Promise<{ ok: boolean, user?: object, accessToken?: string, error?: string }>}
  */
 export async function apiLogin({ email, password }) {
-  if (!USE_API) return login({ email, password });
+  const useApi = await _detectApi();
+  if (!useApi) return login({ email, password });
   try {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: "POST",
@@ -195,7 +220,8 @@ export async function apiLogin({ email, password }) {
     sessionStorage.setItem("ephemeral_user_api", JSON.stringify(data.user));
     return { ok: true, user: data.user, accessToken: data.accessToken };
   } catch {
-    return { ok: false, error: "Network error – could not reach the server" };
+    _apiAvailable = null; // reset so next call re-probes
+    return login({ email, password });
   }
 }
 
@@ -208,10 +234,8 @@ export async function apiLogout() {
   sessionStorage.removeItem("ephemeral_token");
   sessionStorage.removeItem("ephemeral_refresh");
   sessionStorage.removeItem("ephemeral_user_api");
-  if (!USE_API || !token) {
-    logout();
-    return;
-  }
+  logout(); // always clear local session too
+  if (!_apiAvailable || !token) return;
   try {
     await fetch(`${API_BASE}/auth/logout`, {
       method: "POST",
@@ -239,9 +263,13 @@ export function getAccessToken() {
  * @returns {object|null}
  */
 export function getCurrentUserAny() {
-  if (USE_API) {
-    const raw = sessionStorage.getItem("ephemeral_user_api");
-    return raw ? JSON.parse(raw) : null;
+  const raw = sessionStorage.getItem("ephemeral_user_api");
+  if (raw) {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      /* ignore */
+    }
   }
   return getCurrentUser();
 }
@@ -251,6 +279,5 @@ export function getCurrentUserAny() {
  * @returns {boolean}
  */
 export function isAuthenticatedAny() {
-  if (USE_API) return !!sessionStorage.getItem("ephemeral_token");
-  return isAuthenticated();
+  return !!sessionStorage.getItem("ephemeral_token") || isAuthenticated();
 }

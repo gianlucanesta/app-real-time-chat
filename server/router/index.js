@@ -86,6 +86,12 @@ const ROUTES = [
     auth: true,
   },
   {
+    method: "GET",
+    pattern: /^\/api\/users\/lookup-phone$/,
+    handler: usersRoutes.lookupPhone,
+    auth: true,
+  },
+  {
     method: "PATCH",
     pattern: /^\/api\/users\/([^/]+)$/,
     handler: usersRoutes.update,

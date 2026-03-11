@@ -88,4 +88,24 @@ async function update(req, res, [userId]) {
   }
 }
 
-module.exports = { me, search, update };
+/**
+ * GET /api/users/lookup-phone?phone=<full_number>
+ * Returns { found: true, user: {...} } or { found: false }.
+ * Phone must include the country code prefix (e.g. "+39355999999").
+ */
+async function lookupPhone(req, res) {
+  const { phone } = getQueryParams(req);
+  if (!phone || phone.trim().length < 4) {
+    return sendJSON(res, 422, { error: '"phone" query param is required' });
+  }
+  try {
+    const user = await User.findByPhone(phone.trim());
+    if (!user) return sendJSON(res, 200, { found: false });
+    return sendJSON(res, 200, { found: true, user });
+  } catch (err) {
+    console.error("[users] lookupPhone error:", err.message);
+    return sendJSON(res, 500, { error: "Internal server error" });
+  }
+}
+
+module.exports = { me, search, update, lookupPhone };

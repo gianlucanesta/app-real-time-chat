@@ -81,6 +81,25 @@ async function create({ email, passwordHash, displayName, phone = "" }) {
 }
 
 /**
+ * Look up a user by their phone number (exact match after normalisation).
+ * Returns the user row (no password_hash) or null.
+ * @param {string} phone  e.g. "+39 355 999 99 99" or "+39355999999"
+ * @returns {Promise<object|null>}
+ */
+async function findByPhone(phone) {
+  // Strip all non-digit/plus characters for a loose match
+  const normalized = phone.replace(/[^+\d]/g, "");
+  const { rows } = await pool.query(
+    `SELECT id, email, display_name, initials, avatar_gradient, avatar_url
+     FROM users
+     WHERE regexp_replace(phone, '[^+\\d]', '', 'g') = $1
+     LIMIT 1`,
+    [normalized],
+  );
+  return rows[0] ?? null;
+}
+
+/**
  * Partial update – only the fields present in `fields` are changed.
  * Allowed columns (whitelist to prevent SQL injection):
  */
@@ -144,6 +163,7 @@ module.exports = {
   findById,
   findByEmail,
   search,
+  findByPhone,
   create,
   update,
   saveRefreshToken,
