@@ -324,6 +324,14 @@
   outline: none;
   color: var(--color-text);
   font-size: 13px;
+  color-scheme: dark;
+}
+.sidebar-search .search-input input:-webkit-autofill,
+.sidebar-search .search-input input:-webkit-autofill:hover,
+.sidebar-search .search-input input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 100px var(--color-input) inset;
+  -webkit-text-fill-color: var(--color-text);
+  caret-color: var(--color-text);
 }
 .sidebar-search .search-input input::placeholder {
   color: var(--color-text-secondary);
@@ -762,6 +770,61 @@
 .call-dropdown-item svg {
   flex-shrink: 0;
   color: var(--color-text-secondary);
+}
+
+/* ── More Options Dropdown ── */
+.more-btn-wrapper {
+  position: relative;
+}
+.more-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 200;
+  min-width: 220px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  flex-direction: column;
+  padding: var(--space-1) 0;
+}
+.more-dropdown.open {
+  display: flex;
+}
+.more-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: none;
+  border: none;
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.more-dropdown-item:hover {
+  background: var(--color-input);
+}
+.more-dropdown-item svg {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+.more-dropdown-item--danger {
+  color: var(--color-danger, #ef4444);
+}
+.more-dropdown-item--danger svg {
+  color: var(--color-danger, #ef4444);
+}
+.more-dropdown-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: var(--space-1) 0;
 }
 
 /* Messages Area */

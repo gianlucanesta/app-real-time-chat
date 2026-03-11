@@ -37,6 +37,19 @@ select {
   color: inherit;
 }
 
+/* Prevent Chrome autofill from overriding the dark theme background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 100px var(--color-input, #1e2535) inset;
+  -webkit-text-fill-color: var(--color-text, #e2e8f0);
+  caret-color: var(--color-text, #e2e8f0);
+  color-scheme: dark;
+}
+
 button {
   cursor: pointer;
   border: none;

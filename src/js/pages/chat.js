@@ -666,11 +666,51 @@ function _initHeaderActions() {
     });
   }
 
-  document
-    .querySelector('[aria-label="More options"]')
-    ?.addEventListener("click", () =>
-      showToast("More options: coming soon.", "info"),
-    );
+  // ── More options dropdown (chat header) ──
+  const moreBtn = document.querySelector('.chat-header-actions [aria-controls="more-dropdown"]');
+  const moreDropdown = document.getElementById("more-dropdown");
+  if (moreBtn && moreDropdown) {
+    moreBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isOpen = moreDropdown.classList.contains("open");
+      moreDropdown.classList.toggle("open", !isOpen);
+      moreDropdown.setAttribute("aria-hidden", String(isOpen));
+      moreBtn.setAttribute("aria-expanded", String(!isOpen));
+    });
+    moreDropdown.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-more]");
+      if (!btn) return;
+      e.stopPropagation();
+      moreDropdown.classList.remove("open");
+      moreDropdown.setAttribute("aria-hidden", "true");
+      moreBtn.setAttribute("aria-expanded", "false");
+      const action = btn.dataset.more;
+      if (action === "contact-info") {
+        document.getElementById("contact-info-trigger")?.click();
+        return;
+      }
+      const labels = {
+        "select-messages": "Select messages: coming soon.",
+        mute: "Mute notifications: coming soon.",
+        disappearing: "Disappearing messages: coming soon.",
+        favorites: "Added to favorites.",
+        "add-to-list": "Add to list: coming soon.",
+        "close-chat": "Chat closed.",
+        report: "Report: coming soon.",
+        block: "Block: coming soon.",
+        "clear-chat": "Clear chat: coming soon.",
+        "delete-chat": "Delete chat: coming soon.",
+      };
+      showToast(labels[action] || "Coming soon.", "info");
+    });
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".more-btn-wrapper")) {
+        moreDropdown.classList.remove("open");
+        moreDropdown.setAttribute("aria-hidden", "true");
+        moreBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
   document
     .querySelector('.chat-header-actions [aria-label="Search"]')
     ?.addEventListener("click", () =>
@@ -810,12 +850,12 @@ function _initNewContactPanel() {
     const country = document.getElementById("ncp-country")?.value ?? "";
     const full = country + phone.replace(/\s/g, "");
     _setPhoneStatus("checking", "Checking…");
-    if (!USE_API) {
+    const token = getAccessToken();
+    if (!USE_API || !token) {
       _setPhoneStatus(null);
       return;
     }
     try {
-      const token = getAccessToken();
       const res = await fetch(
         `${SERVER_URL}/api/users/lookup-phone?phone=${encodeURIComponent(full)}`,
         { headers: { Authorization: `Bearer ${token}` } },
@@ -900,11 +940,61 @@ function _initNewContactPanel() {
       if (hasError) return;
 
       const last = document.getElementById("ncp-lastname")?.value.trim();
+      const country = document.getElementById("ncp-country")?.value ?? "";
+      const phoneRaw = document.getElementById("ncp-phone")?.value.trim();
       const fullName = [first, last].filter(Boolean).join(" ");
-      showToast(`Contact "${fullName}" saved!`, "success");
+      const initials = [first.charAt(0), last ? last.charAt(0) : ""]
+        .filter(Boolean)
+        .join("")
+        .toUpperCase();
+
+      // Pick a deterministic gradient from the first character
+      const gradients = [
+        "linear-gradient(135deg,#2563EB,#7C3AED)",
+        "linear-gradient(135deg,#ec4899,#f97316)",
+        "linear-gradient(135deg,#10b981,#3b82f6)",
+        "linear-gradient(135deg,#f59e0b,#ef4444)",
+        "linear-gradient(135deg,#8b5cf6,#06b6d4)",
+      ];
+      const gradient = gradients[first.charCodeAt(0) % gradients.length];
+
+      const contactId = "local_" + Date.now();
+      conversations[contactId] = {
+        contact: {
+          id: contactId,
+          displayName: fullName,
+          initials,
+          gradient,
+          online: false,
+          role: "",
+          phone: country + phoneRaw,
+        },
+        unread: 0,
+        lastTime: "",
+        lastMessage: "",
+        messages: [],
+      };
 
       _resetPanel();
-      closePanel();
+
+      // Close new-contact-panel
+      panel.classList.remove("open");
+      panel.setAttribute("aria-hidden", "true");
+
+      // Also close new-chat-panel
+      const newChatPanel = document.getElementById("new-chat-panel");
+      newChatPanel?.classList.remove("open");
+      newChatPanel?.setAttribute("aria-hidden", "true");
+
+      // Refresh sidebar and open the new conversation
+      _renderConversationList();
+      _selectConversation(contactId);
+
+      // On mobile, collapse sidebar
+      const sidebar = document.getElementById("sidebar");
+      if (sidebar) sidebar.classList.add("hidden");
+
+      showToast(`Contact "${fullName}" saved!`, "success");
     });
 }
 
