@@ -65,7 +65,7 @@ services:
     runtime: image
     plan: free
     image:
-      url: docker.io/adminer:latest
+      url: docker.io/library/adminer:latest
     envVars:
       # Pre-fills the server field in the Adminer login form
       - key: ADMINER_DEFAULT_SERVER
