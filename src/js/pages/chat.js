@@ -977,6 +977,24 @@ function _initNewContactPanel() {
 
       _resetPanel();
 
+      // Persist contact to backend (fire-and-forget — local state already updated)
+      const token = getAccessToken();
+      if (USE_API && token) {
+        fetch(`${SERVER_URL}/api/contacts`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            displayName: fullName,
+            phone: country + phoneRaw,
+            initials,
+            gradient,
+          }),
+        }).catch(() => {});
+      }
+
       // Close new-contact-panel
       panel.classList.remove("open");
       panel.setAttribute("aria-hidden", "true");

@@ -6,6 +6,7 @@ const { globalLimiter, authLimiter } = require("../middleware/rateLimiter");
 const authRoutes = require("../routes/auth");
 const messagesRoutes = require("../routes/messages");
 const usersRoutes = require("../routes/users");
+const contactsRoutes = require("../routes/contacts");
 
 /**
  * Route table entry:
@@ -95,6 +96,20 @@ const ROUTES = [
     method: "PATCH",
     pattern: /^\/api\/users\/([^/]+)$/,
     handler: usersRoutes.update,
+    auth: true,
+  },
+
+  // ── Contacts ──────────────────────────────────────────────────────────────
+  {
+    method: "GET",
+    pattern: /^\/api\/contacts$/,
+    handler: contactsRoutes.list,
+    auth: true,
+  },
+  {
+    method: "POST",
+    pattern: /^\/api\/contacts$/,
+    handler: contactsRoutes.create,
     auth: true,
   },
 ];

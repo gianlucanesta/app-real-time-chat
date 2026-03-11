@@ -44,6 +44,18 @@ async function initSchema() {
       expires_at TIMESTAMPTZ NOT NULL,
       created_at TIMESTAMPTZ DEFAULT now()
     );
+
+    CREATE TABLE IF NOT EXISTS contacts (
+      id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id     UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      display_name TEXT        NOT NULL,
+      phone        TEXT        NOT NULL DEFAULT '',
+      initials     TEXT        NOT NULL DEFAULT '',
+      gradient     TEXT        NOT NULL DEFAULT 'linear-gradient(135deg,#2563EB,#7C3AED)',
+      linked_user_id UUID      REFERENCES users(id) ON DELETE SET NULL,
+      created_at   TIMESTAMPTZ DEFAULT now(),
+      UNIQUE (owner_id, phone)
+    );
   `);
   console.log("[pg] schema ready");
 }
