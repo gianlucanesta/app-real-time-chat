@@ -4,7 +4,7 @@ services:
   # ──────────────────────────────────────────────
   - type: web
     name: app-real-time-chat-frontend
-    env: static
+    runtime: static
     staticPublishPath: src
     buildCommand: ""
     routes:
@@ -17,7 +17,7 @@ services:
   # ──────────────────────────────────────────────
   - type: web
     name: app-real-time-chat-backend
-    env: node
+    runtime: node
     plan: free
     rootDir: server
     buildCommand: npm install
@@ -57,7 +57,26 @@ services:
         value: "*"
 
   # ──────────────────────────────────────────────
-  # 3.  Render-managed Redis (Key-Value store)
+  # 3.  Adminer — PostgreSQL visual interface
+  #     ⚠ publicly accessible: use only for dev/demo
+  # ──────────────────────────────────────────────
+  - type: web
+    name: app-real-time-chat-adminer
+    runtime: image
+    plan: free
+    image:
+      url: docker.io/adminer:latest
+    envVars:
+      # Pre-fills the server field in the Adminer login form
+      - key: ADMINER_DEFAULT_SERVER
+        fromDatabase:
+          name: app-real-time-chat-db
+          property: host
+      - key: ADMINER_DEFAULT_DB_DRIVER
+        value: pgsql
+
+  # ──────────────────────────────────────────────
+  # 4.  Render-managed Redis (Key-Value store)
   # ──────────────────────────────────────────────
   - type: redis
     name: app-real-time-chat-redis
