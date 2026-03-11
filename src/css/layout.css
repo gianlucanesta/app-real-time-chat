@@ -97,6 +97,10 @@
   gap: var(--space-5);
 }
 
+.auth-card > .divider {
+  margin-top: var(--space-8);
+}
+
 .auth-social {
   display: flex;
   flex-direction: column;

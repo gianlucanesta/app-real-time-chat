@@ -39,6 +39,17 @@ export function initLoginPage() {
     });
   });
 
+  // Expand/collapse extra social buttons
+  const _expandBtn = document.querySelector(".social-expand-btn");
+  const _socialExtra = document.querySelector(".social-extra");
+  if (_expandBtn && _socialExtra) {
+    _expandBtn.addEventListener("click", () => {
+      const expanded = _expandBtn.getAttribute("aria-expanded") === "true";
+      _expandBtn.setAttribute("aria-expanded", String(!expanded));
+      _socialExtra.classList.toggle("expanded", !expanded);
+    });
+  }
+
   // Form submit
   form.addEventListener("submit", (e) => {
     e.preventDefault();
