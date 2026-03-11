@@ -1,4 +1,4 @@
-import { login } from "../auth.js";
+import { apiLogin } from "../auth.js";
 import { showToast } from "../ui/toast.js";
 import { initTogglePassword } from "../ui/toggle-password.js";
 import { validateEmail, markError, clearError } from "../utils.js";
@@ -42,11 +42,11 @@ export function initLoginPage() {
   // Form submit
   form.addEventListener("submit", (e) => {
     e.preventDefault();
-    _handleLogin(emailEl, passEl);
+    _handleLogin(emailEl, passEl, form);
   });
 }
 
-function _handleLogin(emailEl, passEl) {
+async function _handleLogin(emailEl, passEl, form) {
   let valid = true;
 
   if (!validateEmail(emailEl.value)) {
@@ -59,7 +59,13 @@ function _handleLogin(emailEl, passEl) {
   }
   if (!valid) return;
 
-  const result = login({ email: emailEl.value, password: passEl.value });
+  const submitBtn = form?.querySelector('button[type="submit"]');
+  if (submitBtn) submitBtn.disabled = true;
+
+  const result = await apiLogin({ email: emailEl.value, password: passEl.value });
+
+  if (submitBtn) submitBtn.disabled = false;
+
   if (!result.ok) {
     showToast(result.error, "error");
     markError(passEl, result.error);
@@ -69,8 +75,8 @@ function _handleLogin(emailEl, passEl) {
   window.location.replace("chat.html");
 }
 
-function _doSocialLogin() {
-  const result = login({ email: "demo@ephemeral.app", password: "Demo1234" });
+async function _doSocialLogin() {
+  const result = await apiLogin({ email: "demo@ephemeral.app", password: "Demo1234" });
   if (result.ok) {
     window.location.replace("chat.html");
   } else {

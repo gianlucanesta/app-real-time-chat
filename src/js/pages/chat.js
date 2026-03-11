@@ -1,5 +1,4 @@
-import { getCurrentUser, logout } from "../auth.js";
-import { getAccessToken, getCurrentUserAny } from "../auth.js";
+import { getAccessToken, getCurrentUserAny, apiLogout } from "../auth.js";
 import { showToast } from "../ui/toast.js";
 import {
   MOCK_CONVERSATIONS,
@@ -52,7 +51,7 @@ export function initChatPage() {
 
 // ── User profile ───────────────────────────────────────────────
 function _loadUserProfile() {
-  const user = getCurrentUser();
+  const user = getCurrentUserAny();
   if (!user) return;
 
   // Populate left nav avatar
@@ -866,7 +865,7 @@ function _initSidebarMenu() {
       dropdown.classList.remove("open");
       const action = item.dataset.action;
       if (action === "logout") {
-        logout();
+        apiLogout();
         window.location.replace("index.html");
         return;
       }

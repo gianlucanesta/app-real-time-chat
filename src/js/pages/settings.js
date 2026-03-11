@@ -1,4 +1,4 @@
-import { getCurrentUser, updateUser, logout } from "../auth.js";
+import { getCurrentUserAny, updateUser, apiLogout } from "../auth.js";
 import { showToast } from "../ui/toast.js";
 import { initTogglePassword } from "../ui/toggle-password.js";
 import {
@@ -22,7 +22,7 @@ export function initSettingsPage() {
 
 // ── Profile ────────────────────────────────────────────────────
 function _loadUserProfile() {
-  const user = getCurrentUser();
+  const user = getCurrentUserAny();
   if (!user) return;
 
   // Settings panel profile card
@@ -293,7 +293,7 @@ function _initMobileTabBar() {
 
 // ── Nav bar avatar ─────────────────────────────────────────────
 function _initNavAvatar() {
-  const user = getCurrentUser();
+  const user = getCurrentUserAny();
   if (!user) return;
   const navAv = document.getElementById("nav-profile-avatar");
   if (navAv) {
@@ -307,7 +307,7 @@ function _initNavAvatar() {
 function _initLogout() {
   document.getElementById("logout-btn")?.addEventListener("click", (e) => {
     e.preventDefault();
-    logout();
+    apiLogout();
     window.location.replace("index.html");
   });
 }

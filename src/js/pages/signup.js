@@ -1,4 +1,4 @@
-import { signup } from "../auth.js";
+import { apiSignup } from "../auth.js";
 import { showToast } from "../ui/toast.js";
 import { initTogglePassword } from "../ui/toggle-password.js";
 import {
@@ -67,11 +67,11 @@ export function initSignupPage() {
   // Form submit
   form.addEventListener("submit", (e) => {
     e.preventDefault();
-    _handleSignup({ emailEl, phoneEl, passEl, termsEl });
+    _handleSignup({ emailEl, phoneEl, passEl, termsEl, submitEl });
   });
 }
 
-function _handleSignup({ emailEl, phoneEl, passEl, termsEl }) {
+async function _handleSignup({ emailEl, phoneEl, passEl, termsEl, submitEl }) {
   let valid = true;
 
   if (!validateEmail(emailEl.value)) {
@@ -99,12 +99,16 @@ function _handleSignup({ emailEl, phoneEl, passEl, termsEl }) {
   // Use the email prefix as a display name if the user didn't provide one
   const displayName = emailEl.value.split("@")[0];
 
-  const result = signup({
+  if (submitEl) submitEl.disabled = true;
+
+  const result = await apiSignup({
     email: emailEl.value,
     phone: phoneEl?.value || "",
     password: passEl.value,
     displayName,
   });
+
+  if (submitEl) submitEl.disabled = false;
 
   if (!result.ok) {
     showToast(result.error, "error");
