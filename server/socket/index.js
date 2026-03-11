@@ -117,6 +117,11 @@ function initSocket(io) {
           parts.length === 2
             ? parts.find((id) => id !== socket.user.sub)
             : null;
+
+        console.log(
+          `[socket] message saved: ${msg._id} | conv: ${conversationId} | sender: ${socket.user.sub} | recipient: ${recipientId}`,
+        );
+
         if (recipientId) {
           io.to("conv:" + conversationId)
             .to("user:" + recipientId)
@@ -129,6 +134,7 @@ function initSocket(io) {
         if (typeof ack === "function") {
           ack({ ok: true, messageId: String(msg._id) });
         }
+        console.log(`[socket] message broadcast + ack done for ${msg._id}`);
       } catch (err) {
         console.error("[socket] message:send error:", err.message);
         socket.emit("error", { message: "Failed to save message" });

@@ -19,6 +19,10 @@ let activeContactId = null;
 let activeFilterType = "all";
 const conversations = {};
 
+// Presence: track online user IDs independently of conversations
+// so we never lose updates that arrive before contacts are loaded.
+const _onlineUserIds = new Set();
+
 // Call screen opener — assigned by _initCallScreen
 let _openCall = () => {};
 
@@ -96,6 +100,13 @@ function _renderConversationList(filter = "", filterType = activeFilterType) {
     filtered = filtered.filter((id) => conversations[id].unread > 0);
   }
 
+  // Sort by most recent message (newest first); contacts with no messages sink
+  filtered.sort((a, b) => {
+    const tA = conversations[a]._lastTs || 0;
+    const tB = conversations[b]._lastTs || 0;
+    return tB - tA;
+  });
+
   filtered.forEach((id) => {
     const conv = conversations[id];
     const div = document.createElement("div");
@@ -111,10 +122,10 @@ function _renderConversationList(filter = "", filterType = activeFilterType) {
       `<div class="conversation-content">` +
       `<div class="conversation-header">` +
       `<span class="conversation-name">${_esc(conv.contact.displayName)}</span>` +
-      `<span class="conversation-time">${_esc(conv.lastTime)}</span>` +
+      (conv.lastTime ? `<span class="conversation-time${conv.unread > 0 ? ' unread' : ''}">${_esc(conv.lastTime)}</span>` : "") +
       `</div>` +
       `<div class="conversation-preview">` +
-      `<span class="conversation-message">${_esc(conv.lastMessage)}</span>` +
+      (conv.lastMessage ? `<span class="conversation-message${conv.unread > 0 ? ' unread' : ''}">${_esc(conv.lastMessage)}</span>` : `<span class="conversation-message">No messages yet</span>`) +
       (conv.unread > 0 ? `<span class="badge">${conv.unread}</span>` : "") +
       `</div>` +
       `</div>`;
@@ -532,8 +543,9 @@ function _sendMessage() {
   const conv = conversations[activeContactId];
   if (conv) {
     conv.messages.push(msg);
-    conv.lastMessage = text.slice(0, 30) + (text.length > 30 ? "…" : "");
+    conv.lastMessage = "You: " + text.slice(0, 30) + (text.length > 30 ? "…" : "");
     conv.lastTime = time;
+    conv._lastTs = now.getTime();
   }
 
   // Render immediately
@@ -1788,6 +1800,7 @@ function _initSocket() {
     conv.lastMessage =
       msg.text.slice(0, 30) + (msg.text.length > 30 ? "…" : "");
     conv.lastTime = time;
+    conv._lastTs = new Date(msg.createdAt).getTime();
 
     if (msg.conversationId !== activeContactId) {
       // Background conversation — increment unread badge and refresh sidebar
@@ -1867,20 +1880,19 @@ function _initSocket() {
 
   // ── Presence: online/offline tracking ────────────────────────────────────
   _socket.on("presence:list", (userIds) => {
-    // Initial list of online users received right after we connect
-    for (const convId of Object.keys(conversations)) {
-      const c = conversations[convId].contact;
-      c.online = !!(c.id && userIds.includes(c.id));
-    }
-    _renderConversationList(document.getElementById("sidebar-search")?.value || "");
-    if (activeContactId) _updateHeaderStatus(activeContactId);
+    // Store the authoritative set of online users so we never lose it
+    _onlineUserIds.clear();
+    if (Array.isArray(userIds)) userIds.forEach((id) => _onlineUserIds.add(id));
+    _applyPresenceToConversations();
   });
 
   _socket.on("presence:online", ({ userId }) => {
+    _onlineUserIds.add(userId);
     _setContactOnline(userId, true);
   });
 
   _socket.on("presence:offline", ({ userId }) => {
+    _onlineUserIds.delete(userId);
     _setContactOnline(userId, false);
   });
 }
@@ -2041,7 +2053,13 @@ async function _loadContactsFromAPI() {
         changed = true;
       }
     }
-    if (changed) _renderConversationList();
+    if (changed) {
+      // Apply any presence data that arrived before contacts were loaded
+      _applyPresenceToConversations();
+      _renderConversationList();
+      // Pre-fetch last message for each conversation to show previews
+      _preloadConversationPreviews();
+    }
   } catch { /* silently ignore network errors */ }
 }
 
@@ -2052,6 +2070,58 @@ function _getCurrentUserId() {
 
 function _formatTime(date) {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+/**
+ * Apply the current _onlineUserIds set to all conversations.
+ * Called both when presence:list arrives AND when contacts finish loading,
+ * so we never lose presence data due to a load-order race.
+ */
+function _applyPresenceToConversations() {
+  for (const convId of Object.keys(conversations)) {
+    const c = conversations[convId].contact;
+    c.online = !!(c.id && _onlineUserIds.has(c.id));
+  }
+  _renderConversationList(document.getElementById("sidebar-search")?.value || "");
+  if (activeContactId) _updateHeaderStatus(activeContactId);
+}
+
+/**
+ * Pre-fetch the last message for all conversations so the sidebar shows
+ * message preview, time, and unread count immediately after loading.
+ */
+async function _preloadConversationPreviews() {
+  const myId = _getCurrentUserId();
+  const convIds = Object.keys(conversations);
+  // Fetch in parallel (capped to avoid excessive concurrency)
+  const fetches = convIds.map(async (convId) => {
+    const conv = conversations[convId];
+    if (conv._previewLoaded) return;
+    try {
+      const res = await apiFetch(`${SERVER_URL}/api/messages/${encodeURIComponent(convId)}`);
+      if (!res || !res.ok) return;
+      const { messages } = await res.json();
+      if (!messages || !messages.length) { conv._previewLoaded = true; return; }
+
+      // Count unread: messages from them that we haven't read
+      let unread = 0;
+      for (const msg of messages) {
+        if (msg.sender !== myId && msg.status !== "read") unread++;
+      }
+      conv.unread = unread;
+
+      // Set last message preview
+      const last = messages[messages.length - 1];
+      const lastText = last.text || "";
+      const isMine = last.sender === myId;
+      conv.lastMessage = (isMine ? "You: " : "") + lastText.slice(0, 40) + (lastText.length > 40 ? "\u2026" : "");
+      conv.lastTime = _formatTime(new Date(last.createdAt));
+      conv._lastTs = new Date(last.createdAt).getTime();
+      conv._previewLoaded = true;
+    } catch { /* ignore per-conversation errors */ }
+  });
+  await Promise.all(fetches);
+  _renderConversationList(document.getElementById("sidebar-search")?.value || "");
 }
 
 /**

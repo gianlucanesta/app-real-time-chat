@@ -596,6 +596,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Unread emphasis: bolder text + accent color on time */
+.conversation-time.unread {
+  color: var(--color-accent);
+  font-weight: var(--font-bold);
+}
+.conversation-message.unread {
+  color: var(--color-text);
+  font-weight: var(--font-medium);
+}
 
 /* Chat Main Area */
 .chat-main {
