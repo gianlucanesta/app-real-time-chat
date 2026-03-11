@@ -4,9 +4,7 @@ import { initLoginPage } from "./pages/login.js";
 import { initSignupPage } from "./pages/signup.js";
 import { initChatPage } from "./pages/chat.js";
 import { initSettingsPage } from "./pages/settings.js";
-import { seedDemoData } from "./data/mock-data.js";
 
-seedDemoData();
 initTheme();
 
 const page = document.body.dataset.page;

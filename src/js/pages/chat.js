@@ -1,10 +1,5 @@
 import { getAccessToken, getCurrentUserAny, apiLogout } from "../auth.js";
 import { showToast } from "../ui/toast.js";
-import {
-  MOCK_CONVERSATIONS,
-  MOCK_USERS,
-  getRandomReply,
-} from "../data/mock-data.js";
 import { debounce } from "../utils.js";
 
 // ── API / Socket.io configuration ─────────────────────────────────────────────
@@ -20,11 +15,9 @@ const SERVER_URL =
 let _socket = null;
 
 // ── Module state ───────────────────────────────────────────────
-let activeContactId = "usr_mock_002";
+let activeContactId = null;
 let activeFilterType = "all";
-// Deep-copy conversations so we can mutate them at runtime without touching
-// the imported source object.
-const conversations = JSON.parse(JSON.stringify(MOCK_CONVERSATIONS));
+const conversations = {};
 
 // Call screen opener — assigned by _initCallScreen
 let _openCall = () => {};
@@ -33,7 +26,6 @@ let _openCall = () => {};
 export function initChatPage() {
   _loadUserProfile();
   _renderConversationList();
-  _selectConversation(activeContactId);
   _initSearch();
   _initInputArea();
   _initMessageActions();
@@ -490,24 +482,7 @@ function _sendMessage() {
   const text = input?.value.trim();
   if (!text || !activeContactId) return;
 
-  const now = new Date();
-  const time = now.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  const msg = { id: "m" + Date.now(), from: "me", text, time };
-
-  const conv = conversations[activeContactId];
-  conv.messages.push(msg);
-  conv.lastMessage = text.slice(0, 30) + (text.length > 30 ? "…" : "");
-  conv.lastTime = time;
-
-  const area = document.getElementById("chat-messages");
-  if (area) {
-    area.appendChild(_createMessageEl(msg));
-    area.scrollTop = area.scrollHeight;
-  }
-
+  // Reset input UI immediately
   input.value = "";
   const sendBtn = document.querySelector(".send-btn");
   const voiceBtn2 = document.querySelector('[aria-label="Voice note"]');
@@ -517,57 +492,33 @@ function _sendMessage() {
   }
   if (voiceBtn2) voiceBtn2.style.display = "flex";
 
-  _simulateReply();
-}
+  if (USE_API && _socket?.connected) {
+    // Real-time path: emit to server; the server echoes message:new back to
+    // all room members (including us) which triggers the DOM update.
+    _socketSendMessage(activeContactId, text);
+    return;
+  }
 
-function _simulateReply() {
-  const area = document.getElementById("chat-messages");
+  // Offline / fallback path (no socket)
+  const now = new Date();
+  const time = now.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const msg = { id: "m" + Date.now(), from: "me", text, time };
+
   const conv = conversations[activeContactId];
-  if (!area || !conv) return;
+  if (conv) {
+    conv.messages.push(msg);
+    conv.lastMessage = text.slice(0, 30) + (text.length > 30 ? "…" : "");
+    conv.lastTime = time;
+  }
 
-  setTimeout(() => {
-    // Typing indicator
-    const typingGroup = document.createElement("div");
-    typingGroup.id = "typing-indicator";
-    typingGroup.className = "message-group-received";
-
-    const row = document.createElement("div");
-    row.className = "message-row";
-
-    const indicator = document.createElement("div");
-    indicator.className = "typing-indicator";
-    indicator.innerHTML = "<span></span><span></span><span></span>";
-
-    row.appendChild(indicator);
-    typingGroup.appendChild(row);
-    area.appendChild(typingGroup);
+  const area = document.getElementById("chat-messages");
+  if (area) {
+    area.appendChild(_createMessageEl(msg));
     area.scrollTop = area.scrollHeight;
-
-    const replyDelay = 1200 + Math.random() * 800;
-    setTimeout(() => {
-      typingGroup.remove();
-
-      const replyText = getRandomReply();
-      const time = new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-      const replyMsg = {
-        id: "m" + Date.now(),
-        from: "them",
-        text: replyText,
-        time,
-      };
-
-      conv.messages.push(replyMsg);
-      conv.lastMessage =
-        replyText.slice(0, 30) + (replyText.length > 30 ? "…" : "");
-      conv.lastTime = time;
-
-      area.appendChild(_createMessageEl(replyMsg));
-      area.scrollTop = area.scrollHeight;
-    }, replyDelay);
-  }, 400);
+  }
 }
 
 // ── Emoji picker ───────────────────────────────────────────────
@@ -770,19 +721,58 @@ function _initNewChatPanel() {
   _renderNewChatContactList("");
 }
 
-function _renderNewChatContactList(filter = "") {
+async function _renderNewChatContactList(filter = "") {
   const list = document.getElementById("new-chat-contact-list");
   if (!list) return;
+
+  const lFilter = filter.trim();
+
+  if (lFilter.length < 2) {
+    list.innerHTML = `<p class="new-chat-empty-hint">Type at least 2 characters to search users…</p>`;
+    return;
+  }
+
+  list.innerHTML = `<p class="new-chat-empty-hint">Searching…</p>`;
+
+  let users = [];
+  if (USE_API) {
+    try {
+      const token = getAccessToken();
+      const res = await fetch(
+        `${SERVER_URL}/api/users/search?q=${encodeURIComponent(lFilter)}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (res.ok) {
+        const data = await res.json();
+        users = data.users || [];
+      }
+    } catch {
+      list.innerHTML = `<p class="new-chat-empty-hint">Could not load users.</p>`;
+      return;
+    }
+  }
+
+  if (!users.length) {
+    list.innerHTML = `<p class="new-chat-empty-hint">No users found.</p>`;
+    return;
+  }
+
   list.innerHTML = "";
+  // Normalise API field names (snake_case) to the internal camelCase shape
+  const normalised = users.map((u) => ({
+    id: u.id,
+    displayName: u.display_name ?? u.displayName ?? "",
+    initials: u.initials ?? "",
+    role: u.role ?? "",
+    gradient:
+      u.avatar_gradient ??
+      u.gradient ??
+      "linear-gradient(135deg,#2563EB,#7C3AED)",
+    online: false,
+    email: u.email ?? "",
+  }));
 
-  const lFilter = filter.toLowerCase();
-  const filtered = MOCK_USERS.filter(
-    (u) =>
-      u.displayName.toLowerCase().includes(lFilter) ||
-      u.role.toLowerCase().includes(lFilter),
-  );
-
-  filtered.forEach((user) => {
+  normalised.forEach((user) => {
     const row = document.createElement("div");
     row.className = "new-chat-contact-row";
     row.innerHTML =
@@ -801,7 +791,7 @@ function _renderNewChatContactList(filter = "") {
         conversations[user.id] = {
           contact: user,
           unread: 0,
-          lastTime: "Now",
+          lastTime: "",
           lastMessage: "",
           messages: [],
         };
@@ -1367,18 +1357,51 @@ function _initSocket() {
 
   // ── Incoming message from server ─────────────────────────────────────────
   _socket.on("message:new", (msg) => {
-    if (msg.conversationId !== activeContactId) return;
-
-    const area = document.getElementById("chat-messages");
-    if (!area) return;
-
-    const bubble = _createMessageEl({
+    const time = _formatTime(new Date(msg.createdAt));
+    const entry = {
       id: msg._id,
       from: msg.sender === _getCurrentUserId() ? "me" : "them",
       text: msg.text,
-      time: _formatTime(new Date(msg.createdAt)),
-    });
-    area.appendChild(bubble);
+      time,
+    };
+
+    // Update local conversations model so the sidebar stays in sync
+    if (!conversations[msg.conversationId]) {
+      conversations[msg.conversationId] = {
+        contact: {
+          displayName: "Unknown",
+          initials: "?",
+          online: false,
+          gradient: "",
+        },
+        unread: 0,
+        lastTime: time,
+        lastMessage: "",
+        messages: [],
+      };
+    }
+    const conv = conversations[msg.conversationId];
+    conv.messages.push(entry);
+    conv.lastMessage =
+      msg.text.slice(0, 30) + (msg.text.length > 30 ? "…" : "");
+    conv.lastTime = time;
+
+    if (msg.conversationId !== activeContactId) {
+      // Background conversation — increment unread badge and refresh sidebar
+      conv.unread = (conv.unread || 0) + 1;
+      _renderConversationList(
+        document.getElementById("sidebar-search")?.value || "",
+      );
+      return;
+    }
+
+    // Active conversation — render bubble
+    _renderConversationList(
+      document.getElementById("sidebar-search")?.value || "",
+    );
+    const area = document.getElementById("chat-messages");
+    if (!area) return;
+    area.appendChild(_createMessageEl(entry));
     area.scrollTop = area.scrollHeight;
   });
 

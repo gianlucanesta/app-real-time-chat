@@ -62,7 +62,10 @@ async function _handleLogin(emailEl, passEl, form) {
   const submitBtn = form?.querySelector('button[type="submit"]');
   if (submitBtn) submitBtn.disabled = true;
 
-  const result = await apiLogin({ email: emailEl.value, password: passEl.value });
+  const result = await apiLogin({
+    email: emailEl.value,
+    password: passEl.value,
+  });
 
   if (submitBtn) submitBtn.disabled = false;
 
@@ -76,7 +79,10 @@ async function _handleLogin(emailEl, passEl, form) {
 }
 
 async function _doSocialLogin() {
-  const result = await apiLogin({ email: "demo@ephemeral.app", password: "Demo1234" });
+  const result = await apiLogin({
+    email: "demo@ephemeral.app",
+    password: "Demo1234",
+  });
   if (result.ok) {
     window.location.replace("chat.html");
   } else {
