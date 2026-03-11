@@ -45,6 +45,69 @@
   color: var(--color-text);
 }
 
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  padding: var(--space-2) var(--space-5);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-medium);
+}
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text);
+}
+
+.btn-danger {
+  background-color: var(--color-danger);
+  color: #fff;
+  padding: var(--space-2) var(--space-5);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-semibold);
+}
+.btn-danger:hover {
+  filter: brightness(1.12);
+}
+.btn-danger:active {
+  transform: scale(0.97);
+}
+
+/* --- Confirm Modal --- */
+.confirm-modal-card {
+  max-width: 380px;
+  text-align: center;
+  padding: var(--space-8) var(--space-6) var(--space-6);
+}
+.confirm-modal-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--space-5);
+}
+.confirm-modal-icon--danger {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: var(--color-danger);
+}
+.confirm-modal-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-bold);
+  color: var(--color-text);
+  margin-bottom: var(--space-3);
+}
+.confirm-modal-body {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin-bottom: var(--space-5);
+}
+.confirm-modal-card .modal-actions {
+  justify-content: center;
+  gap: var(--space-3);
+}
+
 .btn-sm {
   font-size: 13px;
   padding: var(--space-2) var(--space-5);
@@ -519,6 +582,7 @@ input[type="range"]::-moz-range-thumb {
   stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
+  transition: stroke 0.3s ease;
 }
 .msg-status.status-sent svg {
   stroke: var(--color-text-secondary);
@@ -528,6 +592,27 @@ input[type="range"]::-moz-range-thumb {
 }
 .msg-status.status-read svg {
   stroke: var(--color-info, #3b82f6);
+}
+.msg-status.status-sending svg {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: msg-spin 0.9s linear infinite;
+  stroke: var(--color-text-secondary);
+}
+
+@keyframes msg-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Wider viewBox for double-tick (delivered/read) */
+.msg-status.status-delivered svg,
+.msg-status.status-read svg {
+  width: 20px;
 }
 
 /* --- Notification Dot --- */

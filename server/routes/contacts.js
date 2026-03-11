@@ -78,4 +78,21 @@ async function list(req, res) {
   }
 }
 
-module.exports = { create, list };
+/**
+ * DELETE /api/contacts/:id
+ * Remove a contact owned by the authenticated user.
+ */
+async function remove(req, res, [contactId]) {
+  if (!contactId)
+    return sendJSON(res, 400, { error: "contact id is required" });
+  try {
+    const deleted = await Contact.deleteById(contactId, req.user.sub);
+    if (!deleted) return sendJSON(res, 404, { error: "Contact not found" });
+    return sendJSON(res, 200, { deleted: true });
+  } catch (err) {
+    console.error("[contacts] remove error:", err.message);
+    return sendJSON(res, 500, { error: "Internal server error" });
+  }
+}
+
+module.exports = { create, list, remove };

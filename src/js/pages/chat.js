@@ -1,4 +1,10 @@
-import { getAccessToken, getCurrentUserAny, apiLogout, apiFetch, refreshTokenIfNeeded } from "../auth.js";
+import {
+  getAccessToken,
+  getCurrentUserAny,
+  apiLogout,
+  apiFetch,
+  refreshTokenIfNeeded,
+} from "../auth.js";
 import { showToast } from "../ui/toast.js";
 import { debounce } from "../utils.js";
 
@@ -23,6 +29,10 @@ const conversations = {};
 // so we never lose updates that arrive before contacts are loaded.
 const _onlineUserIds = new Set();
 
+// Message selection state
+let _selectMode = false;
+const _selectedMsgIds = new Set();
+
 // Call screen opener — assigned by _initCallScreen
 let _openCall = () => {};
 
@@ -43,6 +53,7 @@ export function initChatPage() {
   _initMobileSidebar();
   _initNavBar();
   _initCallScreen();
+  _initSelectionBar();
   _initEmptyStateActions();
   if (USE_API) _initSocket();
   if (USE_API) _loadContactsFromAPI();
@@ -122,10 +133,14 @@ function _renderConversationList(filter = "", filterType = activeFilterType) {
       `<div class="conversation-content">` +
       `<div class="conversation-header">` +
       `<span class="conversation-name">${_esc(conv.contact.displayName)}</span>` +
-      (conv.lastTime ? `<span class="conversation-time${conv.unread > 0 ? ' unread' : ''}">${_esc(conv.lastTime)}</span>` : "") +
+      (conv.lastTime
+        ? `<span class="conversation-time${conv.unread > 0 ? " unread" : ""}">${_esc(conv.lastTime)}</span>`
+        : "") +
       `</div>` +
       `<div class="conversation-preview">` +
-      (conv.lastMessage ? `<span class="conversation-message${conv.unread > 0 ? ' unread' : ''}">${_esc(conv.lastMessage)}</span>` : `<span class="conversation-message">No messages yet</span>`) +
+      (conv.lastMessage
+        ? `<span class="conversation-message${conv.unread > 0 ? " unread" : ""}">${_esc(conv.lastMessage)}</span>`
+        : `<span class="conversation-message">No messages yet</span>`) +
       (conv.unread > 0 ? `<span class="badge">${conv.unread}</span>` : "") +
       `</div>` +
       `</div>`;
@@ -144,6 +159,9 @@ function _renderConversationList(filter = "", filterType = activeFilterType) {
 
 // ── Select conversation ────────────────────────────────────────
 function _selectConversation(contactId) {
+  // Exit selection mode when switching conversations
+  _exitSelectMode();
+
   // Leave previous room, join new one so we receive messages for this convo
   if (_socket?.connected) {
     if (activeContactId && activeContactId !== contactId) {
@@ -199,10 +217,16 @@ function _selectConversation(contactId) {
   if (_socket?.connected && conv.messages.length) {
     const unreadIds = conv.messages
       .filter((m) => m.from === "them" && !m._readSent)
-      .map((m) => { m._readSent = true; return m.id; })
+      .map((m) => {
+        m._readSent = true;
+        return m.id;
+      })
       .filter(Boolean);
     if (unreadIds.length) {
-      _socket.emit("message:read", { messageIds: unreadIds, conversationId: contactId });
+      _socket.emit("message:read", {
+        messageIds: unreadIds,
+        conversationId: contactId,
+      });
     }
   }
 }
@@ -228,6 +252,18 @@ function _createMessageEl(msg) {
   const group = document.createElement("div");
   const menuId = "msg-menu-" + msg.id;
 
+  // Round checkbox for select mode (always in DOM, hidden via CSS by default)
+  const cb = document.createElement("button");
+  cb.type = "button";
+  cb.className = "msg-select-cb";
+  cb.setAttribute("aria-label", "Select message");
+  cb.setAttribute("aria-pressed", "false");
+  cb.innerHTML = `<svg viewBox="0 0 12 12"><polyline points="2 6 5 9 10 3"/></svg>`;
+
+  // Wrapper that keeps the column layout inside the flex-row select mode
+  const body = document.createElement("div");
+  body.className = "msg-body";
+
   if (msg.from === "me") {
     group.className = "message-group-sent";
     group.dataset.msgId = msg.id;
@@ -250,11 +286,14 @@ function _createMessageEl(msg) {
     time.style.textAlign = "right";
     time.innerHTML = _esc(msg.time) + _statusTickHTML(msg.status || "sending");
 
-    group.appendChild(row);
-    group.appendChild(_createMsgEmojiPopup(menuId));
-    group.appendChild(_createMsgEmojiExpandedPicker(menuId));
-    group.appendChild(_createMsgContextMenu(msg, menuId));
-    group.appendChild(time);
+    body.appendChild(row);
+    body.appendChild(_createMsgEmojiPopup(menuId));
+    body.appendChild(_createMsgEmojiExpandedPicker(menuId));
+    body.appendChild(_createMsgContextMenu(msg, menuId));
+    body.appendChild(time);
+
+    group.appendChild(cb);
+    group.appendChild(body);
   } else {
     group.className = "message-group-received";
     group.dataset.msgId = msg.id;
@@ -276,11 +315,14 @@ function _createMessageEl(msg) {
     time.className = "message-time";
     time.textContent = msg.time;
 
-    group.appendChild(row);
-    group.appendChild(_createMsgEmojiPopup(menuId));
-    group.appendChild(_createMsgEmojiExpandedPicker(menuId));
-    group.appendChild(_createMsgContextMenu(msg, menuId));
-    group.appendChild(time);
+    body.appendChild(row);
+    body.appendChild(_createMsgEmojiPopup(menuId));
+    body.appendChild(_createMsgEmojiExpandedPicker(menuId));
+    body.appendChild(_createMsgContextMenu(msg, menuId));
+    body.appendChild(time);
+
+    group.appendChild(cb);
+    group.appendChild(body);
   }
 
   return group;
@@ -534,7 +576,10 @@ function _sendMessage() {
   if (voiceBtn2) voiceBtn2.style.display = "flex";
 
   const now = new Date();
-  const time = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const time = now.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
   const tempId = "tmp_" + Date.now();
 
   // Optimistic message entry — appears immediately as "sending"
@@ -543,7 +588,8 @@ function _sendMessage() {
   const conv = conversations[activeContactId];
   if (conv) {
     conv.messages.push(msg);
-    conv.lastMessage = "You: " + text.slice(0, 30) + (text.length > 30 ? "…" : "");
+    conv.lastMessage =
+      "You: " + text.slice(0, 30) + (text.length > 30 ? "…" : "");
     conv.lastTime = time;
     conv._lastTs = now.getTime();
   }
@@ -554,19 +600,25 @@ function _sendMessage() {
     area.appendChild(_createMessageEl(msg));
     area.scrollTop = area.scrollHeight;
   }
-  _renderConversationList(document.getElementById("sidebar-search")?.value || "");
+  _renderConversationList(
+    document.getElementById("sidebar-search")?.value || "",
+  );
 
   if (USE_API && _socket?.connected) {
     // Emit with acknowledgement — server replies { ok, messageId }
     const convId = activeContactId;
-    _socket.emit("message:send", { conversationId: convId, text }, (ackData) => {
-      if (ackData?.ok && ackData.messageId) {
-        // Update the temp message to "sent" with the real MongoDB _id
-        msg.id = ackData.messageId;
-        msg.status = "sent";
-        _updateMsgStatusDOM(tempId, "sent", ackData.messageId);
-      }
-    });
+    _socket.emit(
+      "message:send",
+      { conversationId: convId, text },
+      (ackData) => {
+        if (ackData?.ok && ackData.messageId) {
+          // Update the temp message to "sent" with the real MongoDB _id
+          msg.id = ackData.messageId;
+          msg.status = "sent";
+          _updateMsgStatusDOM(tempId, "sent", ackData.messageId);
+        }
+      },
+    );
   }
 }
 
@@ -711,7 +763,9 @@ function _initHeaderActions() {
   }
 
   // ── More options dropdown (chat header) ──
-  const moreBtn = document.querySelector('.chat-header-actions [aria-controls="more-dropdown"]');
+  const moreBtn = document.querySelector(
+    '.chat-header-actions [aria-controls="more-dropdown"]',
+  );
   const moreDropdown = document.getElementById("more-dropdown");
   if (moreBtn && moreDropdown) {
     moreBtn.addEventListener("click", (e) => {
@@ -733,8 +787,19 @@ function _initHeaderActions() {
         document.getElementById("contact-info-trigger")?.click();
         return;
       }
+      if (action === "select-messages") {
+        _enterSelectMode();
+        return;
+      }
+      if (action === "clear-chat") {
+        _showClearChatModal();
+        return;
+      }
+      if (action === "delete-chat") {
+        _showDeleteChatModal();
+        return;
+      }
       const labels = {
-        "select-messages": "Select messages: coming soon.",
         mute: "Mute notifications: coming soon.",
         disappearing: "Disappearing messages: coming soon.",
         favorites: "Added to favorites.",
@@ -742,8 +807,6 @@ function _initHeaderActions() {
         "close-chat": "Chat closed.",
         report: "Report: coming soon.",
         block: "Block: coming soon.",
-        "clear-chat": "Clear chat: coming soon.",
-        "delete-chat": "Delete chat: coming soon.",
       };
       showToast(labels[action] || "Coming soon.", "info");
     });
@@ -825,8 +888,7 @@ function _initNewContactPanel() {
 
   // ── Avatar live-initials ──────────────────────────────────────
   const _updateAvatar = () => {
-    const first =
-      document.getElementById("ncp-firstname")?.value.trim() ?? "";
+    const first = document.getElementById("ncp-firstname")?.value.trim() ?? "";
     const last = document.getElementById("ncp-lastname")?.value.trim() ?? "";
     const icon = document.getElementById("ncp-avatar-icon");
     const initialsEl = document.getElementById("ncp-avatar-initials");
@@ -860,7 +922,11 @@ function _initNewContactPanel() {
       // force reflow to restart animation
       void row.offsetWidth;
       row.classList.add("ncp-shake");
-      row.addEventListener("animationend", () => row.classList.remove("ncp-shake"), { once: true });
+      row.addEventListener(
+        "animationend",
+        () => row.classList.remove("ncp-shake"),
+        { once: true },
+      );
     }
   };
 
@@ -868,7 +934,10 @@ function _initNewContactPanel() {
     const field = document.getElementById(fieldId);
     const err = document.getElementById(errorId);
     if (field) field.classList.remove("ncp-invalid");
-    if (err) { err.textContent = ""; err.classList.remove("visible"); }
+    if (err) {
+      err.textContent = "";
+      err.classList.remove("visible");
+    }
   };
 
   // ── Phone lookup ──────────────────────────────────────────────
@@ -879,7 +948,7 @@ function _initNewContactPanel() {
     if (!state) return; // hide
     const icons = {
       checking: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>`,
-      found:    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+      found: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
       "not-found": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
     };
     el.innerHTML = (icons[state] ?? "") + `<span>${text}</span>`;
@@ -904,12 +973,18 @@ function _initNewContactPanel() {
         `${SERVER_URL}/api/users/lookup-phone?phone=${encodeURIComponent(full)}`,
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      if (!res.ok) { _setPhoneStatus(null); return; }
+      if (!res.ok) {
+        _setPhoneStatus(null);
+        return;
+      }
       const data = await res.json();
       if (data.found) {
         _setPhoneStatus("found", `On Ephemeral — can start chatting`);
       } else {
-        _setPhoneStatus("not-found", "Not on Ephemeral — contact saved locally");
+        _setPhoneStatus(
+          "not-found",
+          "Not on Ephemeral — contact saved locally",
+        );
       }
     } catch {
       _setPhoneStatus(null);
@@ -974,11 +1049,19 @@ function _initNewContactPanel() {
 
       let hasError = false;
       if (!first) {
-        _setFieldError("ncp-field-firstname", "ncp-error-firstname", "First name is required.");
+        _setFieldError(
+          "ncp-field-firstname",
+          "ncp-error-firstname",
+          "First name is required.",
+        );
         hasError = true;
       }
       if (!phone) {
-        _setFieldError("ncp-field-phone", "ncp-error-phone", "Phone number is required.");
+        _setFieldError(
+          "ncp-field-phone",
+          "ncp-error-phone",
+          "Phone number is required.",
+        );
         hasError = true;
       }
       if (hasError) return;
@@ -1031,7 +1114,9 @@ function _initNewContactPanel() {
               initials = data.contact.linked_initials || initials;
             }
           }
-        } catch { /* network error — fall back to local ID */ }
+        } catch {
+          /* network error — fall back to local ID */
+        }
       }
 
       if (saveBtn) saveBtn.disabled = false;
@@ -1288,15 +1373,21 @@ function _initMobileSidebar() {
 
 // ── Empty state quick-action buttons ──────────────────────────
 function _initEmptyStateActions() {
-  document.getElementById("empty-new-contact-btn")?.addEventListener("click", () => {
-    document.getElementById("new-chat-btn")?.click();
-  });
-  document.getElementById("empty-new-group-btn")?.addEventListener("click", () => {
-    showToast("New group: coming soon.", "info");
-  });
-  document.getElementById("empty-settings-btn")?.addEventListener("click", () => {
-    window.location.href = "settings.html";
-  });
+  document
+    .getElementById("empty-new-contact-btn")
+    ?.addEventListener("click", () => {
+      document.getElementById("new-chat-btn")?.click();
+    });
+  document
+    .getElementById("empty-new-group-btn")
+    ?.addEventListener("click", () => {
+      showToast("New group: coming soon.", "info");
+    });
+  document
+    .getElementById("empty-settings-btn")
+    ?.addEventListener("click", () => {
+      window.location.href = "settings.html";
+    });
 }
 
 // ── HTML escape helper ─────────────────────────────────────────
@@ -1771,12 +1862,13 @@ function _initSocket() {
       // Build a contact entry from the message payload so the recipient
       // can see who sent the message without a separate API call.
       const senderName = msg.senderDisplayName || "Unknown";
-      const senderInitials = senderName
-        .split(/\s+/)
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2) || "?";
+      const senderInitials =
+        senderName
+          .split(/\s+/)
+          .map((n) => n[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2) || "?";
       conversations[msg.conversationId] = {
         contact: {
           id: msg.sender,
@@ -1944,7 +2036,9 @@ function _setContactOnline(userId, online) {
     }
   }
   if (changed) {
-    _renderConversationList(document.getElementById("sidebar-search")?.value || "");
+    _renderConversationList(
+      document.getElementById("sidebar-search")?.value || "",
+    );
     if (activeContactId) _updateHeaderStatus(activeContactId);
   }
 }
@@ -1982,8 +2076,8 @@ function _statusTickHTML(status) {
       return ` <span class="msg-status status-delivered">${_TICK_DOUBLE}</span>`;
     case "read":
       return ` <span class="msg-status status-read">${_TICK_DOUBLE}</span>`;
-    default: // "sending" — show a clock/spinner
-      return ` <span class="msg-status status-sending"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke-dasharray="18 18"/></svg></span>`;
+    default: // "sending" — rotating arc spinner
+      return ` <span class="msg-status status-sending"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5" stroke-dasharray="23 12" stroke-dashoffset="9"/></svg></span>`;
   }
 }
 
@@ -1994,7 +2088,9 @@ function _statusTickHTML(status) {
  * @param {string} [newId] If provided, also update the data-msg-id attribute
  */
 function _updateMsgStatusDOM(msgId, status, newId) {
-  const group = document.querySelector(`.message-group-sent[data-msg-id="${msgId}"]`);
+  const group = document.querySelector(
+    `.message-group-sent[data-msg-id="${msgId}"]`,
+  );
   if (!group) return;
   if (newId) group.dataset.msgId = newId;
   const timeEl = group.querySelector(".message-time");
@@ -2032,15 +2128,15 @@ async function _loadContactsFromAPI() {
       // Prefer the registered profile name/initials over the manually-typed alias
       // so each party sees the other person's actual identity.
       const displayName = c.linked_display_name || c.display_name;
-      const initials    = c.linked_initials    || c.initials;
+      const initials = c.linked_initials || c.initials;
       if (!conversations[convId]) {
         conversations[convId] = {
           contact: {
             id: otherId || String(c.id),
+            dbId: String(c.id), // PostgreSQL contacts.id — needed for delete-chat
             displayName,
             initials,
-            gradient:
-              c.gradient || "linear-gradient(135deg,#2563EB,#7C3AED)",
+            gradient: c.gradient || "linear-gradient(135deg,#2563EB,#7C3AED)",
             online: false,
             role: "",
             phone: c.phone || "",
@@ -2060,7 +2156,9 @@ async function _loadContactsFromAPI() {
       // Pre-fetch last message for each conversation to show previews
       _preloadConversationPreviews();
     }
-  } catch { /* silently ignore network errors */ }
+  } catch {
+    /* silently ignore network errors */
+  }
 }
 
 function _getCurrentUserId() {
@@ -2082,8 +2180,359 @@ function _applyPresenceToConversations() {
     const c = conversations[convId].contact;
     c.online = !!(c.id && _onlineUserIds.has(c.id));
   }
-  _renderConversationList(document.getElementById("sidebar-search")?.value || "");
+  _renderConversationList(
+    document.getElementById("sidebar-search")?.value || "",
+  );
   if (activeContactId) _updateHeaderStatus(activeContactId);
+}
+
+// ── Message Selection ──────────────────────────────────────────────────────
+
+/**
+ * Enter message-selection mode.
+ * Adds select-mode class to chat-messages, shows checkboxes, shows selection bar.
+ */
+function _enterSelectMode() {
+  if (_selectMode) return;
+  _selectMode = true;
+  _selectedMsgIds.clear();
+
+  const area = document.getElementById("chat-messages");
+  const inputArea = document.getElementById("chat-input-area");
+  const selBar = document.getElementById("selection-bar");
+
+  area?.classList.add("select-mode");
+  inputArea?.style.setProperty("display", "none");
+  selBar?.classList.add("visible");
+  selBar?.setAttribute("aria-hidden", "false");
+
+  _updateSelectionBar();
+
+  // Clicking anywhere on a message group toggles selection
+  area?.addEventListener("click", _onSelectModeClick);
+}
+
+/**
+ * Exit selection mode and restore the input bar.
+ */
+function _exitSelectMode() {
+  if (!_selectMode) return;
+  _selectMode = false;
+  _selectedMsgIds.clear();
+
+  const area = document.getElementById("chat-messages");
+  const inputArea = document.getElementById("chat-input-area");
+  const selBar = document.getElementById("selection-bar");
+
+  area?.classList.remove("select-mode");
+  // Remove all selected highlights
+  area
+    ?.querySelectorAll(".msg-selected")
+    .forEach((el) => el.classList.remove("msg-selected"));
+  inputArea?.style.removeProperty("display");
+  selBar?.classList.remove("visible");
+  selBar?.setAttribute("aria-hidden", "true");
+
+  area?.removeEventListener("click", _onSelectModeClick);
+}
+
+/**
+ * Click handler active only in select mode.
+ * Clicking a message group (or its checkbox) toggles it.
+ */
+function _onSelectModeClick(e) {
+  const group = e.target.closest(
+    ".message-group-sent, .message-group-received",
+  );
+  if (!group) return;
+  const msgId = group.dataset.msgId;
+  if (!msgId) return;
+  if (_selectedMsgIds.has(msgId)) {
+    _selectedMsgIds.delete(msgId);
+    group.classList.remove("msg-selected");
+    const cb = group.querySelector(".msg-select-cb");
+    if (cb) cb.setAttribute("aria-pressed", "false");
+  } else {
+    _selectedMsgIds.add(msgId);
+    group.classList.add("msg-selected");
+    const cb = group.querySelector(".msg-select-cb");
+    if (cb) cb.setAttribute("aria-pressed", "true");
+  }
+  _updateSelectionBar();
+}
+
+/**
+ * Update the selection bar count and button states.
+ */
+function _updateSelectionBar() {
+  const count = _selectedMsgIds.size;
+  const countEl = document.getElementById("selection-count");
+  if (countEl)
+    countEl.textContent = count === 1 ? "1 selected" : `${count} selected`;
+
+  // Only allow delete when there are selected messages
+  const delBtn = document.querySelector('[data-sel-action="delete"]');
+  if (delBtn) delBtn.disabled = count === 0;
+}
+
+/**
+ * Wire up the selection bar buttons (called once during init).
+ */
+function _initSelectionBar() {
+  document
+    .getElementById("selection-cancel")
+    ?.addEventListener("click", _exitSelectMode);
+
+  document.getElementById("selection-bar")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-sel-action]");
+    if (!btn || btn.disabled) return;
+    const action = btn.dataset.selAction;
+    if (action === "delete") {
+      _showDeleteMessagesModal();
+    } else if (action === "copy") {
+      _copySelectedMessages();
+    } else if (action === "forward") {
+      showToast("Forward: coming soon.", "info");
+    } else if (action === "star") {
+      showToast("Star: coming soon.", "info");
+    } else if (action === "download") {
+      showToast("Download: coming soon.", "info");
+    }
+  });
+}
+
+/**
+ * Copy text of selected messages to clipboard.
+ */
+function _copySelectedMessages() {
+  const area = document.getElementById("chat-messages");
+  if (!area) return;
+  const texts = [];
+  for (const msgId of _selectedMsgIds) {
+    const group = area.querySelector(`[data-msg-id="${msgId}"]`);
+    const bubble = group?.querySelector(".message-bubble");
+    if (bubble) texts.push(bubble.textContent?.trim() || "");
+  }
+  if (!texts.length) return;
+  navigator.clipboard.writeText(texts.join("\n")).then(
+    () => showToast("Copied to clipboard.", "success"),
+    () => showToast("Copy failed.", "error"),
+  );
+}
+
+// ── Confirm Modals ─────────────────────────────────────────────────────────
+
+/**
+ * Simple modal helper: show an overlay, resolve with true on confirm, false on cancel.
+ * @param {string} overlayId
+ * @param {string} confirmId
+ * @param {string} cancelId
+ * @returns {Promise<boolean>}
+ */
+function _confirmModal(overlayId, confirmId, cancelId) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById(overlayId);
+    const confirmBtn = document.getElementById(confirmId);
+    const cancelBtn = document.getElementById(cancelId);
+    if (!overlay || !confirmBtn || !cancelBtn) {
+      resolve(false);
+      return;
+    }
+
+    overlay.classList.add("open");
+    overlay.setAttribute("aria-hidden", "false");
+
+    const close = (result) => {
+      overlay.classList.remove("open");
+      overlay.setAttribute("aria-hidden", "true");
+      confirmBtn.removeEventListener("click", onConfirm);
+      cancelBtn.removeEventListener("click", onCancel);
+      overlay.removeEventListener("click", onBackdrop);
+      resolve(result);
+    };
+    const onConfirm = () => close(true);
+    const onCancel = () => close(false);
+    const onBackdrop = (e) => {
+      if (e.target === overlay) close(false);
+    };
+
+    confirmBtn.addEventListener("click", onConfirm);
+    cancelBtn.addEventListener("click", onCancel);
+    overlay.addEventListener("click", onBackdrop);
+  });
+}
+
+function _showDeleteMessagesModal() {
+  const count = _selectedMsgIds.size;
+  const desc = document.getElementById("delete-messages-desc");
+  if (desc)
+    desc.textContent = `Delete ${count} message${count !== 1 ? "s" : ""}? This cannot be undone.`;
+  _confirmModal(
+    "delete-messages-modal",
+    "delete-messages-confirm",
+    "delete-messages-cancel",
+  ).then((confirmed) => {
+    if (confirmed) _deleteSelectedMessages();
+  });
+}
+
+function _showClearChatModal() {
+  _confirmModal(
+    "clear-chat-modal",
+    "clear-chat-confirm",
+    "clear-chat-cancel",
+  ).then((confirmed) => {
+    if (confirmed) _clearChat();
+  });
+}
+
+function _showDeleteChatModal() {
+  _confirmModal(
+    "delete-chat-modal",
+    "delete-chat-confirm",
+    "delete-chat-cancel",
+  ).then((confirmed) => {
+    if (confirmed) _deleteChat();
+  });
+}
+
+// ── Delete Actions ─────────────────────────────────────────────────────────
+
+async function _deleteSelectedMessages() {
+  if (_selectedMsgIds.size === 0) return;
+  const ids = [..._selectedMsgIds];
+
+  try {
+    if (USE_API) {
+      const res = await apiFetch(`${SERVER_URL}/api/messages`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messageIds: ids }),
+      });
+      if (!res || !res.ok) {
+        showToast("Failed to delete messages.", "error");
+        return;
+      }
+    }
+
+    // Remove from in-memory model
+    const conv = conversations[activeContactId];
+    if (conv) {
+      conv.messages = conv.messages.filter((m) => !ids.includes(m.id));
+    }
+
+    // Remove from DOM
+    const area = document.getElementById("chat-messages");
+    if (area) {
+      for (const msgId of ids) {
+        const group = area.querySelector(`[data-msg-id="${msgId}"]`);
+        group?.remove();
+      }
+    }
+
+    showToast(
+      `${ids.length} message${ids.length !== 1 ? "s" : ""} deleted.`,
+      "success",
+    );
+    _exitSelectMode();
+  } catch {
+    showToast("Failed to delete messages.", "error");
+  }
+}
+
+async function _clearChat() {
+  if (!activeContactId) return;
+  try {
+    if (USE_API) {
+      const res = await apiFetch(
+        `${SERVER_URL}/api/messages/${encodeURIComponent(activeContactId)}`,
+        {
+          method: "DELETE",
+        },
+      );
+      if (!res || !res.ok) {
+        showToast("Failed to clear chat.", "error");
+        return;
+      }
+    }
+
+    // Clear in-memory model
+    const conv = conversations[activeContactId];
+    if (conv) {
+      conv.messages = [];
+      conv.lastMessage = "";
+      conv.lastTime = "";
+      conv._lastTs = 0;
+      conv.unread = 0;
+    }
+
+    // Clear DOM
+    const area = document.getElementById("chat-messages");
+    if (area) {
+      area.innerHTML = "";
+      const sep = document.createElement("div");
+      sep.className = "date-separator";
+      sep.innerHTML = "<span>TODAY</span>";
+      area.appendChild(sep);
+    }
+
+    _renderConversationList(
+      document.getElementById("sidebar-search")?.value || "",
+    );
+    showToast("Chat cleared.", "success");
+  } catch {
+    showToast("Failed to clear chat.", "error");
+  }
+}
+
+async function _deleteChat() {
+  if (!activeContactId) return;
+  const conv = conversations[activeContactId];
+  const contactDbId = conv?.contact?.dbId; // PostgreSQL contacts.id
+
+  try {
+    if (USE_API) {
+      // First clear all messages
+      const msgRes = await apiFetch(
+        `${SERVER_URL}/api/messages/${encodeURIComponent(activeContactId)}`,
+        {
+          method: "DELETE",
+        },
+      );
+      if (!msgRes || !msgRes.ok) {
+        showToast("Failed to delete chat.", "error");
+        return;
+      }
+      // Then delete the contact (if we have the DB id)
+      if (contactDbId) {
+        const ctRes = await apiFetch(
+          `${SERVER_URL}/api/contacts/${encodeURIComponent(contactDbId)}`,
+          {
+            method: "DELETE",
+          },
+        );
+        if (!ctRes || !ctRes.ok) {
+          showToast("Failed to delete chat.", "error");
+          return;
+        }
+      }
+    }
+
+    // Remove from in-memory model
+    delete conversations[activeContactId];
+    activeContactId = null;
+
+    // Reset chat view — remove has-chat to show empty state
+    document.querySelector(".chat-page")?.classList.remove("has-chat");
+    document.getElementById("chat-messages")?.replaceChildren();
+
+    _renderConversationList(
+      document.getElementById("sidebar-search")?.value || "",
+    );
+    showToast("Chat deleted.", "success");
+  } catch {
+    showToast("Failed to delete chat.", "error");
+  }
 }
 
 /**
@@ -2098,10 +2547,15 @@ async function _preloadConversationPreviews() {
     const conv = conversations[convId];
     if (conv._previewLoaded) return;
     try {
-      const res = await apiFetch(`${SERVER_URL}/api/messages/${encodeURIComponent(convId)}`);
+      const res = await apiFetch(
+        `${SERVER_URL}/api/messages/${encodeURIComponent(convId)}`,
+      );
       if (!res || !res.ok) return;
       const { messages } = await res.json();
-      if (!messages || !messages.length) { conv._previewLoaded = true; return; }
+      if (!messages || !messages.length) {
+        conv._previewLoaded = true;
+        return;
+      }
 
       // Count unread: messages from them that we haven't read
       let unread = 0;
@@ -2114,14 +2568,21 @@ async function _preloadConversationPreviews() {
       const last = messages[messages.length - 1];
       const lastText = last.text || "";
       const isMine = last.sender === myId;
-      conv.lastMessage = (isMine ? "You: " : "") + lastText.slice(0, 40) + (lastText.length > 40 ? "\u2026" : "");
+      conv.lastMessage =
+        (isMine ? "You: " : "") +
+        lastText.slice(0, 40) +
+        (lastText.length > 40 ? "\u2026" : "");
       conv.lastTime = _formatTime(new Date(last.createdAt));
       conv._lastTs = new Date(last.createdAt).getTime();
       conv._previewLoaded = true;
-    } catch { /* ignore per-conversation errors */ }
+    } catch {
+      /* ignore per-conversation errors */
+    }
   });
   await Promise.all(fetches);
-  _renderConversationList(document.getElementById("sidebar-search")?.value || "");
+  _renderConversationList(
+    document.getElementById("sidebar-search")?.value || "",
+  );
 }
 
 /**
@@ -2133,10 +2594,15 @@ async function _loadMessagesFromAPI(conversationId) {
   const conv = conversations[conversationId];
   if (!conv || conv._historyLoaded) return;
   try {
-    const res = await apiFetch(`${SERVER_URL}/api/messages/${encodeURIComponent(conversationId)}`);
+    const res = await apiFetch(
+      `${SERVER_URL}/api/messages/${encodeURIComponent(conversationId)}`,
+    );
     if (!res || !res.ok) return;
     const { messages } = await res.json();
-    if (!messages || !messages.length) { conv._historyLoaded = true; return; }
+    if (!messages || !messages.length) {
+      conv._historyLoaded = true;
+      return;
+    }
 
     const myId = _getCurrentUserId();
     const existingIds = new Set(conv.messages.map((m) => m.id));
@@ -2149,7 +2615,7 @@ async function _loadMessagesFromAPI(conversationId) {
         from: isMine ? "me" : "them",
         text: msg.text,
         time: _formatTime(new Date(msg.createdAt)),
-        status: isMine ? (msg.status || "sent") : undefined,
+        status: isMine ? msg.status || "sent" : undefined,
       });
     }
 
@@ -2164,14 +2630,19 @@ async function _loadMessagesFromAPI(conversationId) {
     conv._historyLoaded = true;
     if (conv.messages.length) {
       const last = conv.messages[conv.messages.length - 1];
-      conv.lastMessage = last.text.slice(0, 30) + (last.text.length > 30 ? "…" : "");
+      conv.lastMessage =
+        last.text.slice(0, 30) + (last.text.length > 30 ? "…" : "");
       conv.lastTime = last.time;
     }
 
     // Re-render if this is still the active conversation
     if (activeContactId === conversationId) {
       _renderMessages(conversationId);
-      _renderConversationList(document.getElementById("sidebar-search")?.value || "");
+      _renderConversationList(
+        document.getElementById("sidebar-search")?.value || "",
+      );
     }
-  } catch { /* silently ignore network errors */ }
+  } catch {
+    /* silently ignore network errors */
+  }
 }

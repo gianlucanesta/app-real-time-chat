@@ -91,4 +91,62 @@ async function create(req, res) {
   }
 }
 
-module.exports = { list, create };
+/**
+ * DELETE /api/messages
+ * Body: { messageIds: string[] }
+ * Deletes specific messages. Only deletes messages sent by the requesting user.
+ */
+async function deleteMessages(req, res) {
+  let body;
+  try {
+    body = await readBody(req);
+  } catch {
+    return sendJSON(res, 400, { error: "Invalid JSON body" });
+  }
+
+  const { messageIds } = body;
+  if (!Array.isArray(messageIds) || messageIds.length === 0) {
+    return sendJSON(res, 422, { error: "messageIds array is required" });
+  }
+  if (messageIds.length > 500) {
+    return sendJSON(res, 422, { error: "Too many messageIds (max 500)" });
+  }
+
+  try {
+    const result = await Message.deleteMany({
+      _id: { $in: messageIds },
+      sender: req.user.sub, // only own messages
+    });
+    return sendJSON(res, 200, { deleted: result.deletedCount });
+  } catch (err) {
+    console.error("[messages] deleteMessages error:", err.message);
+    return sendJSON(res, 500, { error: "Internal server error" });
+  }
+}
+
+/**
+ * DELETE /api/messages/:conversationId
+ * Clear all messages in a conversation.
+ * The requesting user must be a participant (their UUID must be in the conversationId).
+ */
+async function clearConversation(req, res, [conversationId]) {
+  if (!conversationId) {
+    return sendJSON(res, 400, { error: "conversationId is required" });
+  }
+
+  // Verify the user is a participant
+  const parts = conversationId.split("___");
+  if (parts.length !== 2 || !parts.includes(req.user.sub)) {
+    return sendJSON(res, 403, { error: "Forbidden" });
+  }
+
+  try {
+    await Message.deleteMany({ conversationId });
+    return sendJSON(res, 200, { cleared: true });
+  } catch (err) {
+    console.error("[messages] clearConversation error:", err.message);
+    return sendJSON(res, 500, { error: "Internal server error" });
+  }
+}
+
+module.exports = { list, create, deleteMessages, clearConversation };

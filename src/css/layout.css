@@ -2438,3 +2438,183 @@
   width: 18px;
   height: 18px;
 }
+
+/* ── Message Select Mode ──────────────────────────────────────────────────── */
+
+/* Round checkbox — hidden by default, shown in select mode */
+.msg-select-cb {
+  display: none;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-text-secondary);
+  background: none;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition:
+    border-color var(--transition-fast),
+    background-color var(--transition-fast);
+  flex-shrink: 0;
+  align-self: flex-end;
+  margin-bottom: 6px;
+  padding: 0;
+}
+.msg-select-cb svg {
+  display: none;
+  width: 12px;
+  height: 12px;
+  stroke: #fff;
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* In select mode, show checkboxes and restructure layout */
+.chat-messages.select-mode {
+  padding-left: var(--space-6);
+}
+.chat-messages.select-mode .message-group-received,
+.chat-messages.select-mode .message-group-sent {
+  width: 100%;
+  max-width: 100%;
+  flex-direction: row;
+  align-items: flex-end;
+  align-self: stretch;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  padding: 4px var(--space-2);
+  margin-bottom: var(--space-2);
+  gap: var(--space-3);
+  transition: background-color var(--transition-fast);
+}
+.chat-messages.select-mode .message-group-received {
+  flex-direction: row;
+}
+/* Sent messages: checkbox on left, bubble floats right */
+.chat-messages.select-mode .message-group-sent {
+  flex-direction: row;
+  justify-content: flex-start;
+}
+.chat-messages.select-mode .msg-select-cb {
+  display: flex;
+}
+
+/* Wrap original content columns */
+.msg-body {
+  display: flex;
+  flex-direction: column;
+}
+.message-group-received .msg-body {
+  align-items: flex-start;
+}
+.message-group-sent .msg-body {
+  align-items: flex-end;
+  margin-left: auto;
+}
+
+/* Selected state */
+.chat-messages.select-mode .message-group-received.msg-selected,
+.chat-messages.select-mode .message-group-sent.msg-selected {
+  background-color: var(--color-accent-subtle);
+}
+.msg-selected .msg-select-cb {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+.msg-selected .msg-select-cb svg {
+  display: block;
+}
+
+/* Hide reaction/chevron buttons in select mode to avoid confusion */
+.chat-messages.select-mode .msg-react-btn,
+.chat-messages.select-mode .msg-chevron-inside {
+  display: none !important;
+}
+
+/* ── Selection Action Bar ─────────────────────────────────────────────────── */
+.selection-bar {
+  display: none;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--color-border);
+  background-color: var(--color-card);
+  flex-shrink: 0;
+}
+.selection-bar.visible {
+  display: flex;
+}
+.selection-bar-cancel {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+  flex-shrink: 0;
+}
+.selection-bar-cancel:hover {
+  color: var(--color-text);
+  background-color: rgba(255, 255, 255, 0.07);
+}
+.selection-bar-count {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  flex: 1;
+  white-space: nowrap;
+}
+.selection-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.selection-action-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+.selection-action-btn:hover:not(:disabled) {
+  color: var(--color-text);
+  background-color: rgba(255, 255, 255, 0.07);
+}
+.selection-action-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.selection-action-btn--delete:not(:disabled) {
+  color: var(--color-danger);
+}
+.selection-action-btn--delete:hover:not(:disabled) {
+  background-color: rgba(239, 68, 68, 0.12);
+}
+
+/* Mobile selection bar: stack delete to the right */
+@media (max-width: 767px) {
+  .selection-bar {
+    padding: var(--space-2) var(--space-3);
+    gap: var(--space-2);
+  }
+  .selection-action-btn[data-sel-action="copy"],
+  .selection-action-btn[data-sel-action="star"],
+  .selection-action-btn[data-sel-action="forward"],
+  .selection-action-btn[data-sel-action="download"] {
+    display: none; /* mobile: only show delete and cancel */
+  }
+}

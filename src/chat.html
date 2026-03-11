@@ -1688,8 +1688,33 @@
           </div>
         </div>
 
+        <!-- Selection Action Bar (shown when in select-messages mode) -->
+        <div class="selection-bar" id="selection-bar" aria-hidden="true">
+          <button class="selection-bar-cancel" id="selection-cancel" aria-label="Cancel selection">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+          <span class="selection-bar-count" id="selection-count">0 selected</span>
+          <div class="selection-bar-actions">
+            <button class="selection-action-btn" data-sel-action="copy" aria-label="Copy">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+            <button class="selection-action-btn" data-sel-action="star" aria-label="Star">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </button>
+            <button class="selection-action-btn selection-action-btn--delete" data-sel-action="delete" aria-label="Delete selected" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            </button>
+            <button class="selection-action-btn" data-sel-action="forward" aria-label="Forward">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>
+            </button>
+            <button class="selection-action-btn" data-sel-action="download" aria-label="Download">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
+          </div>
+        </div>
+
         <!-- Chat Input Area -->
-        <div class="chat-input-area">
+        <div class="chat-input-area" id="chat-input-area">
           <div class="chat-input-row">
             <button class="input-action-btn" aria-label="Add attachment">
               <svg
@@ -2049,6 +2074,53 @@
       <!-- /.call-mobile-end -->
     </div>
     <!-- /.call-screen -->
+
+    <!-- ── Confirmation Modals ─────────────────────────────────────────────── -->
+
+    <!-- Delete selected messages -->
+    <div class="modal-overlay" id="delete-messages-modal" aria-hidden="true" role="dialog" aria-labelledby="delete-messages-title">
+      <div class="modal-card confirm-modal-card">
+        <div class="confirm-modal-icon confirm-modal-icon--danger">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </div>
+        <h2 class="confirm-modal-title" id="delete-messages-title">Delete messages?</h2>
+        <p class="confirm-modal-body" id="delete-messages-desc">This action cannot be undone.</p>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="delete-messages-cancel">Cancel</button>
+          <button class="btn btn-danger" id="delete-messages-confirm">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Clear chat -->
+    <div class="modal-overlay" id="clear-chat-modal" aria-hidden="true" role="dialog" aria-labelledby="clear-chat-title">
+      <div class="modal-card confirm-modal-card">
+        <div class="confirm-modal-icon confirm-modal-icon--danger">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </div>
+        <h2 class="confirm-modal-title" id="clear-chat-title">Clear chat?</h2>
+        <p class="confirm-modal-body">All messages in this conversation will be permanently deleted. This cannot be undone.</p>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="clear-chat-cancel">Cancel</button>
+          <button class="btn btn-danger" id="clear-chat-confirm">Clear chat</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete chat -->
+    <div class="modal-overlay" id="delete-chat-modal" aria-hidden="true" role="dialog" aria-labelledby="delete-chat-title">
+      <div class="modal-card confirm-modal-card">
+        <div class="confirm-modal-icon confirm-modal-icon--danger">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        </div>
+        <h2 class="confirm-modal-title" id="delete-chat-title">Delete chat?</h2>
+        <p class="confirm-modal-body">This contact and all messages will be permanently removed. This cannot be undone.</p>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="delete-chat-cancel">Cancel</button>
+          <button class="btn btn-danger" id="delete-chat-confirm">Delete chat</button>
+        </div>
+      </div>
+    </div>
 
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
     <script type="module" src="js/main.js"></script>

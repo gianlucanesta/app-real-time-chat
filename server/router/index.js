@@ -72,6 +72,20 @@ const ROUTES = [
     handler: messagesRoutes.create,
     auth: true,
   },
+  // DELETE /api/messages  — delete specific messages by id
+  {
+    method: "DELETE",
+    pattern: /^\/api\/messages$/,
+    handler: messagesRoutes.deleteMessages,
+    auth: true,
+  },
+  // DELETE /api/messages/:conversationId  — clear entire conversation
+  {
+    method: "DELETE",
+    pattern: /^\/api\/messages\/([^/]+)$/,
+    handler: messagesRoutes.clearConversation,
+    auth: true,
+  },
 
   // ── Users ─────────────────────────────────────────────────────────────────
   {
@@ -110,6 +124,13 @@ const ROUTES = [
     method: "POST",
     pattern: /^\/api\/contacts$/,
     handler: contactsRoutes.create,
+    auth: true,
+  },
+  // DELETE /api/contacts/:id  — delete a contact
+  {
+    method: "DELETE",
+    pattern: /^\/api\/contacts\/([^/]+)$/,
+    handler: contactsRoutes.remove,
     auth: true,
   },
 ];

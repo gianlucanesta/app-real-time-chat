@@ -59,4 +59,16 @@ async function listByOwner(ownerId) {
   return rows;
 }
 
-module.exports = { upsert, listByOwner };
+/**
+ * Delete a contact by its id, scoped to the owner.
+ * Returns the deleted row or null if not found.
+ */
+async function deleteById(contactId, ownerId) {
+  const { rows } = await pool.query(
+    `DELETE FROM contacts WHERE id = $1 AND owner_id = $2 RETURNING *`,
+    [contactId, ownerId],
+  );
+  return rows[0] ?? null;
+}
+
+module.exports = { upsert, listByOwner, deleteById };
