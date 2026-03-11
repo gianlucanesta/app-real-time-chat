@@ -56,6 +56,10 @@ async function initSchema() {
       created_at   TIMESTAMPTZ DEFAULT now(),
       UNIQUE (owner_id, phone)
     );
+
+    -- Add first_name / last_name to users if not yet present (idempotent migration)
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT NOT NULL DEFAULT '';
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name  TEXT NOT NULL DEFAULT '';
   `);
   console.log("[pg] schema ready");
 }

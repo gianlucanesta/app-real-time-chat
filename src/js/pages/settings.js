@@ -1,4 +1,10 @@
-import { getCurrentUserAny, updateUser, apiLogout } from "../auth.js";
+import {
+  getCurrentUserAny,
+  updateUser,
+  apiUpdateUser,
+  getAccessToken,
+  apiLogout,
+} from "../auth.js";
 import { showToast } from "../ui/toast.js";
 import { initTogglePassword } from "../ui/toggle-password.js";
 import {
@@ -85,7 +91,9 @@ function _loadUserProfile() {
   if (profileRole) profileRole.textContent = user.role || "";
 
   // Form fields
-  _setVal("displayName", user.displayName);
+  _setVal("settingsFirstName", user.firstName || user.first_name || "");
+  _setVal("settingsLastName", user.lastName || user.last_name || "");
+  _setVal("displayName", user.displayName || user.display_name || "");
   _setVal("settingsEmail", user.email);
   _setVal("settingsPhone", user.phone || "");
   _setVal("settingsRole", user.role || "");
@@ -119,7 +127,11 @@ function _initForm() {
     ?.addEventListener("click", _saveSettings);
 }
 
-function _saveSettings() {
+async function _saveSettings() {
+  const firstName =
+    document.getElementById("settingsFirstName")?.value.trim() || "";
+  const lastName =
+    document.getElementById("settingsLastName")?.value.trim() || "";
   const displayName =
     document.getElementById("displayName")?.value.trim() || "";
   const email = document.getElementById("settingsEmail")?.value.trim() || "";
@@ -147,7 +159,27 @@ function _saveSettings() {
     .toUpperCase()
     .slice(0, 2);
 
-  const result = updateUser({ displayName, email, phone, role, initials });
+  const fields = {
+    firstName,
+    lastName,
+    displayName,
+    email,
+    phone,
+    role,
+    initials,
+  };
+
+  const token = getAccessToken();
+  const user = getCurrentUserAny();
+  const userId = user?.id;
+
+  let result;
+  if (token && userId) {
+    result = await apiUpdateUser(userId, fields);
+  } else {
+    result = updateUser(fields);
+  }
+
   if (result.ok) {
     showToast("Settings saved successfully!", "success");
     _loadUserProfile();

@@ -62,6 +62,8 @@ async function update(req, res, [userId]) {
   // Map camelCase client fields → snake_case DB columns
   const allowed = {
     displayName: "display_name",
+    firstName: "first_name",
+    lastName: "last_name",
     phone: "phone",
     role: "role",
     avatarUrl: "avatar_url",

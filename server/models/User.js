@@ -13,7 +13,7 @@ const { pool } = require("../config/db");
  */
 async function findById(id) {
   const { rows } = await pool.query(
-    "SELECT id, email, display_name, phone, role, avatar_url, initials, avatar_gradient, created_at FROM users WHERE id = $1",
+    "SELECT id, email, display_name, first_name, last_name, phone, role, avatar_url, initials, avatar_gradient, created_at FROM users WHERE id = $1",
     [id],
   );
   return rows[0] ?? null;
@@ -27,7 +27,7 @@ async function findById(id) {
  */
 async function findByEmail(email) {
   const { rows } = await pool.query(
-    "SELECT id, email, password_hash, display_name, phone, role, avatar_url, initials, avatar_gradient, created_at FROM users WHERE email = $1",
+    "SELECT id, email, password_hash, display_name, first_name, last_name, phone, role, avatar_url, initials, avatar_gradient, created_at FROM users WHERE email = $1",
     [email.toLowerCase().trim()],
   );
   return rows[0] ?? null;
@@ -68,7 +68,7 @@ async function create({ email, passwordHash, displayName, phone = "" }) {
   const { rows } = await pool.query(
     `INSERT INTO users (email, password_hash, display_name, phone, initials)
      VALUES ($1, $2, $3, $4, $5)
-     RETURNING id, email, display_name, phone, role, avatar_url, initials, avatar_gradient, created_at`,
+     RETURNING id, email, display_name, first_name, last_name, phone, role, avatar_url, initials, avatar_gradient, created_at`,
     [
       email.toLowerCase().trim(),
       passwordHash,
@@ -105,6 +105,8 @@ async function findByPhone(phone) {
  */
 const UPDATABLE_COLUMNS = new Set([
   "display_name",
+  "first_name",
+  "last_name",
   "phone",
   "role",
   "avatar_url",
@@ -121,7 +123,7 @@ async function update(id, fields) {
 
   const { rows } = await pool.query(
     `UPDATE users SET ${setClauses} WHERE id = $1
-     RETURNING id, email, display_name, phone, role, avatar_url, initials, avatar_gradient, created_at`,
+     RETURNING id, email, display_name, first_name, last_name, phone, role, avatar_url, initials, avatar_gradient, created_at`,
     [id, ...values],
   );
   return rows[0] ?? null;

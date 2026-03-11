@@ -259,6 +259,34 @@ export function getAccessToken() {
 }
 
 /**
+ * Update the authenticated user's profile via the backend API.
+ * Falls back to the localStorage updateUser() when the API is unavailable.
+ * @param {string} userId  UUID of the user to update
+ * @param {object} fields  camelCase fields to update (displayName, firstName, lastName, phone, role, …)
+ * @returns {Promise<{ ok: boolean, user?: object, error?: string }>}
+ */
+export async function apiUpdateUser(userId, fields) {
+  const token = getAccessToken();
+  if (!token) return updateUser(fields);
+  try {
+    const res = await fetch(`${API_BASE}/users/${userId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(fields),
+    });
+    const data = await res.json();
+    if (!res.ok) return { ok: false, error: data.error || "Update failed" };
+    sessionStorage.setItem("ephemeral_user_api", JSON.stringify(data.user));
+    return { ok: true, user: data.user };
+  } catch {
+    return updateUser(fields);
+  }
+}
+
+/**
  * Returns the current user from the API session or falls back to localStorage.
  * @returns {object|null}
  */
