@@ -739,10 +739,55 @@ function _initNewContactPanel() {
   const panel = document.getElementById("new-contact-panel");
   if (!panel) return;
 
+  // Live avatar: show initials when name is typed
+  const _updateAvatar = () => {
+    const first =
+      document.getElementById("ncp-firstname")?.value.trim() ?? "";
+    const last = document.getElementById("ncp-lastname")?.value.trim() ?? "";
+    const icon = document.getElementById("ncp-avatar-icon");
+    const initials = document.getElementById("ncp-avatar-initials");
+    if (!icon || !initials) return;
+    const text = [first.charAt(0), last.charAt(0)]
+      .filter(Boolean)
+      .join("")
+      .toUpperCase();
+    if (text) {
+      icon.style.display = "none";
+      initials.style.display = "";
+      initials.textContent = text;
+    } else {
+      icon.style.display = "";
+      initials.style.display = "none";
+    }
+  };
+
+  const _resetPanel = () => {
+    ["ncp-firstname", "ncp-lastname", "ncp-phone"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+    const syncEl = document.getElementById("ncp-sync");
+    if (syncEl) syncEl.checked = false;
+    _updateAvatar();
+  };
+
   const closePanel = () => {
     panel.classList.remove("open");
     panel.setAttribute("aria-hidden", "true");
   };
+
+  document
+    .getElementById("ncp-firstname")
+    ?.addEventListener("input", _updateAvatar);
+  document
+    .getElementById("ncp-lastname")
+    ?.addEventListener("input", _updateAvatar);
+
+  document
+    .getElementById("ncp-photo-btn")
+    ?.addEventListener("click", () =>
+      showToast("Photo upload: coming soon.", "info"),
+    );
 
   document
     .getElementById("new-contact-back-btn")
@@ -763,16 +808,9 @@ function _initNewContactPanel() {
       }
 
       const fullName = [first, last].filter(Boolean).join(" ");
-      // Placeholder: in the future POST to /api/contacts
       showToast(`Contact "${fullName}" saved!`, "success");
 
-      // Reset fields and close
-      ["ncp-firstname", "ncp-lastname", "ncp-phone"].forEach((id) => {
-        const el = document.getElementById(id);
-        if (el) el.value = "";
-      });
-      const syncEl = document.getElementById("ncp-sync");
-      if (syncEl) syncEl.checked = false;
+      _resetPanel();
       closePanel();
     });
 }

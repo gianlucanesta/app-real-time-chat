@@ -490,24 +490,46 @@
           <!-- Body -->
           <div class="new-contact-body">
             <!-- Avatar -->
-            <div class="ecp-avatar-section">
-              <div class="ecp-avatar" id="new-contact-avatar" style="background: linear-gradient(135deg,#2563eb,#7c3aed)">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  style="width:36px;height:36px;opacity:.8"
+            <div class="ncp-avatar-section">
+              <div class="ncp-avatar-wrap">
+                <div class="ncp-avatar" id="new-contact-avatar">
+                  <svg
+                    id="ncp-avatar-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  <span id="ncp-avatar-initials" class="ncp-avatar-initials" aria-hidden="true"></span>
+                </div>
+                <button
+                  type="button"
+                  class="ncp-photo-btn"
+                  id="ncp-photo-btn"
+                  aria-label="Add photo"
                 >
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                    <circle cx="12" cy="13" r="4" />
+                  </svg>
+                </button>
               </div>
+              <p class="ncp-avatar-hint">Add photo</p>
             </div>
             <!-- Fields -->
-            <div class="ecp-fields-section">
+            <div class="ecp-fields-section ncp-fields-section">
               <!-- Name fields -->
               <div class="ecp-field-row">
                 <div class="ecp-field-icon">
@@ -623,24 +645,26 @@
               </div>
             </div>
           </div>
-          <!-- Save FAB -->
-          <button
-            type="button"
-            class="ecp-save-fab"
-            id="new-contact-save-btn"
-            aria-label="Save contact"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+          <!-- Footer: save button -->
+          <div class="ncp-footer">
+            <button
+              type="button"
+              class="ncp-save-btn"
+              id="new-contact-save-btn"
             >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          </button>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              Save contact
+            </button>
+          </div>
         </div>
 
         <!-- Conversation List (populated by JS) -->
