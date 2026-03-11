@@ -288,6 +288,113 @@ export function getAccessToken() {
   );
 }
 
+// ── Token refresh / force-logout helpers ───────────────────────────────────────
+
+/**
+ * Use the stored refresh token to obtain a new access + refresh token pair.
+ * Rotates the stored tokens in the same storage (localStorage / sessionStorage)
+ * that they were originally written to.
+ * @returns {Promise<boolean>} true if refresh succeeded
+ */
+async function _tryRefresh() {
+  const refreshToken =
+    sessionStorage.getItem("ephemeral_refresh") ||
+    localStorage.getItem("ephemeral_refresh");
+  if (!refreshToken) return false;
+  try {
+    const res = await fetch(`${API_BASE}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    // Write to whichever storage originally held the tokens
+    const store = localStorage.getItem("ephemeral_refresh")
+      ? localStorage
+      : sessionStorage;
+    store.setItem("ephemeral_token", data.accessToken);
+    store.setItem("ephemeral_refresh", data.refreshToken);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Clear ALL auth state and redirect the user to the login page.
+ * Called when both the access token and the refresh token are invalid/expired.
+ */
+function _forceLogout() {
+  ["ephemeral_token", "ephemeral_refresh", "ephemeral_user_api"].forEach(
+    (k) => {
+      sessionStorage.removeItem(k);
+      localStorage.removeItem(k);
+    },
+  );
+  logout(); // clears SESSION_TOKEN + ephemeral_remember
+
+  // Works whether the app is served from /src/ or from root
+  const loginPath = window.location.pathname.includes("/src/")
+    ? "/src/index.html"
+    : "/index.html";
+  window.location.href = loginPath;
+}
+
+/**
+ * Authenticated fetch wrapper.
+ * - Injects `Authorization: Bearer <token>` automatically.
+ * - On 401: attempts to refresh the access token once and retries the request.
+ * - On second 401 (refresh also failed/expired): force-logouts and redirects.
+ *
+ * @param {string} url
+ * @param {RequestInit} [options]
+ * @returns {Promise<Response|undefined>}  undefined means the page is being redirected
+ */
+export async function apiFetch(url, options = {}) {
+  const withToken = (tok) => ({
+    ...options,
+    headers: { ...(options.headers || {}), Authorization: `Bearer ${tok}` },
+  });
+
+  let token = getAccessToken();
+  if (!token) {
+    _forceLogout();
+    return;
+  }
+
+  let res = await fetch(url, withToken(token));
+  if (res.status !== 401) return res;
+
+  // First 401 — try to refresh
+  const refreshed = await _tryRefresh();
+  if (!refreshed) {
+    _forceLogout();
+    return;
+  }
+
+  // Retry once with the new token
+  token = getAccessToken();
+  res = await fetch(url, withToken(token));
+  if (res.status === 401) {
+    _forceLogout();
+    return;
+  }
+  return res;
+}
+
+/**
+ * Proactively refresh the access token (called by the Socket.io connect_error
+ * handler so that the next reconnect attempt uses a fresh token).
+ * Force-logouts if the refresh token is also expired/invalid.
+ * @returns {Promise<boolean>}
+ */
+export async function refreshTokenIfNeeded() {
+  const ok = await _tryRefresh();
+  if (!ok) _forceLogout();
+  return ok;
+}
+
 /**
  * Update the authenticated user's profile via the backend API.
  * Falls back to the localStorage updateUser() when the API is unavailable.
@@ -299,17 +406,21 @@ export async function apiUpdateUser(userId, fields) {
   const token = getAccessToken();
   if (!token) return updateUser(fields);
   try {
-    const res = await fetch(`${API_BASE}/users/${userId}`, {
+    const res = await apiFetch(`${API_BASE}/users/${userId}`, {
       method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(fields),
     });
+    if (!res) return { ok: false, error: "Session expired" };
     const data = await res.json();
     if (!res.ok) return { ok: false, error: data.error || "Update failed" };
-    sessionStorage.setItem("ephemeral_user_api", JSON.stringify(data.user));
+    // Persist updated user in the same storage that holds the active session
+    const storedKey = "ephemeral_user_api";
+    if (localStorage.getItem("ephemeral_token")) {
+      localStorage.setItem(storedKey, JSON.stringify(data.user));
+    } else {
+      sessionStorage.setItem(storedKey, JSON.stringify(data.user));
+    }
     return { ok: true, user: data.user };
   } catch {
     return updateUser(fields);

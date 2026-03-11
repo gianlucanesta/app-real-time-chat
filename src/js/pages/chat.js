@@ -1,4 +1,4 @@
-import { getAccessToken, getCurrentUserAny, apiLogout } from "../auth.js";
+import { getAccessToken, getCurrentUserAny, apiLogout, apiFetch, refreshTokenIfNeeded } from "../auth.js";
 import { showToast } from "../ui/toast.js";
 import { debounce } from "../utils.js";
 
@@ -41,6 +41,7 @@ export function initChatPage() {
   _initCallScreen();
   _initEmptyStateActions();
   if (USE_API) _initSocket();
+  if (USE_API) _loadContactsFromAPI();
 }
 
 // ── User profile ───────────────────────────────────────────────
@@ -132,6 +133,14 @@ function _renderConversationList(filter = "", filterType = activeFilterType) {
 
 // ── Select conversation ────────────────────────────────────────
 function _selectConversation(contactId) {
+  // Leave previous room, join new one so we receive messages for this convo
+  if (_socket?.connected) {
+    if (activeContactId && activeContactId !== contactId) {
+      _socket.emit("leave:conversation", activeContactId);
+    }
+    _socket.emit("join:conversation", contactId);
+  }
+
   activeContactId = contactId;
   const conv = conversations[contactId];
   if (!conv) return;
@@ -171,6 +180,17 @@ function _selectConversation(contactId) {
   );
   _renderMessages(contactId);
   _updateContactPanel(contactId);
+
+  // Mark all unread incoming messages as "read" — the user just opened this chat
+  if (_socket?.connected && conv.messages.length) {
+    const unreadIds = conv.messages
+      .filter((m) => m.from === "them" && !m._readSent)
+      .map((m) => { m._readSent = true; return m.id; })
+      .filter(Boolean);
+    if (unreadIds.length) {
+      _socket.emit("message:read", { messageIds: unreadIds, conversationId: contactId });
+    }
+  }
 }
 
 // ── Messages ───────────────────────────────────────────────────
@@ -196,6 +216,7 @@ function _createMessageEl(msg) {
 
   if (msg.from === "me") {
     group.className = "message-group-sent";
+    group.dataset.msgId = msg.id;
 
     const row = document.createElement("div");
     row.className = "message-row";
@@ -213,7 +234,7 @@ function _createMessageEl(msg) {
     const time = document.createElement("div");
     time.className = "message-time";
     time.style.textAlign = "right";
-    time.textContent = msg.time;
+    time.innerHTML = _esc(msg.time) + _statusTickHTML(msg.status || "sending");
 
     group.appendChild(row);
     group.appendChild(_createMsgEmojiPopup(menuId));
@@ -222,6 +243,7 @@ function _createMessageEl(msg) {
     group.appendChild(time);
   } else {
     group.className = "message-group-received";
+    group.dataset.msgId = msg.id;
 
     const row = document.createElement("div");
     row.className = "message-row";
@@ -497,20 +519,12 @@ function _sendMessage() {
   }
   if (voiceBtn2) voiceBtn2.style.display = "flex";
 
-  if (USE_API && _socket?.connected) {
-    // Real-time path: emit to server; the server echoes message:new back to
-    // all room members (including us) which triggers the DOM update.
-    _socketSendMessage(activeContactId, text);
-    return;
-  }
-
-  // Offline / fallback path (no socket)
   const now = new Date();
-  const time = now.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  const msg = { id: "m" + Date.now(), from: "me", text, time };
+  const time = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const tempId = "tmp_" + Date.now();
+
+  // Optimistic message entry — appears immediately as "sending"
+  const msg = { id: tempId, from: "me", text, time, status: "sending" };
 
   const conv = conversations[activeContactId];
   if (conv) {
@@ -519,10 +533,25 @@ function _sendMessage() {
     conv.lastTime = time;
   }
 
+  // Render immediately
   const area = document.getElementById("chat-messages");
   if (area) {
     area.appendChild(_createMessageEl(msg));
     area.scrollTop = area.scrollHeight;
+  }
+  _renderConversationList(document.getElementById("sidebar-search")?.value || "");
+
+  if (USE_API && _socket?.connected) {
+    // Emit with acknowledgement — server replies { ok, messageId }
+    const convId = activeContactId;
+    _socket.emit("message:send", { conversationId: convId, text }, (ackData) => {
+      if (ackData?.ok && ackData.messageId) {
+        // Update the temp message to "sent" with the real MongoDB _id
+        msg.id = ackData.messageId;
+        msg.status = "sent";
+        _updateMsgStatusDOM(tempId, "sent", ackData.messageId);
+      }
+    });
   }
 }
 
@@ -924,7 +953,7 @@ function _initNewContactPanel() {
   // ── Save ──────────────────────────────────────────────────────
   document
     .getElementById("new-contact-save-btn")
-    ?.addEventListener("click", () => {
+    ?.addEventListener("click", async () => {
       const first = document.getElementById("ncp-firstname")?.value.trim();
       const phone = document.getElementById("ncp-phone")?.value.trim();
 
@@ -958,10 +987,51 @@ function _initNewContactPanel() {
       ];
       const gradient = gradients[first.charCodeAt(0) % gradients.length];
 
-      const contactId = "local_" + Date.now();
-      conversations[contactId] = {
+      // Persist contact to backend and derive a deterministic conversation ID
+      const saveBtn = document.getElementById("new-contact-save-btn");
+      if (saveBtn) saveBtn.disabled = true;
+
+      let linkedUserId = null;
+      let dbId = null;
+      if (USE_API) {
+        try {
+          const res = await apiFetch(`${SERVER_URL}/api/contacts`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              displayName: fullName,
+              phone: country + phoneRaw,
+              initials,
+              gradient,
+            }),
+          });
+          if (res && res.ok) {
+            const data = await res.json();
+            linkedUserId = data.contact?.linked_user_id ?? null;
+            dbId = data.contact?.id ?? null;
+            // If the phone resolved to a registered user, use their real profile
+            // name/initials instead of the manually typed alias.
+            if (data.contact?.linked_display_name) {
+              fullName = data.contact.linked_display_name;
+              initials = data.contact.linked_initials || initials;
+            }
+          }
+        } catch { /* network error — fall back to local ID */ }
+      }
+
+      if (saveBtn) saveBtn.disabled = false;
+
+      // Use a deterministic pair-ID so both parties share the same room.
+      // Falls back to db row ID, then a local timestamp.
+      const myId = _getCurrentUserId();
+      const convId =
+        myId && linkedUserId
+          ? _pairId(myId, linkedUserId)
+          : linkedUserId || dbId || "local_" + Date.now();
+
+      conversations[convId] = {
         contact: {
-          id: contactId,
+          id: linkedUserId || dbId || convId,
           displayName: fullName,
           initials,
           gradient,
@@ -977,24 +1047,6 @@ function _initNewContactPanel() {
 
       _resetPanel();
 
-      // Persist contact to backend (fire-and-forget — local state already updated)
-      const token = getAccessToken();
-      if (USE_API && token) {
-        fetch(`${SERVER_URL}/api/contacts`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            displayName: fullName,
-            phone: country + phoneRaw,
-            initials,
-            gradient,
-          }),
-        }).catch(() => {});
-      }
-
       // Close new-contact-panel
       panel.classList.remove("open");
       panel.setAttribute("aria-hidden", "true");
@@ -1006,7 +1058,7 @@ function _initNewContactPanel() {
 
       // Refresh sidebar and open the new conversation
       _renderConversationList();
-      _selectConversation(contactId);
+      _selectConversation(convId);
 
       // On mobile, collapse sidebar
       const sidebar = document.getElementById("sidebar");
@@ -1089,16 +1141,20 @@ async function _renderNewChatContactList(filter = "") {
       panel?.classList.remove("open");
       panel?.setAttribute("aria-hidden", "true");
 
-      if (!conversations[user.id]) {
-        conversations[user.id] = {
-          contact: user,
+      // Use a deterministic pair-ID shared by both users
+      const myId = _getCurrentUserId();
+      const convId = myId ? _pairId(myId, user.id) : user.id;
+
+      if (!conversations[convId]) {
+        conversations[convId] = {
+          contact: { ...user },
           unread: 0,
           lastTime: "",
           lastMessage: "",
           messages: [],
         };
       }
-      _selectConversation(user.id);
+      _selectConversation(convId);
       const sidebar = document.getElementById("sidebar");
       if (sidebar) sidebar.classList.add("hidden");
     });
@@ -1652,7 +1708,9 @@ function _initSocket() {
   if (!token || typeof window.io === "undefined") return;
 
   _socket = window.io(SERVER_URL, {
-    auth: { token },
+    // Use a callback so socket.io fetches the (possibly refreshed) token
+    // on each reconnection attempt instead of freezing the initial value.
+    auth: (cb) => cb({ token: getAccessToken() }),
     transports: ["websocket"],
     reconnectionAttempts: 5,
     reconnectionDelay: 2000,
@@ -1666,34 +1724,61 @@ function _initSocket() {
     }
   });
 
-  _socket.on("connect_error", (err) => {
+  _socket.on("connect_error", async (err) => {
     console.warn("[socket] connection error:", err.message);
+    // If the handshake was rejected for auth reasons (expired token), try to
+    // refresh. The socket.io client will retry automatically; if the refresh
+    // succeeded, getAccessToken() now returns the fresh token (picked up via
+    // the auth callback above).
+    if (/auth|expired|token/i.test(err.message)) {
+      await refreshTokenIfNeeded();
+    }
   });
 
   // ── Incoming message from server ─────────────────────────────────────────
   _socket.on("message:new", (msg) => {
+    const myId = _getCurrentUserId();
+    const isMine = msg.sender === myId;
+
+    // The sender already rendered the bubble optimistically — skip the echo.
+    if (isMine) return;
+
     const time = _formatTime(new Date(msg.createdAt));
     const entry = {
       id: msg._id,
-      from: msg.sender === _getCurrentUserId() ? "me" : "them",
+      from: "them",
       text: msg.text,
       time,
     };
 
     // Update local conversations model so the sidebar stays in sync
     if (!conversations[msg.conversationId]) {
+      // Build a contact entry from the message payload so the recipient
+      // can see who sent the message without a separate API call.
+      const senderName = msg.senderDisplayName || "Unknown";
+      const senderInitials = senderName
+        .split(/\s+/)
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2) || "?";
       conversations[msg.conversationId] = {
         contact: {
-          displayName: "Unknown",
-          initials: "?",
-          online: false,
-          gradient: "",
+          id: msg.sender,
+          displayName: senderName,
+          initials: senderInitials,
+          gradient: "linear-gradient(135deg,#2563EB,#7C3AED)",
+          online: true,
+          role: "",
+          phone: "",
         },
         unread: 0,
         lastTime: time,
         lastMessage: "",
         messages: [],
       };
+      // Join the room so the recipient can reply
+      _socketJoinConversation(msg.conversationId);
     }
     const conv = conversations[msg.conversationId];
     conv.messages.push(entry);
@@ -1707,6 +1792,11 @@ function _initSocket() {
       _renderConversationList(
         document.getElementById("sidebar-search")?.value || "",
       );
+      // Tell sender the message was delivered (reached us, but not read yet)
+      _socket.emit("message:delivered", {
+        messageIds: [msg._id],
+        conversationId: msg.conversationId,
+      });
       return;
     }
 
@@ -1718,6 +1808,28 @@ function _initSocket() {
     if (!area) return;
     area.appendChild(_createMessageEl(entry));
     area.scrollTop = area.scrollHeight;
+
+    // Message was both delivered AND read (conversation is open)
+    _socket.emit("message:read", {
+      messageIds: [msg._id],
+      conversationId: msg.conversationId,
+    });
+  });
+
+  // ── Message status updates (sent → delivered → read) ─────────────────────
+  _socket.on("message:status", ({ messageIds, status }) => {
+    if (!messageIds || !status) return;
+    for (const mid of messageIds) {
+      // Update in-memory model
+      for (const convId of Object.keys(conversations)) {
+        const m = conversations[convId].messages.find((x) => x.id === mid);
+        if (m && m.from === "me") {
+          m.status = status;
+          _updateMsgStatusDOM(mid, status);
+          break;
+        }
+      }
+    }
   });
 
   // ── TTL expiry: remove the bubble from the DOM ───────────────────────────
@@ -1748,6 +1860,25 @@ function _initSocket() {
       indicator.textContent = "";
       indicator.style.display = "none";
     }
+  });
+
+  // ── Presence: online/offline tracking ────────────────────────────────────
+  _socket.on("presence:list", (userIds) => {
+    // Initial list of online users received right after we connect
+    for (const convId of Object.keys(conversations)) {
+      const c = conversations[convId].contact;
+      c.online = !!(c.id && userIds.includes(c.id));
+    }
+    _renderConversationList(document.getElementById("sidebar-search")?.value || "");
+    if (activeContactId) _updateHeaderStatus(activeContactId);
+  });
+
+  _socket.on("presence:online", ({ userId }) => {
+    _setContactOnline(userId, true);
+  });
+
+  _socket.on("presence:offline", ({ userId }) => {
+    _setContactOnline(userId, false);
   });
 }
 
@@ -1783,6 +1914,134 @@ function _socketTypingStop() {
 }
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Update a contact's online status across all conversations that reference
+ * that userId, re-render the sidebar, and update the chat header if active.
+ */
+function _setContactOnline(userId, online) {
+  let changed = false;
+  for (const convId of Object.keys(conversations)) {
+    const c = conversations[convId].contact;
+    if (c.id === userId && c.online !== online) {
+      c.online = online;
+      changed = true;
+    }
+  }
+  if (changed) {
+    _renderConversationList(document.getElementById("sidebar-search")?.value || "");
+    if (activeContactId) _updateHeaderStatus(activeContactId);
+  }
+}
+
+/**
+ * Refresh the chat header Online/Offline label for the given conversation.
+ */
+function _updateHeaderStatus(contactId) {
+  const conv = conversations[contactId];
+  if (!conv) return;
+  const statusEl = document.querySelector(".chat-header .chat-status");
+  if (!statusEl) return;
+  if (conv.contact.online) {
+    statusEl.textContent = "Online";
+    statusEl.style.color = "var(--color-success)";
+  } else {
+    statusEl.textContent = "Offline";
+    statusEl.style.color = "var(--color-text-secondary)";
+  }
+}
+
+// Single-check SVG (sent), double-check SVG (delivered), double-check blue (read)
+const _TICK_SINGLE = `<svg viewBox="0 0 16 16"><path d="M2 8.5l3.5 3.5L14 4"/></svg>`;
+const _TICK_DOUBLE = `<svg viewBox="0 0 20 16"><path d="M2 8.5l3.5 3.5L14 4"/><path d="M6 8.5l3.5 3.5L18 4"/></svg>`;
+
+/**
+ * Return the HTML for a message status tick icon.
+ * @param {"sending"|"sent"|"delivered"|"read"} status
+ */
+function _statusTickHTML(status) {
+  switch (status) {
+    case "sent":
+      return ` <span class="msg-status status-sent">${_TICK_SINGLE}</span>`;
+    case "delivered":
+      return ` <span class="msg-status status-delivered">${_TICK_DOUBLE}</span>`;
+    case "read":
+      return ` <span class="msg-status status-read">${_TICK_DOUBLE}</span>`;
+    default: // "sending" — show a clock/spinner
+      return ` <span class="msg-status status-sending"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke-dasharray="18 18"/></svg></span>`;
+  }
+}
+
+/**
+ * Update the tick icon in the DOM for a specific message.
+ * @param {string} msgId   The message ID (or temp ID)
+ * @param {string} status  "sent" | "delivered" | "read"
+ * @param {string} [newId] If provided, also update the data-msg-id attribute
+ */
+function _updateMsgStatusDOM(msgId, status, newId) {
+  const group = document.querySelector(`.message-group-sent[data-msg-id="${msgId}"]`);
+  if (!group) return;
+  if (newId) group.dataset.msgId = newId;
+  const timeEl = group.querySelector(".message-time");
+  if (!timeEl) return;
+  const existing = timeEl.querySelector(".msg-status");
+  if (existing) existing.remove();
+  timeEl.insertAdjacentHTML("beforeend", _statusTickHTML(status));
+}
+
+/**
+ * Produce a stable, order-independent conversation ID from two user UUIDs.
+ * Sorting guarantees both parties compute the same string.
+ */
+function _pairId(userIdA, userIdB) {
+  return [userIdA, userIdB].sort().join("___");
+}
+
+/**
+ * Fetch the current user's contacts from the API and populate the in-memory
+ * conversations map. Runs once at startup (when USE_API is true).
+ */
+async function _loadContactsFromAPI() {
+  const token = getAccessToken();
+  if (!token) return;
+  const myId = _getCurrentUserId();
+  try {
+    const res = await apiFetch(`${SERVER_URL}/api/contacts`);
+    if (!res || !res.ok) return;
+    const { contacts } = await res.json();
+    let changed = false;
+    for (const c of contacts) {
+      const otherId = c.linked_user_id;
+      const convId =
+        myId && otherId ? _pairId(myId, otherId) : otherId || String(c.id);
+      // Prefer the registered profile name/initials over the manually-typed alias
+      // so each party sees the other person's actual identity.
+      const displayName = c.linked_display_name || c.display_name;
+      const initials    = c.linked_initials    || c.initials;
+      if (!conversations[convId]) {
+        conversations[convId] = {
+          contact: {
+            id: otherId || String(c.id),
+            displayName,
+            initials,
+            gradient:
+              c.gradient || "linear-gradient(135deg,#2563EB,#7C3AED)",
+            online: false,
+            role: "",
+            phone: c.phone || "",
+          },
+          unread: 0,
+          lastTime: "",
+          lastMessage: "",
+          messages: [],
+        };
+        changed = true;
+      }
+    }
+    if (changed) _renderConversationList();
+  } catch { /* silently ignore network errors */ }
+}
+
 function _getCurrentUserId() {
   const user = getCurrentUserAny?.() || getCurrentUser?.();
   return user?.id ?? null;

@@ -41,10 +41,19 @@ async function upsert({
 
 /**
  * List all contacts owned by a user.
+ * When a contact is linked to a registered user, their profile fields
+ * (display_name, initials) override the manually-typed alias.
  */
 async function listByOwner(ownerId) {
   const { rows } = await pool.query(
-    `SELECT * FROM contacts WHERE owner_id = $1 ORDER BY display_name`,
+    `SELECT
+       c.*,
+       u.display_name AS linked_display_name,
+       u.initials     AS linked_initials
+     FROM contacts c
+     LEFT JOIN users u ON u.id = c.linked_user_id
+     WHERE c.owner_id = $1
+     ORDER BY display_name`,
     [ownerId],
   );
   return rows;

@@ -42,6 +42,21 @@ async function create(req, res) {
       gradient: gradient ?? "linear-gradient(135deg,#2563EB,#7C3AED)",
       linkedUserId,
     });
+
+    // Enrich the response with the linked user's registered name/initials so
+    // the client can display the real profile instead of the manually-typed alias.
+    if (linkedUserId) {
+      try {
+        const linkedUser = await User.findById(linkedUserId);
+        if (linkedUser) {
+          contact.linked_display_name = linkedUser.display_name;
+          contact.linked_initials = linkedUser.initials;
+        }
+      } catch {
+        /* non-critical */
+      }
+    }
+
     return sendJSON(res, 201, { contact });
   } catch (err) {
     console.error("[contacts] create error:", err.message);

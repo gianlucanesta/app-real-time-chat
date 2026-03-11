@@ -504,6 +504,32 @@ input[type="range"]::-moz-range-thumb {
   box-sizing: content-box;
 }
 
+/* --- Message Status Ticks (WhatsApp-style) --- */
+.msg-status {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.msg-status svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--color-text-secondary);
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.msg-status.status-sent svg {
+  stroke: var(--color-text-secondary);
+}
+.msg-status.status-delivered svg {
+  stroke: var(--color-text-secondary);
+}
+.msg-status.status-read svg {
+  stroke: var(--color-info, #3b82f6);
+}
+
 /* --- Notification Dot --- */
 .notif-dot {
   width: 8px;
