@@ -303,6 +303,8 @@
   height: 36px;
   padding: 0 var(--space-3);
   width: 100%;
+  border: 2px solid transparent;
+  transition: border-color var(--transition-fast);
 }
 .sidebar-search .search-input svg {
   width: 16px;
@@ -450,6 +452,28 @@
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
+}
+
+/* Hint state inside new-chat-contact-list */
+.new-chat-empty-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-10) var(--space-6) var(--space-8);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+.new-chat-empty-hint svg {
+  width: 40px;
+  height: 40px;
+  opacity: 0.35;
+  flex-shrink: 0;
+}
+.new-chat-empty-hint p {
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  max-width: 200px;
 }
 .new-chat-contact-row {
   display: flex;
@@ -2093,5 +2117,52 @@
 .chat-page:not(.has-chat) .chat-header,
 .chat-page:not(.has-chat) #chat-messages,
 .chat-page:not(.has-chat) .chat-input-area {
+  display: none;
+}
+
+/* Desktop-only: blue focus ring on new-chat search input */
+@media (min-width: 768px) {
+  .new-chat-panel .sidebar-search .search-input:focus-within {
+    border-color: var(--color-accent);
+  }
+}
+
+/* ── New-contact slide-in panel ─────────────────────────────── */
+.new-contact-panel {
+  position: absolute;
+  inset: 0;
+  z-index: 21;
+  background-color: var(--color-bg);
+  transform: translateX(100%);
+  transition: transform 0.22s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.new-contact-panel.open {
+  transform: translateX(0);
+}
+.new-contact-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-card);
+  flex-shrink: 0;
+  height: 64px;
+}
+.new-contact-header h2 {
+  flex: 1;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-bold);
+  color: var(--color-text);
+}
+.new-contact-body {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.new-contact-body::-webkit-scrollbar {
   display: none;
 }

@@ -31,6 +31,7 @@ export function initChatPage() {
   _initMessageActions();
   _initStaticMessageMenus();
   _initNewChatPanel();
+  _initNewContactPanel();
   _initFilterChips();
   _initSidebarMenu();
   _initHeaderActions();
@@ -713,9 +714,17 @@ function _initNewChatPanel() {
   panel.querySelectorAll(".new-chat-action-item").forEach((btn) => {
     btn.addEventListener("click", () => {
       const action = btn.dataset.ncAction;
+      if (action === "contact") {
+        const ncp = document.getElementById("new-contact-panel");
+        if (ncp) {
+          ncp.classList.add("open");
+          ncp.setAttribute("aria-hidden", "false");
+          document.getElementById("ncp-firstname")?.focus();
+        }
+        return;
+      }
       const labels = {
         group: "New group",
-        contact: "New contact",
         community: "New community",
       };
       showToast(`${labels[action] ?? "Action"}: coming soon.`, "info");
@@ -725,6 +734,49 @@ function _initNewChatPanel() {
   _renderNewChatContactList("");
 }
 
+// ── New-contact panel ────────────────────────────────────────────
+function _initNewContactPanel() {
+  const panel = document.getElementById("new-contact-panel");
+  if (!panel) return;
+
+  const closePanel = () => {
+    panel.classList.remove("open");
+    panel.setAttribute("aria-hidden", "true");
+  };
+
+  document
+    .getElementById("new-contact-back-btn")
+    ?.addEventListener("click", closePanel);
+
+  document
+    .getElementById("new-contact-save-btn")
+    ?.addEventListener("click", () => {
+      const first = document.getElementById("ncp-firstname")?.value.trim();
+      const last = document.getElementById("ncp-lastname")?.value.trim();
+      const country = document.getElementById("ncp-country")?.value ?? "";
+      const phone = document.getElementById("ncp-phone")?.value.trim();
+
+      if (!first) {
+        showToast("Please enter a first name.", "warning");
+        document.getElementById("ncp-firstname")?.focus();
+        return;
+      }
+
+      const fullName = [first, last].filter(Boolean).join(" ");
+      // Placeholder: in the future POST to /api/contacts
+      showToast(`Contact "${fullName}" saved!`, "success");
+
+      // Reset fields and close
+      ["ncp-firstname", "ncp-lastname", "ncp-phone"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+      const syncEl = document.getElementById("ncp-sync");
+      if (syncEl) syncEl.checked = false;
+      closePanel();
+    });
+}
+
 async function _renderNewChatContactList(filter = "") {
   const list = document.getElementById("new-chat-contact-list");
   if (!list) return;
@@ -732,7 +784,14 @@ async function _renderNewChatContactList(filter = "") {
   const lFilter = filter.trim();
 
   if (lFilter.length < 2) {
-    list.innerHTML = `<p class="new-chat-empty-hint">Type at least 2 characters to search users…</p>`;
+    list.innerHTML = `
+      <div class="new-chat-empty-hint">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.35-4.35"/>
+        </svg>
+        <p>Type at least 2 characters<br>to search for people</p>
+      </div>`;
     return;
   }
 
