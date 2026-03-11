@@ -181,6 +181,9 @@ function _selectConversation(contactId) {
   _renderMessages(contactId);
   _updateContactPanel(contactId);
 
+  // Load message history from API if not yet loaded
+  if (USE_API) _loadMessagesFromAPI(contactId);
+
   // Mark all unread incoming messages as "read" — the user just opened this chat
   if (_socket?.connected && conv.messages.length) {
     const unreadIds = conv.messages
@@ -2049,4 +2052,56 @@ function _getCurrentUserId() {
 
 function _formatTime(date) {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+/**
+ * Fetch message history from the API for a conversation and merge into the
+ * in-memory model. Called once per conversation selection to populate history.
+ */
+async function _loadMessagesFromAPI(conversationId) {
+  if (!USE_API) return;
+  const conv = conversations[conversationId];
+  if (!conv || conv._historyLoaded) return;
+  try {
+    const res = await apiFetch(`${SERVER_URL}/api/messages/${encodeURIComponent(conversationId)}`);
+    if (!res || !res.ok) return;
+    const { messages } = await res.json();
+    if (!messages || !messages.length) { conv._historyLoaded = true; return; }
+
+    const myId = _getCurrentUserId();
+    const existingIds = new Set(conv.messages.map((m) => m.id));
+
+    for (const msg of messages) {
+      if (existingIds.has(msg._id)) continue;
+      const isMine = msg.sender === myId;
+      conv.messages.push({
+        id: msg._id,
+        from: isMine ? "me" : "them",
+        text: msg.text,
+        time: _formatTime(new Date(msg.createdAt)),
+        status: isMine ? (msg.status || "sent") : undefined,
+      });
+    }
+
+    // Sort by createdAt to maintain order
+    conv.messages.sort((a, b) => {
+      // temp IDs (tmp_*) are newer by definition
+      if (a.id.startsWith?.("tmp_")) return 1;
+      if (b.id.startsWith?.("tmp_")) return -1;
+      return a.id.localeCompare(b.id);
+    });
+
+    conv._historyLoaded = true;
+    if (conv.messages.length) {
+      const last = conv.messages[conv.messages.length - 1];
+      conv.lastMessage = last.text.slice(0, 30) + (last.text.length > 30 ? "…" : "");
+      conv.lastTime = last.time;
+    }
+
+    // Re-render if this is still the active conversation
+    if (activeContactId === conversationId) {
+      _renderMessages(conversationId);
+      _renderConversationList(document.getElementById("sidebar-search")?.value || "");
+    }
+  } catch { /* silently ignore network errors */ }
 }

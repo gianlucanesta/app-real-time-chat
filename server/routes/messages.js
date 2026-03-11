@@ -74,8 +74,15 @@ async function create(req, res) {
       expires_at,
     });
 
-    // Mirror key in Redis with same TTL for sub-minute expiry precision
-    await redis.set(`msg:${msg._id}`, "1", "EX", MESSAGE_TTL_SECONDS);
+    // Mirror key in Redis with same TTL for sub-minute expiry precision (non-fatal)
+    try {
+      await redis.set(`msg:${msg._id}`, "1", "EX", MESSAGE_TTL_SECONDS);
+    } catch (redisErr) {
+      console.warn(
+        "[messages] redis set failed (non-fatal):",
+        redisErr.message,
+      );
+    }
 
     return sendJSON(res, 201, { message: msg });
   } catch (err) {

@@ -18,6 +18,12 @@ const messageSchema = new mongoose.Schema({
     default: "",
     maxlength: 4096,
   },
+  // Message delivery status: sent → delivered → read
+  status: {
+    type: String,
+    enum: ["sent", "delivered", "read"],
+    default: "sent",
+  },
   // expires_at is set SERVER-SIDE on every write — never trust the client.
   expires_at: {
     type: Date,

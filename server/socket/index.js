@@ -95,8 +95,15 @@ function initSocket(io) {
           expires_at,
         });
 
-        // Mirror in Redis for precise TTL notification
-        await redis.set(`msg:${msg._id}`, "1", "EX", MESSAGE_TTL_SECONDS);
+        // Mirror in Redis for precise TTL notification (non-fatal if Redis is down)
+        try {
+          await redis.set(`msg:${msg._id}`, "1", "EX", MESSAGE_TTL_SECONDS);
+        } catch (redisErr) {
+          console.warn(
+            "[socket] redis set failed (non-fatal):",
+            redisErr.message,
+          );
+        }
 
         // Include sender display info so receivers can build the contact entry
         const msgPayload = msg.toObject();
@@ -149,8 +156,19 @@ function initSocket(io) {
 
     // ── Message status events ────────────────────────────────────────────────
     // Client tells us it has received (displayed or at least stored) messages
-    socket.on("message:delivered", ({ messageIds, conversationId }) => {
+    socket.on("message:delivered", async ({ messageIds, conversationId }) => {
       if (!Array.isArray(messageIds) || !conversationId) return;
+
+      // Persist status in MongoDB (only upgrade sent → delivered, never downgrade)
+      try {
+        await Message.updateMany(
+          { _id: { $in: messageIds }, status: "sent" },
+          { $set: { status: "delivered" } },
+        );
+      } catch (err) {
+        console.error("[socket] message:delivered DB error:", err.message);
+      }
+
       // Relay to conv room + other party's personal room (so they get it
       // even if they navigated away from this conversation).
       const parts = conversationId.split("___");
@@ -168,8 +186,19 @@ function initSocket(io) {
     });
 
     // Client tells us the user has read (viewed) messages
-    socket.on("message:read", ({ messageIds, conversationId }) => {
+    socket.on("message:read", async ({ messageIds, conversationId }) => {
       if (!Array.isArray(messageIds) || !conversationId) return;
+
+      // Persist status in MongoDB (upgrade sent/delivered → read)
+      try {
+        await Message.updateMany(
+          { _id: { $in: messageIds }, status: { $in: ["sent", "delivered"] } },
+          { $set: { status: "read" } },
+        );
+      } catch (err) {
+        console.error("[socket] message:read DB error:", err.message);
+      }
+
       const parts = conversationId.split("___");
       const otherId =
         parts.length === 2 ? parts.find((id) => id !== socket.user.sub) : null;
