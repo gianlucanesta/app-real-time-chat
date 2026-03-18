@@ -7,18 +7,13 @@ import {
   Users,
   Star,
   Archive,
-  Settings,
   CircleDashed,
-  Sun,
-  Moon,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import { useTheme } from "../../contexts/ThemeContext";
 
 export function VerticalNav() {
   const { pathname } = useLocation();
   const { user } = useAuth();
-  const { theme, toggleTheme } = useTheme();
 
   // A helper function to determine if a route is active
   const isActive = (path: string) => {
@@ -85,28 +80,6 @@ export function VerticalNav() {
 
         {/* Bottom icons */}
         <div className="flex flex-col gap-1 w-full items-center">
-          <button
-            onClick={toggleTheme}
-            title={
-              theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
-            }
-            className="w-11 h-11 rounded-md flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-[color,background-color] duration-[150ms] cursor-pointer border-none bg-transparent"
-          >
-            {theme === "dark" ? <Sun size={22} /> : <Moon size={22} />}
-          </button>
-
-          <Link
-            to="/settings"
-            title="Settings"
-            className={`w-11 h-11 rounded-md flex items-center justify-center transition-[color,background-color] duration-[150ms] cursor-pointer no-underline border-none ${
-              isActive("/settings")
-                ? "text-accent bg-accent/10"
-                : "text-text-secondary hover:text-text-main hover:bg-input"
-            }`}
-          >
-            <Settings size={22} />
-          </Link>
-
           <Link to="/settings" title="Profile">
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold cursor-pointer border-2 border-transparent hover:border-accent transition-colors"
@@ -142,17 +115,6 @@ export function VerticalNav() {
             </Link>
           );
         })}
-        {/* Theme Toggle on Mobile */}
-        <button
-          onClick={toggleTheme}
-          className="flex flex-col items-center justify-center w-full h-full gap-1 transition-colors text-text-secondary hover:text-text-main"
-        >
-          {theme === "dark" ? <Sun size={22} /> : <Moon size={22} />}
-          <span className="text-[10px] font-medium">
-            {theme === "dark" ? "Light" : "Dark"}
-          </span>
-        </button>
-
         {/* Profile Tab on Mobile */}
         <Link
           to="/settings"

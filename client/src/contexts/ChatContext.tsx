@@ -225,11 +225,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           return prev;
         });
       } else {
-        // Incoming message from another user — append (dedupe by id)
-        setActiveMessages((prev) => {
-          if (prev.some((m) => m.id === newMsg.id)) return prev;
-          return [...prev, newMsg];
-        });
+        // Only append to the active conversation's message list
+        if (msg.conversationId === activeConvRef.current?.id) {
+          setActiveMessages((prev) => {
+            if (prev.some((m) => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
+        }
       }
 
       // Update or CREATE conversation in sidebar
@@ -343,9 +345,24 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setActiveMessages((prev) => prev.filter((m) => m.id !== data.id));
     };
 
-    // Emit delivered for incoming messages (not own)
+    // Emit read/delivered status for incoming messages (not own)
     const handleDeliverOnReceive = (msg: MessagePayload) => {
-      if (msg.sender !== user.id && msg.status === "sent") {
+      if (msg.sender === user.id) return;
+
+      const isConvActive = msg.conversationId === activeConvRef.current?.id;
+
+      if (isConvActive) {
+        // User is looking at this conversation — mark as read immediately
+        socket.emit("message:read", {
+          messageIds: [msg._id],
+          conversationId: msg.conversationId,
+        });
+        // Reflect read status locally so the sender's tick updates without reload
+        setActiveMessages((prev) =>
+          prev.map((m) => (m.id === msg._id ? { ...m, status: "read" } : m)),
+        );
+      } else if (msg.status === "sent") {
+        // Conversation not open — mark as delivered
         socket.emit("message:delivered", {
           messageIds: [msg._id],
           conversationId: msg.conversationId,
