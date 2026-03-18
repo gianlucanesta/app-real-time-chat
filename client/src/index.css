@@ -2,19 +2,28 @@
 @import "./chat-components.css";
 
 @theme {
-  /* Colors */
-  --color-bg: #0f172a;
-  --color-card: #1e293b;
-  --color-input: #334155;
-  --color-border: #475569;
+  /* Colors — aligned with static prototype */
+  --color-bg: #0b1120;
+  --color-card: #131c2e;
+  --color-input: #1a2332;
+  --color-border: #1e293b;
   --color-accent: #2563eb;
   --color-accent-hover: #3b82f6;
-  --color-text-main: #f8fafc;
+  --color-accent-subtle: rgba(37, 99, 235, 0.12);
+  --color-text-main: #f1f5f9;
   --color-text-secondary: #94a3b8;
-  --color-success: #10b981;
+  --color-success: #22c55e;
   --color-danger: #ef4444;
+  --color-info: #3b82f6;
+  --color-warning: #f59e0b;
   --color-overlay: rgba(0, 0, 0, 0.5);
-  --color-toggle-off: #475569;
+  --color-toggle-off: #374151;
+
+  /* Toast backgrounds */
+  --color-toast-info-bg: #1a2332;
+  --color-toast-success-bg: #14532d;
+  --color-toast-error-bg: #450a0a;
+  --color-toast-warning-bg: #422006;
 
   /* Fonts */
   --font-sans:
@@ -48,15 +57,19 @@
   --spacing-8: 32px;
   --spacing-10: 40px;
 
-  /* Custom dimensions */
-  --width-sidebar: 400px;
-  --width-settings-sidebar: 220px;
+  /* Custom dimensions — aligned with static prototype */
+  --width-sidebar: 360px;
+  --width-settings-sidebar: 380px;
   --height-input: 44px;
 
   /* Avatars */
   --size-avatar-sm: 28px;
   --size-avatar-md: 40px;
   --size-avatar-lg: 80px;
+
+  /* Transitions */
+  --transition-fast: 150ms;
+  --transition-base: 200ms;
 
   /* Animations */
   --animate-typing-bounce: typingBounce 1.4s infinite ease-in-out;

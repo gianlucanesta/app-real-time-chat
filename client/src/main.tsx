@@ -12,6 +12,7 @@ import { routeTree } from "./routeTree.gen";
 
 // Import AuthContext
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { ToastProvider } from "./contexts/ToastContext";
 
 // Create a new router instance
 const router = createRouter({
@@ -34,8 +35,10 @@ function App() {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
-  </StrictMode>
+    <ToastProvider>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </ToastProvider>
+  </StrictMode>,
 );
