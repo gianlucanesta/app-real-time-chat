@@ -14,6 +14,7 @@ import {
   AlertTriangle,
   ShieldAlert,
   Trash2,
+  ChevronLeft,
 } from "lucide-react";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useClickOutside } from "../../hooks/useClickOutside";
@@ -22,9 +23,42 @@ import { EditContactPanel } from "./EditContactPanel";
 import { ChatMessage } from "./ChatMessage";
 import { CallScreen } from "./CallScreen";
 import { ConfirmModal } from "./ConfirmModal";
-import { useChat } from "../../contexts/ChatContext";
+import { useChat, type Message } from "../../contexts/ChatContext";
 
-export function ChatArea() {
+/** Return a human-friendly date label for a message group separator. */
+function dateSeparatorLabel(dateStr: string): string {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const msgDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffMs = today.getTime() - msgDay.getTime();
+  const diffDays = Math.round(diffMs / 86_400_000);
+  if (diffDays === 0) return "TODAY";
+  if (diffDays === 1) return "YESTERDAY";
+  return d.toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }).toUpperCase();
+}
+
+/** Group messages by day, returning [label, messages][] pairs. */
+function groupMessagesByDate(messages: Message[]): [string, Message[]][] {
+  const groups: [string, Message[]][] = [];
+  let currentLabel = "";
+  for (const msg of messages) {
+    const label = dateSeparatorLabel(msg.rawTimestamp);
+    if (label !== currentLabel) {
+      currentLabel = label;
+      groups.push([label, [msg]]);
+    } else {
+      groups[groups.length - 1][1].push(msg);
+    }
+  }
+  return groups;
+}
+
+interface ChatAreaProps {
+  onMobileBack?: () => void;
+}
+
+export function ChatArea({ onMobileBack }: ChatAreaProps) {
   const { activeConversation, activeMessages, sendMessage, typingUsers, socket } = useChat();
 
   const [isContactInfoOpen, setIsContactInfoOpen] = useState(false);
@@ -200,6 +234,17 @@ export function ChatArea() {
           className="flex items-center gap-3 md:gap-4 cursor-pointer hover:bg-input/50 p-1.5 md:p-2 -ml-1.5 md:-ml-2 rounded-xl transition-colors"
           onClick={handleOpenContactInfo}
         >
+          {/* Mobile back button */}
+          {onMobileBack && (
+            <button
+              type="button"
+              className="md:hidden w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors shrink-0 -mr-1"
+              onClick={(e) => { e.stopPropagation(); onMobileBack(); }}
+              aria-label="Back to conversations"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          )}
           <div className="relative inline-block">
             <div
               className="w-10 h-10 md:w-[42px] md:h-[42px] rounded-full flex items-center justify-center font-bold text-[13px] md:text-[14px] text-white shrink-0"
@@ -371,32 +416,34 @@ export function ChatArea() {
       <div
         className={`flex-1 overflow-y-auto px-4 md:px-8 flex flex-col pt-6 pb-2 md:pb-4 scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-toggle-off ${isSelectMode ? "select-mode" : ""}`}
       >
-        {/* Date Separator */}
-        <div className="flex items-center justify-center gap-4 my-6">
-          <div className="w-12 h-px bg-border"></div>
-          <span className="text-[11px] font-medium text-text-secondary uppercase tracking-[1px]">
-            TODAY
-          </span>
-          <div className="w-12 h-px bg-border"></div>
-        </div>
+        {groupMessagesByDate(activeMessages).map(([label, msgs]) => (
+          <div key={label}>
+            {/* Date Separator */}
+            <div className="flex items-center justify-center gap-4 my-6">
+              <div className="w-12 h-px bg-border"></div>
+              <span className="text-[11px] font-medium text-text-secondary uppercase tracking-[1px]">
+                {label}
+              </span>
+              <div className="w-12 h-px bg-border"></div>
+            </div>
 
-        {activeMessages.map((msg) => (
-          <ChatMessage
-            key={msg.id}
-            id={msg.id}
-            text={msg.text}
-            time={msg.timestamp}
-            isSent={msg.isMe}
-            status={msg.status}
-            contactInitials={!msg.isMe ? contactInitials : undefined}
-            contactGradient={!msg.isMe ? contactGradient : undefined}
-            isSelectMode={isSelectMode}
-            isSelected={selectedMessages.includes(msg.id)}
-            onToggleSelect={() => toggleMessageSelection(msg.id)}
-          />
+            {msgs.map((msg) => (
+              <ChatMessage
+                key={msg.id}
+                id={msg.id}
+                text={msg.text}
+                time={msg.timestamp}
+                isSent={msg.isMe}
+                status={msg.status}
+                contactInitials={!msg.isMe ? contactInitials : undefined}
+                contactGradient={!msg.isMe ? contactGradient : undefined}
+                isSelectMode={isSelectMode}
+                isSelected={selectedMessages.includes(msg.id)}
+                onToggleSelect={() => toggleMessageSelection(msg.id)}
+              />
+            ))}
+          </div>
         ))}
-
-        {/* Temporary check for typing indicator (when another user type feature is mocked) */}
       </div>
 
       {/* Selection Action Bar */}

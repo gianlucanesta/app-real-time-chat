@@ -162,7 +162,11 @@ export function Sidebar() {
 
       {/* Conversation List */}
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-toggle-off">
-        {conversations.map((chat) => (
+        {[...conversations].sort((a, b) => {
+          const ta = a.lastMessageTimestamp ? new Date(a.lastMessageTimestamp).getTime() : 0;
+          const tb = b.lastMessageTimestamp ? new Date(b.lastMessageTimestamp).getTime() : 0;
+          return tb - ta;
+        }).map((chat) => (
           <div
             key={chat.id}
             onClick={() => setActiveConversation(chat)}

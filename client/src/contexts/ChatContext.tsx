@@ -32,6 +32,7 @@ export interface Conversation {
   initials: string;
   lastMessage?: string;
   lastMessageTime?: string;
+  lastMessageTimestamp?: string;
   unreadCount: number;
   isOnline?: boolean;
   participants: string[];
@@ -86,6 +87,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setConversations(
         data.conversations.map((c) => ({
           ...c,
+          lastMessageTimestamp: c.lastMessageTime || undefined,
           lastMessageTime: c.lastMessageTime
             ? fmtTime(c.lastMessageTime)
             : undefined,
@@ -216,6 +218,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
               ...c,
               lastMessage: isMe ? `You: ${newMsg.text}` : newMsg.text,
               lastMessageTime: msgTimestamp,
+              lastMessageTimestamp: msg.createdAt,
               unreadCount: isMe || isActive ? c.unreadCount : c.unreadCount + 1,
             };
           });
@@ -233,6 +236,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             initials: msg.senderInitials ?? "??",
             lastMessage: newMsg.text,
             lastMessageTime: msgTimestamp,
+            lastMessageTimestamp: msg.createdAt,
             unreadCount: 1,
             isOnline: false,
             participants: parts,
