@@ -2156,7 +2156,9 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-medium);
   width: 120px;
-  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .chat-empty-action:hover {
@@ -2170,18 +2172,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--color-input);
-  border-radius: var(--radius-lg);
   color: var(--color-text-secondary);
 }
 
 .chat-empty-action-icon svg {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
 }
 
 .chat-empty-action:hover .chat-empty-action-icon {
-  color: var(--color-accent);
+  color: var(--color-text);
 }
 
 /* Hide empty state once a chat is active */
@@ -2360,11 +2360,22 @@
 
 /* Shake animation for validation error */
 @keyframes ncp-shake {
-  0%, 100% { transform: translateX(0); }
-  20%       { transform: translateX(-5px); }
-  40%       { transform: translateX(5px); }
-  60%       { transform: translateX(-4px); }
-  80%       { transform: translateX(4px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-5px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
 }
 .ncp-shake {
   animation: ncp-shake 0.32s ease;
@@ -2558,7 +2569,9 @@
   align-items: center;
   justify-content: center;
   color: var(--color-text-secondary);
-  transition: color var(--transition-fast), background-color var(--transition-fast);
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast);
   flex-shrink: 0;
 }
 .selection-bar-cancel:hover {
@@ -2588,7 +2601,9 @@
   align-items: center;
   justify-content: center;
   color: var(--color-text-secondary);
-  transition: color var(--transition-fast), background-color var(--transition-fast);
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast);
 }
 .selection-action-btn:hover:not(:disabled) {
   color: var(--color-text);
