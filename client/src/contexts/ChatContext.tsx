@@ -50,7 +50,9 @@ interface ChatContextType {
   activeMessages: Message[];
   typingUsers: Record<string, { displayName: string }>;
   socket: TypedSocket | null;
+  mobileInChat: boolean;
   setActiveConversation: (conv: Conversation | null) => void;
+  setMobileInChat: (v: boolean) => void;
   sendMessage: (text: string) => void;
   loadConversations: () => Promise<void>;
   addOrUpdateConversation: (conv: Conversation) => void;
@@ -77,6 +79,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [typingUsers, setTypingUsers] = useState<
     Record<string, { displayName: string }>
   >({});
+  const [mobileInChat, setMobileInChat] = useState(false);
 
   // Keep a stable ref to activeConversation so socket handlers don't stale-close
   const activeConvRef = useRef<Conversation | null>(null);
@@ -456,7 +459,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         activeMessages,
         typingUsers,
         socket,
+        mobileInChat,
         setActiveConversation,
+        setMobileInChat,
         sendMessage,
         loadConversations,
         addOrUpdateConversation,

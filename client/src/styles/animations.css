@@ -1,0 +1,98 @@
+/* ══════════════════════════════════════════════════════════
+   Animations — shared keyframes & utility classes
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Field shake (form validation) ─────────────────────── */
+@keyframes fieldShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  15% {
+    transform: translateX(-6px);
+  }
+  30% {
+    transform: translateX(6px);
+  }
+  45% {
+    transform: translateX(-4px);
+  }
+  60% {
+    transform: translateX(4px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+  90% {
+    transform: translateX(2px);
+  }
+}
+
+/* ── Error message slide-in ────────────────────────────── */
+@keyframes errorSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Success pulse ring ────────────────────────────────── */
+@keyframes successPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+/* ── Card success glow ─────────────────────────────────── */
+@keyframes cardSuccessGlow {
+  0%,
+  100% {
+    box-shadow: none;
+  }
+  40% {
+    box-shadow:
+      0 0 0 2px rgba(34, 197, 94, 0.5),
+      0 0 24px rgba(34, 197, 94, 0.15);
+  }
+}
+
+/* ── Fade-in from top ──────────────────────────────────── */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Utility classes ───────────────────────────────────── */
+.field-shake {
+  animation: fieldShake 0.45s ease-in-out;
+}
+.error-msg {
+  animation: errorSlideIn 0.2s ease-out forwards;
+}
+.success-glow {
+  animation:
+    successPulse 0.6s ease-out,
+    cardSuccessGlow 0.8s ease-out;
+}
+.fade-in-down {
+  animation: fadeInDown 0.25s ease-out forwards;
+}
+.settings-save-toast {
+  animation: fadeInDown 0.25s ease-out forwards;
+}

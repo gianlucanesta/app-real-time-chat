@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { VerticalNav } from "../components/layout/VerticalNav";
-import { ChatProvider } from "../contexts/ChatContext";
+import { ChatProvider, useChat } from "../contexts/ChatContext";
 import { useAuth } from "../contexts/AuthContext";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -20,6 +20,20 @@ export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
 });
 
+function LayoutContent() {
+  const { mobileInChat } = useChat();
+  return (
+    <div className="flex h-screen w-full overflow-hidden bg-bg">
+      <VerticalNav />
+      <main
+        className={`flex-1 h-full relative md:pl-[60px] md:pb-0 ${mobileInChat ? "" : "pb-[64px]"}`}
+      >
+        <Outlet />
+      </main>
+    </div>
+  );
+}
+
 function AuthenticatedLayout() {
   const { isLoading } = useAuth();
 
@@ -33,12 +47,7 @@ function AuthenticatedLayout() {
 
   return (
     <ChatProvider>
-      <div className="flex h-screen w-full overflow-hidden bg-bg">
-        <VerticalNav />
-        <main className="flex-1 h-full relative md:pl-[60px] pb-[64px] md:pb-0">
-          <Outlet />
-        </main>
-      </div>
+      <LayoutContent />
     </ChatProvider>
   );
 }

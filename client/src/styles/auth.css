@@ -1,0 +1,79 @@
+/* ══════════════════════════════════════════════════════════
+   Auth pages — login / signup shared styles
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Login success modal ─────────────────────────────────── */
+.success-modal-overlay {
+  background: rgba(0, 0, 0, 0.6);
+  animation: fadeInOverlay 0.2s ease-out forwards;
+}
+@keyframes fadeInOverlay {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.success-modal-card {
+  animation: scaleInCard 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes scaleInCard {
+  from {
+    opacity: 0;
+    transform: scale(0.75);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.check-circle {
+  stroke-dasharray: 151;
+  stroke-dashoffset: 151;
+  transform-origin: 26px 26px;
+  transform: rotate(-90deg);
+  animation: drawCircle 0.55s ease-out 0.15s forwards;
+}
+@keyframes drawCircle {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.check-mark {
+  stroke-dasharray: 36;
+  stroke-dashoffset: 36;
+  animation: drawCheck 0.3s ease-out 0.6s forwards;
+}
+@keyframes drawCheck {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ── Country code select dropdown ────────────────────────── */
+select.phone-select option {
+  background-color: var(--color-card);
+  color: var(--color-text-main);
+}
+
+/* ── Auth page bottom glow ───────────────────────────────── */
+.auth-page-glow::after {
+  content: "";
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 200px;
+  background: radial-gradient(
+    ellipse at center bottom,
+    rgba(37, 99, 235, 0.12) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 0;
+}

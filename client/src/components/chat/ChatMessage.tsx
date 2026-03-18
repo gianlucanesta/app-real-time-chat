@@ -68,7 +68,7 @@ export function ChatMessage({
       data-id={id}
     >
       <div
-        className={`relative w-full flex ${isSelectMode ? (isSent ? "flex-row justify-start" : "flex-row") : isSent ? "flex-col items-end" : "items-end gap-3 mt-1"} ${isSelectMode && !isSent ? "gap-3" : ""}`}
+        className={`relative w-full flex ${isSelectMode ? (isSent ? "flex-row justify-start" : "flex-row") : isSent ? "flex-col items-end" : "items-end mt-1"} ${isSelectMode && !isSent ? "gap-3" : ""}`}
       >
         {/* Checkbox for Select Mode */}
         {isSelectMode && (
@@ -93,15 +93,7 @@ export function ChatMessage({
           </button>
         )}
 
-        {/* Avatar for received messages */}
-        {!isSent && !isSelectMode && (
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-[11px] text-white shrink-0 bottom-[18px] relative hidden md:flex"
-            style={{ background: contactGradient }}
-          >
-            {contactInitials}
-          </div>
-        )}
+        {/* Avatar for received messages — removed */}
 
         <div
           className={`relative flex flex-col ${isSelectMode && isSent ? "items-end ml-auto" : ""}`}

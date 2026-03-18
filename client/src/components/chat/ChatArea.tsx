@@ -3,7 +3,7 @@ import {
   Video,
   Phone,
   MoreVertical,
-  Paperclip,
+  Plus,
   Smile,
   Mic,
   Send,
@@ -81,6 +81,7 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
 
   const [isContactInfoOpen, setIsContactInfoOpen] = useState(false);
   const [isEditContactOpen, setIsEditContactOpen] = useState(false);
+  const [inputValue, setInputValue] = useState("");
 
   // Dropdowns
   const [isCallMenuOpen, setIsCallMenuOpen] = useState(false);
@@ -168,6 +169,19 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
   const contactInitials = activeConversation?.initials || "";
   const contactGradient = activeConversation?.gradient || "";
 
+  // Scroll-to-bottom logic
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const prevConvIdRef = useRef<string | undefined>();
+
+  useEffect(() => {
+    if (!messagesEndRef.current || !activeMessages.length) return;
+    const isConvSwitch = prevConvIdRef.current !== activeConversation?.id;
+    prevConvIdRef.current = activeConversation?.id;
+    messagesEndRef.current.scrollIntoView({
+      behavior: isConvSwitch ? "instant" : "smooth",
+    });
+  }, [activeMessages, activeConversation?.id]);
+
   // Typing emit logic
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
@@ -185,8 +199,20 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
     }, 2000);
   }, [activeConversation, socket]);
 
-  // Stop typing when conversation changes
+  const handleSend = useCallback(() => {
+    if (!inputValue.trim()) return;
+    sendMessage(inputValue.trim());
+    setInputValue("");
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    if (isTypingRef.current && activeConversation && socket) {
+      isTypingRef.current = false;
+      socket.emit("typing:stop", activeConversation.id);
+    }
+  }, [inputValue, sendMessage, activeConversation, socket]);
+
+  // Stop typing and clear input when conversation changes
   useEffect(() => {
+    setInputValue("");
     return () => {
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
       isTypingRef.current = false;
@@ -512,7 +538,7 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
 
       {/* Messages Area */}
       <div
-        className={`flex-1 overflow-y-auto px-4 md:px-8 flex flex-col pt-6 pb-2 md:pb-4 scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-toggle-off ${isSelectMode ? "select-mode" : ""}`}
+        className={`flex-1 overflow-y-auto px-4 md:px-8 flex flex-col pt-6 pb-28 md:pb-32 scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-toggle-off ${isSelectMode ? "select-mode" : ""}`}
       >
         {groupMessagesByDate(activeMessages).map(([label, msgs]) => (
           <div key={label} className="flex flex-col">
@@ -544,7 +570,9 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
               />
             ))}
           </div>
-        ))}
+        ))}{" "}
+        {/* Scroll anchor */}
+        <div ref={messagesEndRef} className="shrink-0" />{" "}
       </div>
 
       {/* Selection Action Bar */}
@@ -681,64 +709,57 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
       </div>
 
       {/* Chat Input Area */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-bg via-bg to-transparent">
-        <div className="flex flex-col">
-          <div className="flex items-center bg-input/80 backdrop-blur-md rounded-full border border-border/50 p-1.5 shadow-lg">
-            <button
-              className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center bg-accent text-white md:bg-transparent md:text-text-secondary shrink-0 hover:bg-card hover:text-text-main transition-colors"
-              aria-label="Add attachment"
-            >
-              <Paperclip className="w-[18px] h-[18px]" />
-            </button>
-            <button
-              className="w-10 h-10 rounded-full hidden md:flex items-center justify-center text-text-secondary shrink-0 hover:bg-card hover:text-text-main transition-colors mr-1"
-              aria-label="Emoji"
-            >
-              <Smile className="w-[18px] h-[18px]" />
-            </button>
+      <div className="absolute bottom-0 left-0 right-0 px-3 pb-2 md:px-4 md:pb-2 pt-12 bg-gradient-to-t from-bg via-bg to-transparent">
+        <div className="flex items-center bg-input/80 backdrop-blur-md rounded-full border border-border/50 p-1.5 shadow-lg">
+          {/* + button: blue circle on mobile, plain on desktop */}
+          <button
+            className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center bg-accent text-white md:bg-transparent md:text-text-secondary shrink-0 hover:brightness-110 md:hover:bg-card md:hover:text-text-main transition-colors"
+            aria-label="Add attachment"
+          >
+            <Plus className="w-[18px] h-[18px]" />
+          </button>
 
-            <input
-              type="text"
-              placeholder="Type your message..."
-              className="flex-1 bg-transparent border-none outline-none text-[14px] text-text-main placeholder:text-text-secondary px-2"
-              onChange={handleTypingEmit}
-              onKeyDown={(e) => {
-                if (
-                  e.key === "Enter" &&
-                  !e.shiftKey &&
-                  e.currentTarget.value.trim() !== ""
-                ) {
-                  e.preventDefault();
-                  sendMessage(e.currentTarget.value.trim());
-                  e.currentTarget.value = "";
-                  // Stop typing immediately on send
-                  if (typingTimerRef.current)
-                    clearTimeout(typingTimerRef.current);
-                  if (isTypingRef.current && activeConversation && socket) {
-                    isTypingRef.current = false;
-                    socket.emit("typing:stop", activeConversation.id);
-                  }
-                }
-              }}
-            />
+          {/* Emoji: always on desktop; on mobile only when input is empty */}
+          <button
+            className={`w-10 h-10 rounded-full flex items-center justify-center text-text-secondary shrink-0 hover:bg-card hover:text-text-main transition-colors mr-1 ${inputValue ? "hidden md:flex" : "flex"}`}
+            aria-label="Emoji"
+          >
+            <Smile className="w-[18px] h-[18px]" />
+          </button>
 
-            <div className="flex items-center gap-1.5 ml-2">
-              <button
-                className="w-10 h-10 rounded-full flex items-center justify-center text-text-secondary shrink-0 hover:bg-card hover:text-text-main transition-colors"
-                aria-label="Voice note"
-              >
-                <Mic className="w-[18px] h-[18px]" />
-              </button>
-              <button
-                className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-white shrink-0 hover:brightness-110 shadow-md transition-all"
-                aria-label="Send message"
-              >
-                <Send className="w-[18px] h-[18px] ml-0.5" />
-              </button>
-            </div>
-          </div>
-          <div className="text-center text-[10px] text-text-secondary mt-2 hidden md:block">
-            Enter to send, Shift + Enter for new line
+          <input
+            type="text"
+            placeholder="Write a message..."
+            value={inputValue}
+            className="flex-1 bg-transparent border-none outline-none text-[14px] text-text-main placeholder:text-text-secondary px-2"
+            onChange={(e) => {
+              setInputValue(e.target.value);
+              handleTypingEmit();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+          />
+
+          <div className="flex items-center gap-1.5 ml-2">
+            {/* Mic: only when input is empty */}
+            <button
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-text-secondary shrink-0 hover:bg-card hover:text-text-main transition-colors ${inputValue ? "hidden" : "flex"}`}
+              aria-label="Voice note"
+            >
+              <Mic className="w-[18px] h-[18px]" />
+            </button>
+            {/* Send: only when input has text */}
+            <button
+              className={`w-10 h-10 rounded-full bg-accent flex items-center justify-center text-white shrink-0 hover:brightness-110 shadow-md transition-all ${inputValue ? "flex" : "hidden"}`}
+              aria-label="Send message"
+              onClick={handleSend}
+            >
+              <Send className="w-[18px] h-[18px] ml-0.5" />
+            </button>
           </div>
         </div>
       </div>

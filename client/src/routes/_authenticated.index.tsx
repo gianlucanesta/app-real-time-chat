@@ -12,12 +12,18 @@ export const Route = createFileRoute("/_authenticated/")({
 function ChatIndex() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mobileShowChat, setMobileShowChat] = useState(false);
-  const { activeConversation } = useChat();
+  const { activeConversation, setMobileInChat } = useChat();
 
   // When a conversation is selected, show chat on mobile
   useEffect(() => {
     if (activeConversation) setMobileShowChat(true);
   }, [activeConversation]);
+
+  // Keep global mobileInChat in sync so VerticalNav can hide the bottom bar
+  useEffect(() => {
+    setMobileInChat(mobileShowChat);
+    return () => setMobileInChat(false);
+  }, [mobileShowChat, setMobileInChat]);
 
   return (
     <div className="h-screen max-h-screen flex overflow-hidden font-sans bg-bg text-text-main">
