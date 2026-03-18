@@ -1,6 +1,29 @@
-import type { AuthResponse } from "../types";
+import type { AuthResponse, User } from "../types";
 
 const BASE_URL = "http://localhost:3001/api";
+
+/**
+ * Transform a raw snake_case API user response to the camelCase User type.
+ * The server returns fields like display_name, first_name, avatar_url, etc.
+ */
+export function normalizeUser(raw: Record<string, any>): User {
+  return {
+    id: raw.id,
+    email: raw.email,
+    displayName: raw.display_name ?? raw.displayName ?? "",
+    firstName: raw.first_name ?? raw.firstName,
+    lastName: raw.last_name ?? raw.lastName,
+    avatarUrl: raw.avatar_url ?? raw.avatarUrl ?? null,
+    avatarGradient:
+      raw.avatar_gradient ??
+      raw.avatarGradient ??
+      "linear-gradient(135deg, #6366f1, #a855f7)",
+    role: raw.role ?? "",
+    phone: raw.phone ?? "",
+    isOnline: raw.is_online ?? raw.isOnline ?? false,
+    lastSeen: raw.last_seen ?? raw.lastSeen,
+  };
+}
 
 export class ApiError extends Error {
   status: number;

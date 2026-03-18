@@ -54,6 +54,8 @@ function SignupPage() {
   const [emailError, setEmailError] = useState("");
   const [phoneError, setPhoneError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [emailShake, setEmailShake] = useState(false);
+  const [phoneShake, setPhoneShake] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [socialExpanded, setSocialExpanded] = useState(false);
 
@@ -79,7 +81,19 @@ function SignupPage() {
       login(data);
       navigate({ to: "/" });
     } catch (err: any) {
-      setError(err.message || "Failed to create account");
+      const msg: string = err.message || "Failed to create account";
+      const lower = msg.toLowerCase();
+      if (lower.includes("email")) {
+        setEmailError(msg);
+        setEmailShake(true);
+        setTimeout(() => setEmailShake(false), 500);
+      } else if (lower.includes("phone")) {
+        setPhoneError(msg);
+        setPhoneShake(true);
+        setTimeout(() => setPhoneShake(false), 500);
+      } else {
+        setError(msg);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -126,28 +140,30 @@ function SignupPage() {
             <div className="flex justify-between items-center">
               <Label htmlFor="email">EMAIL</Label>
             </div>
-            <Input
-              id="email"
-              type="email"
-              placeholder="Enter your email"
-              icon={<Mail className="w-5 h-5" />}
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setEmailError("");
-              }}
-              onBlur={() => {
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (email && !emailRegex.test(email)) {
-                  setEmailError("Please enter a valid email address.");
-                } else {
+            <div className={emailShake ? "field-shake" : ""}>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                icon={<Mail className="w-5 h-5" />}
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
                   setEmailError("");
-                }
-              }}
-              autoComplete="email"
-              error={!!emailError}
-              required
-            />
+                }}
+                onBlur={() => {
+                  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                  if (email && !emailRegex.test(email)) {
+                    setEmailError("Please enter a valid email address.");
+                  } else {
+                    setEmailError("");
+                  }
+                }}
+                autoComplete="email"
+                error={!!emailError}
+                required
+              />
+            </div>
             {emailError && (
               <p className="text-[13px] text-danger font-medium mt-1">
                 {emailError}
@@ -162,42 +178,55 @@ function SignupPage() {
                 PHONE NUMBER <span className="text-danger">*</span>
               </Label>
             </div>
-            <div className="flex gap-2">
+            <div
+              className={`flex gap-2 w-full${phoneShake ? " field-shake" : ""}`}
+            >
               <select
                 value={countryCode}
                 onChange={(e) => setCountryCode(e.target.value)}
-                className="h-[44px] px-2 rounded-[10px] bg-input-bg border border-border text-text-main text-[14px] focus:outline-none focus:border-accent transition-colors flex-shrink-0"
-                style={{ maxWidth: 95 }}
+                className="phone-select h-[44px] px-2 rounded-[10px] bg-input border border-border text-text-main text-[14px] focus:outline-none focus:border-accent transition-colors flex-shrink-0 cursor-pointer"
+                style={{ minWidth: 88, maxWidth: 100 }}
               >
                 {COUNTRY_CODES.map((c) => (
-                  <option key={c.code} value={c.code}>
+                  <option
+                    key={c.code}
+                    value={c.code}
+                    className="bg-card text-text-main"
+                  >
                     {c.label}
                   </option>
                 ))}
               </select>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="Phone number"
-                icon={<Phone className="w-5 h-5" />}
-                value={phone}
-                onChange={(e) => {
-                  setPhone(e.target.value);
-                  setPhoneError("");
-                }}
-                onBlur={() => {
-                  if (!phone.trim()) {
-                    setPhoneError("Phone number is required.");
-                  } else if (!/^\d{7,15}$/.test(phone.replace(/\s/g, ""))) {
-                    setPhoneError("Enter a valid phone number (7-15 digits).");
-                  } else {
+              <div className="flex-1 min-w-0">
+                <Input
+                  id="phone"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="Phone number"
+                  icon={<Phone className="w-5 h-5" />}
+                  value={phone}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, "");
+                    setPhone(digits);
                     setPhoneError("");
-                  }
-                }}
-                autoComplete="tel"
-                error={!!phoneError}
-                required
-              />
+                  }}
+                  onBlur={() => {
+                    if (!phone.trim()) {
+                      setPhoneError("Phone number is required.");
+                    } else if (!/^\d{7,15}$/.test(phone.replace(/\s/g, ""))) {
+                      setPhoneError(
+                        "Enter a valid phone number (7-15 digits).",
+                      );
+                    } else {
+                      setPhoneError("");
+                    }
+                  }}
+                  autoComplete="tel"
+                  error={!!phoneError}
+                  required
+                />
+              </div>
             </div>
             {phoneError && (
               <p className="text-[13px] text-danger font-medium mt-1">

@@ -76,6 +76,14 @@ export async function register(
       return;
     }
 
+    if (phone) {
+      const existingPhone = await UserModel.findByPhone(phone);
+      if (existingPhone) {
+        res.status(409).json({ error: "Phone number already registered" });
+        return;
+      }
+    }
+
     // Hash & create
     const passwordHash = await hashPassword(password);
     const user = await UserModel.create({

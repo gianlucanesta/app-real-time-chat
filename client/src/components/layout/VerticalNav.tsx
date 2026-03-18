@@ -96,7 +96,10 @@ export function VerticalNav() {
       </nav>
 
       {/* --- MOBILE BOTTOM NAVIGATION --- */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[64px] bg-bg border-t border-border z-50 flex items-center justify-around px-2">
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 h-[64px] border-t border-border z-50 flex items-center justify-around px-2"
+        style={{ backgroundColor: "#131c2e" }}
+      >
         {mobileNavLinks.map((link) => {
           const Icon = link.icon;
           const active = isActive(link.path);

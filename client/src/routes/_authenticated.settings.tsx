@@ -24,7 +24,7 @@ import { useTheme } from "../contexts/ThemeContext";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { apiFetch } from "../lib/api";
+import { apiFetch, normalizeUser } from "../lib/api";
 import type { User as UserType } from "../types";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -44,7 +44,7 @@ const NAV_ITEMS = [
 ];
 
 function SettingsPage() {
-  const { user, login, logout } = useAuth();
+  const { user, updateUser, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -55,9 +55,8 @@ function SettingsPage() {
   const [navSearch, setNavSearch] = useState("");
 
   // Profile form state
-  const nameParts = (user?.displayName || "").split(" ");
-  const [firstName] = useState(nameParts[0] || "");
-  const [lastName] = useState(nameParts.slice(1).join(" ") || "");
+  const [firstName] = useState(user?.firstName || "");
+  const [lastName] = useState(user?.lastName || "");
   const [displayName, setDisplayName] = useState(user?.displayName || "");
   const [phone, setPhone] = useState(user?.phone || "");
   const [role, setRole] = useState(user?.role || "");
@@ -90,16 +89,7 @@ function SettingsPage() {
         method: "PATCH",
         body: JSON.stringify({ displayName, phone, role }),
       });
-      const keepLoggedIn = !!localStorage.getItem("ephemeral_remember");
-      const accessToken =
-        localStorage.getItem("accessToken") ||
-        sessionStorage.getItem("accessToken") ||
-        "";
-      const refreshToken =
-        localStorage.getItem("refreshToken") ||
-        sessionStorage.getItem("refreshToken") ||
-        "";
-      login({ user: data.user, accessToken, refreshToken }, keepLoggedIn);
+      updateUser(normalizeUser(data.user as any));
       setSaveMessage({
         text: "Profile updated successfully.",
         type: "success",
@@ -111,7 +101,7 @@ function SettingsPage() {
       });
     } finally {
       setIsSaving(false);
-      setTimeout(() => setSaveMessage({ text: "", type: "" }), 3000);
+      setTimeout(() => setSaveMessage({ text: "", type: "" }), 3500);
     }
   };
 
@@ -266,7 +256,7 @@ function SettingsPage() {
           </div>
 
           {/* Save */}
-          <div className="flex items-center gap-3 pt-2">
+          <div className="flex flex-col gap-3 pt-2">
             <Button
               onClick={handleSave}
               disabled={isSaving}
@@ -276,18 +266,18 @@ function SettingsPage() {
             </Button>
             {saveMessage.text && (
               <div
-                className={`flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-lg ${
+                className={`settings-save-toast flex items-center gap-2.5 px-4 py-3 rounded-xl text-[13px] font-medium border ${
                   saveMessage.type === "error"
-                    ? "bg-danger/10 text-danger"
-                    : "bg-success/10 text-success"
+                    ? "bg-danger/10 border-danger/20 text-danger"
+                    : "bg-success/10 border-success/20 text-success"
                 }`}
               >
                 {saveMessage.type === "error" ? (
-                  <HelpCircle className="w-3.5 h-3.5" />
+                  <HelpCircle className="w-4 h-4 shrink-0" />
                 ) : (
-                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <ShieldCheck className="w-4 h-4 shrink-0" />
                 )}
-                {saveMessage.text}
+                <span>{saveMessage.text}</span>
               </div>
             )}
           </div>
@@ -411,7 +401,7 @@ function SettingsPage() {
 // ── Desktop wrapper — renders only on md+ screens ─────────────────────────
 // We need a separate component to avoid React hook ordering issues
 function SettingsPageDesktop() {
-  const { user, login, logout } = useAuth();
+  const { user, updateUser, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -453,16 +443,7 @@ function SettingsPageDesktop() {
         method: "PATCH",
         body: JSON.stringify({ displayName, phone, role }),
       });
-      const keepLoggedIn = !!localStorage.getItem("ephemeral_remember");
-      const accessToken =
-        localStorage.getItem("accessToken") ||
-        sessionStorage.getItem("accessToken") ||
-        "";
-      const refreshToken =
-        localStorage.getItem("refreshToken") ||
-        sessionStorage.getItem("refreshToken") ||
-        "";
-      login({ user: data.user, accessToken, refreshToken }, keepLoggedIn);
+      updateUser(normalizeUser(data.user as any));
       setSaveMessage({
         text: "Profile updated successfully.",
         type: "success",
@@ -474,7 +455,7 @@ function SettingsPageDesktop() {
       });
     } finally {
       setIsSaving(false);
-      setTimeout(() => setSaveMessage({ text: "", type: "" }), 3000);
+      setTimeout(() => setSaveMessage({ text: "", type: "" }), 3500);
     }
   };
 
@@ -533,27 +514,13 @@ function SettingsPageDesktop() {
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-border flex items-center gap-3">
-          <div
-            className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-[12px] text-white shrink-0"
-            style={{ background: avatarGradient }}
-          >
-            {initials}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[13px] font-semibold text-text-main truncate">
-              {user?.displayName || "User"}
-            </div>
-            <div className="text-[11px] text-text-secondary truncate">
-              {user?.email}
-            </div>
-          </div>
+        <div className="p-4 border-t border-border">
           <button
             onClick={handleLogout}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:text-danger hover:bg-danger/10 transition-colors"
-            aria-label="Logout"
+            className="w-full flex items-center justify-center gap-2 h-10 rounded-lg text-danger text-[13px] font-medium hover:bg-danger/10 transition-colors"
           >
             <LogOut className="w-4 h-4" />
+            Sign Out
           </button>
         </div>
       </aside>
@@ -714,7 +681,7 @@ function SettingsPageDesktop() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 mt-8">
+              <div className="flex flex-col gap-3 mt-8">
                 <Button
                   onClick={handleSave}
                   disabled={isSaving}
@@ -722,23 +689,20 @@ function SettingsPageDesktop() {
                 >
                   {isSaving ? "Saving..." : "Save Changes"}
                 </Button>
-                <Button
-                  variant="outline"
-                  asChild
-                  className="h-10 px-6 rounded-lg border-border text-text-main"
-                >
-                  <Link to="/">Cancel</Link>
-                </Button>
                 {saveMessage.text && (
                   <div
-                    className={`flex items-center gap-1.5 text-[12px] font-medium px-3 py-1.5 rounded-lg ${saveMessage.type === "error" ? "bg-danger/10 text-danger" : "bg-success/10 text-success"}`}
+                    className={`settings-save-toast flex items-center gap-2.5 px-4 py-3 rounded-xl text-[13px] font-medium border ${
+                      saveMessage.type === "error"
+                        ? "bg-danger/10 border-danger/20 text-danger"
+                        : "bg-success/10 border-success/20 text-success"
+                    }`}
                   >
                     {saveMessage.type === "error" ? (
-                      <HelpCircle className="w-3.5 h-3.5" />
+                      <HelpCircle className="w-4 h-4 shrink-0" />
                     ) : (
-                      <ShieldCheck className="w-3.5 h-3.5" />
+                      <ShieldCheck className="w-4 h-4 shrink-0" />
                     )}
-                    {saveMessage.text}
+                    <span>{saveMessage.text}</span>
                   </div>
                 )}
               </div>

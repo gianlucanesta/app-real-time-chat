@@ -6,6 +6,7 @@ import {
   getAccessToken,
   setAccessToken,
   clearAccessToken,
+  normalizeUser,
   ApiError,
 } from "../lib/api";
 
@@ -18,6 +19,7 @@ export interface AuthContextType {
   login: (data: AuthResponse) => void;
   logout: () => void;
   checkAuth: () => Promise<void>;
+  updateUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,7 +34,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const login = (data: AuthResponse) => {
     setAccessToken(data.accessToken);
-    setUser(data.user);
+    setUser(normalizeUser(data.user as any));
+  };
+
+  /** Update only the user object without touching auth tokens (e.g. after profile PATCH). */
+  const updateUser = (u: User) => {
+    setUser(u);
   };
 
   /**
@@ -70,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       // Server returns { user: {...} }
       const data = await apiFetch<{ user: User }>("/users/me");
-      setUser(data.user);
+      setUser(normalizeUser(data.user as any));
     } catch (error) {
       // Only wipe tokens on a definitive 401 (invalid / expired + refresh failed).
       // Network errors or 5xx (e.g. backend cold-starting on Render) must NOT
@@ -102,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         checkAuth,
+        updateUser,
       }}
     >
       {children}

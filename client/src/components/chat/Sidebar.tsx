@@ -74,7 +74,7 @@ export function Sidebar() {
   }, [conversations, activeFilter, searchQuery]);
 
   return (
-    <aside className="w-full md:w-[var(--width-sidebar)] md:min-w-[var(--width-sidebar)] bg-bg md:bg-card flex flex-col border-r border-border h-full relative overflow-hidden">
+    <aside className="w-full md:w-[var(--width-sidebar)] md:min-w-[var(--width-sidebar)] bg-card flex flex-col border-r border-border h-full relative overflow-hidden">
       {/* Slide-in Panels */}
       <NewChatPanel
         isOpen={isNewChatOpen}

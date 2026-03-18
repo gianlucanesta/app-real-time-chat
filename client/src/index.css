@@ -3,8 +3,8 @@
 
 @theme {
   /* Colors — aligned with static prototype */
-  --color-bg: #17212b;
-  --color-card: #1f2b38;
+  --color-bg: #0b1120;
+  --color-card: #131c2e;
   --color-input: #27384c;
   --color-border: #2a3a4c;
   --color-accent: #2563eb;
@@ -272,6 +272,15 @@ body {
 }
 .fade-in-down {
   animation: fadeInDown 0.25s ease-out forwards;
+}
+.settings-save-toast {
+  animation: fadeInDown 0.25s ease-out forwards;
+}
+
+/* Country code select dropdown — ensures readable background on all browsers */
+select.phone-select option {
+  background-color: var(--color-card);
+  color: var(--color-text-main);
 }
 
 /* Base utility for auth pages bottom glow */

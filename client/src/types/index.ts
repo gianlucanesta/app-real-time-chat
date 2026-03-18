@@ -2,7 +2,9 @@ export interface User {
   id: string;
   email: string;
   displayName: string;
-  avatarUrl?: string;
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string | null;
   avatarGradient?: string;
   role?: string;
   phone?: string;
