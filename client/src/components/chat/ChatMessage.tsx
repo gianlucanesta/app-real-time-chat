@@ -13,6 +13,11 @@ interface ChatMessageProps {
   isSelectMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: () => void;
+  onCopy?: () => void;
+  onDelete?: () => void;
+  onEnterSelectMode?: () => void;
+  reactions?: Record<string, number>;
+  onReaction?: (emoji: string) => void;
 }
 
 const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
@@ -27,7 +32,12 @@ export function ChatMessage({
   status,
   isSelectMode = false,
   isSelected = false,
-  onToggleSelect
+  onToggleSelect,
+  onCopy,
+  onDelete,
+  onEnterSelectMode,
+  reactions,
+  onReaction,
 }: ChatMessageProps) {
   const [isReactionMenuOpen, setIsReactionMenuOpen] = useState(false);
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
@@ -79,6 +89,21 @@ export function ChatMessage({
             {text}
           </div>
 
+          {/* Reaction strip */}
+          {reactions && Object.keys(reactions).length > 0 && (
+            <div className={`flex items-center gap-1 mt-1 ${isSent ? "justify-end mr-1" : "ml-1"}`}>
+              {Object.entries(reactions).map(([emoji, count]) => (
+                <button
+                  key={emoji}
+                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-card border border-border/50 text-[12px] hover:bg-input/80 transition-colors"
+                  onClick={() => onReaction?.(emoji)}
+                >
+                  {emoji}{count > 1 && <span className="text-text-secondary text-[10px]">{count}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Time and Status */}
           <div className={`text-[11px] text-text-secondary mt-1 flex items-center gap-1 ${isSent ? "justify-end mr-1" : "ml-1"}`}>
             {time}
@@ -121,7 +146,11 @@ export function ChatMessage({
                {isReactionMenuOpen && (
                  <div className="absolute top-full lg:bottom-full lg:top-auto mt-2 lg:mt-0 lg:mb-2 -left-1/2 p-2 bg-card border border-border/80 shadow-xl rounded-full flex items-center gap-1 animate-in zoom-in-95 z-50">
                    {EMOJIS.map(emoji => (
-                     <button key={emoji} className="w-8 h-8 rounded-full hover:bg-input flex items-center justify-center text-xl transition-transform hover:scale-125">
+                     <button
+                       key={emoji}
+                       className="w-8 h-8 rounded-full hover:bg-input flex items-center justify-center text-xl transition-transform hover:scale-125"
+                       onClick={() => { onReaction?.(emoji); setIsReactionMenuOpen(false); }}
+                     >
                        {emoji}
                      </button>
                    ))}
@@ -145,7 +174,10 @@ export function ChatMessage({
                     <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
                       <Reply className="w-4 h-4 text-text-secondary" /> Reply
                     </button>
-                    <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
+                    <button
+                      className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
+                      onClick={() => { onCopy?.(); setIsContextMenuOpen(false); }}
+                    >
                       <Copy className="w-4 h-4 text-text-secondary" /> Copy
                     </button>
                     <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
@@ -157,7 +189,10 @@ export function ChatMessage({
                     <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
                       <Star className="w-4 h-4 text-text-secondary" /> Star
                     </button>
-                    <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
+                    <button
+                      className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
+                      onClick={() => { onEnterSelectMode?.(); setIsContextMenuOpen(false); }}
+                    >
                       <CheckSquare className="w-4 h-4 text-text-secondary" /> Select
                     </button>
                     {!isSent && (
@@ -166,7 +201,10 @@ export function ChatMessage({
                       </button>
                     )}
                     <div className="w-full h-px bg-border/50 my-1"></div>
-                    <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-danger hover:bg-danger/10 transition-colors font-medium">
+                    <button
+                      className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-danger hover:bg-danger/10 transition-colors font-medium"
+                      onClick={() => { onDelete?.(); setIsContextMenuOpen(false); }}
+                    >
                       <Trash2 className="w-4 h-4" /> Delete
                     </button>
                  </div>

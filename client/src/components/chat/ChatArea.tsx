@@ -24,6 +24,7 @@ import { ChatMessage } from "./ChatMessage";
 import { CallScreen } from "./CallScreen";
 import { ConfirmModal } from "./ConfirmModal";
 import { useChat, type Message } from "../../contexts/ChatContext";
+import { useToast } from "../../contexts/ToastContext";
 
 /** Return a human-friendly date label for a message group separator. */
 function dateSeparatorLabel(dateStr: string): string {
@@ -60,6 +61,7 @@ interface ChatAreaProps {
 
 export function ChatArea({ onMobileBack }: ChatAreaProps) {
   const { activeConversation, activeMessages, sendMessage, typingUsers, socket } = useChat();
+  const toast = useToast();
 
   const [isContactInfoOpen, setIsContactInfoOpen] = useState(false);
   const [isEditContactOpen, setIsEditContactOpen] = useState(false);
@@ -90,6 +92,48 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
       prev.includes(id) ? prev.filter((msgId) => msgId !== id) : [...prev, id],
     );
   };
+
+  // Reactions state: messageId -> emoji -> count
+  const [reactions, setReactions] = useState<Record<string, Record<string, number>>>({});
+
+  const handleCopyMessage = useCallback((text: string) => {
+    navigator.clipboard.writeText(text).then(() => toast.success("Message copied!"));
+  }, [toast]);
+
+  const handleDeleteMessage = useCallback((id: string) => {
+    // TODO: API call DELETE /api/messages/:id
+    setSelectedMessages((prev) => prev.filter((m) => m !== id));
+  }, []);
+
+  const handleReaction = useCallback((msgId: string, emoji: string) => {
+    setReactions((prev) => {
+      const msgReactions = { ...(prev[msgId] || {}) };
+      if (msgReactions[emoji]) {
+        msgReactions[emoji] -= 1;
+        if (msgReactions[emoji] <= 0) delete msgReactions[emoji];
+      } else {
+        msgReactions[emoji] = 1;
+      }
+      return { ...prev, [msgId]: msgReactions };
+    });
+  }, []);
+
+  const handleEnterSelectMode = useCallback((msgId: string) => {
+    setIsSelectMode(true);
+    setSelectedMessages([msgId]);
+  }, []);
+
+  const handleCopySelected = useCallback(() => {
+    const texts = activeMessages
+      .filter((m) => selectedMessages.includes(m.id))
+      .map((m) => m.text)
+      .join("\n");
+    navigator.clipboard.writeText(texts).then(() => {
+      toast.success(`${selectedMessages.length} message(s) copied!`);
+      setIsSelectMode(false);
+      setSelectedMessages([]);
+    });
+  }, [activeMessages, selectedMessages, toast]);
 
   // Call & Modal State
   const [isCallScreenOpen, setIsCallScreenOpen] = useState(false);
@@ -440,6 +484,11 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
                 isSelectMode={isSelectMode}
                 isSelected={selectedMessages.includes(msg.id)}
                 onToggleSelect={() => toggleMessageSelection(msg.id)}
+                onCopy={() => handleCopyMessage(msg.text)}
+                onDelete={() => handleDeleteMessage(msg.id)}
+                onEnterSelectMode={() => handleEnterSelectMode(msg.id)}
+                reactions={reactions[msg.id]}
+                onReaction={(emoji) => handleReaction(msg.id, emoji)}
               />
             ))}
           </div>
@@ -481,6 +530,7 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
             data-sel-action="copy"
             aria-label="Copy"
             disabled={selectedMessages.length === 0}
+            onClick={handleCopySelected}
           >
             <svg
               viewBox="0 0 24 24"
@@ -652,12 +702,14 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
       <ConfirmModal
         isOpen={activeModal === "delete-messages"}
         title="Delete messages?"
-        description="This action cannot be undone."
+        description={`Delete ${selectedMessages.length} selected message(s)? This action cannot be undone.`}
         confirmText="Delete"
         onConfirm={() => {
+          // TODO: API call DELETE /api/messages with { messageIds: selectedMessages }
           setActiveModal(null);
           setIsSelectMode(false);
           setSelectedMessages([]);
+          toast.success("Messages deleted");
         }}
         onCancel={() => setActiveModal(null)}
       />
@@ -666,7 +718,11 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
         title="Clear chat?"
         description="All messages in this conversation will be permanently deleted. This cannot be undone."
         confirmText="Clear chat"
-        onConfirm={() => setActiveModal(null)}
+        onConfirm={() => {
+          // TODO: API call DELETE /api/messages/:conversationId
+          setActiveModal(null);
+          toast.success("Chat cleared");
+        }}
         onCancel={() => setActiveModal(null)}
       />
       <ConfirmModal
@@ -674,7 +730,11 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
         title="Delete chat?"
         description="This contact and all messages will be permanently removed. This cannot be undone."
         confirmText="Delete chat"
-        onConfirm={() => setActiveModal(null)}
+        onConfirm={() => {
+          // TODO: API call DELETE /api/contacts/:id + clear messages
+          setActiveModal(null);
+          toast.success("Chat deleted");
+        }}
         onCancel={() => setActiveModal(null)}
       />
     </main>
