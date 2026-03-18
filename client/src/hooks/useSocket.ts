@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "../contexts/AuthContext";
-import { getAccessToken } from "../lib/api";
+import { getAccessToken, setAccessToken } from "../lib/api";
+
+const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api";
 
 export type MessageStatus = "sent" | "delivered" | "read";
 
@@ -90,6 +92,28 @@ export function useSocket() {
     socket.on("disconnect", () => {
       console.log("Socket disconnected");
       setIsConnected(false);
+    });
+
+    socket.on("connect_error", async (err) => {
+      console.warn("[socket] connect_error:", err.message);
+      // Attempt token refresh on auth failure
+      if (err.message?.includes("auth") || err.message?.includes("jwt") || err.message?.includes("token")) {
+        try {
+          const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+          });
+          if (refreshRes.ok) {
+            const data = await refreshRes.json();
+            setAccessToken(data.accessToken);
+            socket.auth = { token: data.accessToken };
+            socket.connect();
+          }
+        } catch (refreshErr) {
+          console.error("[socket] Token refresh failed:", refreshErr);
+        }
+      }
     });
 
     socketRef.current = socket;

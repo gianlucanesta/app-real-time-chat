@@ -55,7 +55,7 @@ export function CallScreen({ isOpen, contactName, contactInitials, onEndCall }: 
         <div className="call-bar-group">
           <button
             type="button"
-            className={`call-bar-btn call-bar-camera`}
+            className={`call-bar-btn call-bar-camera ${!isCameraOn ? 'bg-danger/20 text-danger' : ''}`}
             data-active={isCameraOn}
             onClick={() => setIsCameraOn(!isCameraOn)}
             aria-label="Toggle camera"
@@ -71,7 +71,7 @@ export function CallScreen({ isOpen, contactName, contactInitials, onEndCall }: 
         <div className="call-bar-group">
           <button
             type="button"
-            className={`call-bar-btn call-bar-mic`}
+            className={`call-bar-btn call-bar-mic ${!isMicOn ? 'bg-danger/20 text-danger' : ''}`}
             data-active={isMicOn}
             onClick={() => setIsMicOn(!isMicOn)}
             aria-label="Toggle microphone"
