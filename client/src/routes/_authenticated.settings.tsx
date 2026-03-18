@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useRef } from "react";
 import { Grid, User, Bell, Shield, Lock, LogOut, Camera, Mail, Phone, Briefcase, Settings2, ShieldCheck, HelpCircle, Search, Volume2, MapPin, FileText, Keyboard, ChevronDown } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { useTheme } from "../contexts/ThemeContext";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 function SettingsPage() {
   const { user, login, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   // Form state
@@ -295,6 +297,17 @@ function SettingsPage() {
                 </div>
                 <label className="relative flex items-center cursor-pointer">
                   <input type="checkbox" className="sr-only peer" />
+                  <div className="w-11 h-6 bg-toggle-off peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-between px-6 py-4 hover:bg-input/20 transition-colors">
+                <div>
+                  <div className="font-medium text-text-main text-[14px]">Dark Mode</div>
+                  <div className="text-[13px] text-text-secondary mt-0.5">Switch between light and dark themes</div>
+                </div>
+                <label className="relative flex items-center cursor-pointer">
+                  <input type="checkbox" checked={theme === "dark"} onChange={toggleTheme} className="sr-only peer" />
                   <div className="w-11 h-6 bg-toggle-off peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
                 </label>
               </div>

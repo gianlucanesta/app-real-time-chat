@@ -92,6 +92,29 @@
   color: var(--color-text-main);
 }
 
+/* ── Light theme overrides ─────────────────────────────── */
+:root.light {
+  --color-bg: #f8fafc;
+  --color-card: #ffffff;
+  --color-input: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-accent: #2563eb;
+  --color-accent-hover: #1d4ed8;
+  --color-accent-subtle: rgba(37, 99, 235, 0.08);
+  --color-text-main: #0f172a;
+  --color-text-secondary: #64748b;
+  --color-success: #16a34a;
+  --color-danger: #dc2626;
+  --color-info: #2563eb;
+  --color-warning: #d97706;
+  --color-overlay: rgba(0, 0, 0, 0.3);
+  --color-toggle-off: #cbd5e1;
+  --color-toast-info-bg: #eff6ff;
+  --color-toast-success-bg: #f0fdf4;
+  --color-toast-error-bg: #fef2f2;
+  --color-toast-warning-bg: #fffbeb;
+}
+
 body {
   font-family: var(--font-sans);
   margin: 0;

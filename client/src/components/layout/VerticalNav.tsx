@@ -9,12 +9,16 @@ import {
   Archive,
   Settings,
   CircleDashed,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useTheme } from "../../contexts/ThemeContext";
 
 export function VerticalNav() {
   const { pathname } = useLocation();
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   // A helper function to determine if a route is active
   const isActive = (path: string) => {
@@ -81,6 +85,14 @@ export function VerticalNav() {
 
         {/* Bottom icons */}
         <div className="flex flex-col gap-6 w-full items-center">
+          <button
+            onClick={toggleTheme}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            className="p-3 rounded-xl transition-all text-text-secondary hover:text-text-main hover:bg-card"
+          >
+            {theme === "dark" ? <Sun size={24} /> : <Moon size={24} />}
+          </button>
+
           <Link
             to="/settings"
             title="Settings"
@@ -128,6 +140,15 @@ export function VerticalNav() {
             </Link>
           );
         })}
+        {/* Theme Toggle on Mobile */}
+        <button
+          onClick={toggleTheme}
+          className="flex flex-col items-center justify-center w-full h-full gap-1 transition-colors text-text-secondary hover:text-text-main"
+        >
+          {theme === "dark" ? <Sun size={22} /> : <Moon size={22} />}
+          <span className="text-[10px] font-medium">{theme === "dark" ? "Light" : "Dark"}</span>
+        </button>
+
         {/* Profile Tab on Mobile */}
         <Link
           to="/settings"

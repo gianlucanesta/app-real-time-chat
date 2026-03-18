@@ -13,6 +13,7 @@ import { routeTree } from "./routeTree.gen";
 // Import AuthContext
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ToastProvider } from "./contexts/ToastContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 
 // Create a new router instance
 const router = createRouter({
@@ -35,10 +36,12 @@ function App() {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ToastProvider>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </ToastProvider>
+    <ThemeProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <App />
+        </AuthProvider>
+      </ToastProvider>
+    </ThemeProvider>
   </StrictMode>,
 );
