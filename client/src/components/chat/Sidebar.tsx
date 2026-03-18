@@ -10,7 +10,7 @@ import {
   ChevronDown,
   Lock,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useClickOutside } from "../../hooks/useClickOutside";
 import { useChat } from "../../contexts/ChatContext";
 import { NewChatPanel } from "./NewChatPanel";
@@ -18,6 +18,7 @@ import { NewContactPanel } from "./NewContactPanel";
 
 export function Sidebar() {
   const [activeFilter, setActiveFilter] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [isNewContactOpen, setIsNewContactOpen] = useState(false);
@@ -36,6 +37,37 @@ export function Sidebar() {
     setActiveConversation,
     addOrUpdateConversation,
   } = useChat();
+
+  // Filter + search + sort conversations
+  const filteredConversations = useMemo(() => {
+    let list = [...conversations];
+
+    // Apply filter chip
+    if (activeFilter === "Unread") {
+      list = list.filter((c) => c.unreadCount > 0);
+    } else if (activeFilter === "Groups") {
+      list = list.filter((c) => c.type === "group");
+    }
+    // "Favorites", "Archived", "Muted" — no data yet, show empty
+    if (["Favorites", "Archived", "Muted"].includes(activeFilter)) {
+      list = [];
+    }
+
+    // Apply search
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      list = list.filter((c) => c.name.toLowerCase().includes(q));
+    }
+
+    // Sort by last message timestamp (most recent first)
+    list.sort((a, b) => {
+      const ta = a.lastMessageTimestamp ? new Date(a.lastMessageTimestamp).getTime() : 0;
+      const tb = b.lastMessageTimestamp ? new Date(b.lastMessageTimestamp).getTime() : 0;
+      return tb - ta;
+    });
+
+    return list;
+  }, [conversations, activeFilter, searchQuery]);
 
   return (
     <aside className="w-full md:w-[var(--width-sidebar)] md:min-w-[var(--width-sidebar)] bg-bg md:bg-card flex flex-col border-r border-border h-full relative overflow-hidden">
@@ -108,6 +140,8 @@ export function Sidebar() {
           <input
             type="text"
             placeholder="Search conversations..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="flex-1 bg-transparent border-none outline-none text-[13px] text-text-main placeholder:text-text-secondary"
           />
         </div>
@@ -162,11 +196,13 @@ export function Sidebar() {
 
       {/* Conversation List */}
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-toggle-off">
-        {[...conversations].sort((a, b) => {
-          const ta = a.lastMessageTimestamp ? new Date(a.lastMessageTimestamp).getTime() : 0;
-          const tb = b.lastMessageTimestamp ? new Date(b.lastMessageTimestamp).getTime() : 0;
-          return tb - ta;
-        }).map((chat) => (
+        {filteredConversations.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-12 text-text-secondary text-[13px] gap-2">
+            <Search className="w-5 h-5" />
+            <p>{searchQuery.trim() ? "No conversations found" : activeFilter !== "All" ? `No ${activeFilter.toLowerCase()} conversations` : "No conversations yet"}</p>
+          </div>
+        )}
+        {filteredConversations.map((chat) => (
           <div
             key={chat.id}
             onClick={() => setActiveConversation(chat)}
