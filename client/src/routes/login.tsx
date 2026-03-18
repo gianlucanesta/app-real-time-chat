@@ -52,11 +52,11 @@ function LoginPage() {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
+      login(data);
       setLoginSuccess(true);
       setTimeout(() => {
-        login(data);
         navigate({ to: "/" });
-      }, 600);
+      }, 1800);
     } catch (err: any) {
       errorKey.current += 1;
       setError(err.message || "Failed to login");
@@ -68,8 +68,45 @@ function LoginPage() {
 
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-5 bg-bg text-text-main font-sans overflow-hidden auth-page-glow relative">
+      {loginSuccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center success-modal-overlay">
+          <div className="bg-card rounded-2xl px-10 py-10 flex flex-col items-center gap-5 success-modal-card border border-border shadow-2xl">
+            <svg
+              className="w-[84px] h-[84px]"
+              viewBox="0 0 52 52"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle
+                cx="26"
+                cy="26"
+                r="24"
+                stroke="var(--color-success)"
+                strokeWidth="2"
+                className="check-circle"
+              />
+              <path
+                d="M14 27l8 8 16-16"
+                stroke="var(--color-success)"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="check-mark"
+              />
+            </svg>
+            <div className="text-center">
+              <p className="text-[20px] font-bold text-text-main">
+                Welcome back!
+              </p>
+              <p className="text-[13px] text-text-secondary mt-1.5">
+                Signing you in...
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <div
-        className={`w-full max-w-[440px] bg-card rounded-[16px] px-6 sm:px-8 py-8 sm:py-10 relative z-10 flex flex-col mb-8 transition-all duration-300${loginSuccess ? " success-glow" : ""}${formShake ? " field-shake" : ""}`}
+        className={`w-full max-w-[440px] bg-card rounded-[16px] px-6 sm:px-8 py-8 sm:py-10 relative z-10 flex flex-col mb-8${formShake ? " field-shake" : ""}`}
       >
         {/* Header */}
         <div className="text-center mb-8">
@@ -216,29 +253,10 @@ function LoginPage() {
           {/* Submit */}
           <Button
             type="submit"
-            className={`mt-2 w-full transition-all duration-300${loginSuccess ? " !bg-success hover:!bg-success" : ""}`}
+            className="mt-2 w-full"
             disabled={isLoading || !!emailError || loginSuccess}
           >
-            {loginSuccess ? (
-              <span className="flex items-center gap-2">
-                <svg
-                  className="w-4 h-4"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Success!
-              </span>
-            ) : isLoading ? (
-              "Signing In..."
-            ) : (
-              "Sign In \u2192"
-            )}
+            {isLoading ? "Signing In..." : "Sign In →"}
           </Button>
         </form>
 
