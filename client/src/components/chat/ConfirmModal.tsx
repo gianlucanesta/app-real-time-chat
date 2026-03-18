@@ -15,15 +15,29 @@ export function ConfirmModal({
   confirmText = "Delete",
   cancelText = "Cancel",
   onConfirm,
-  onCancel
+  onCancel,
 }: ConfirmModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className={`modal-overlay ${isOpen ? "open" : ""}`} aria-hidden={!isOpen} role="dialog" aria-labelledby="confirm-modal-title">
-      <div className="modal-card confirm-modal-card">
-        <div className="confirm-modal-icon confirm-modal-icon--danger mb-4">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
+      role="dialog"
+      aria-labelledby="confirm-modal-title"
+      onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
+    >
+      <div className="w-full max-w-[380px] bg-card rounded-2xl p-8 shadow-2xl text-center animate-in fade-in zoom-in-95">
+        {/* Icon */}
+        <div className="w-14 h-14 rounded-full bg-danger/15 flex items-center justify-center mx-auto mb-5">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="w-7 h-7 text-danger"
+          >
             <polyline points="3 6 5 6 21 6" />
             <path d="M19 6l-1 14H6L5 6" />
             <path d="M10 11v6" />
@@ -31,17 +45,26 @@ export function ConfirmModal({
             <path d="M9 6V4h6v2" />
           </svg>
         </div>
-        <h2 className="confirm-modal-title text-xl font-bold text-text-main mb-2" id="confirm-modal-title">{title}</h2>
-        <p className="confirm-modal-body text-text-secondary text-[15px] mb-6">{description}</p>
-        <div className="modal-actions flex justify-end gap-3">
-          <button 
-            className="px-4 py-2 rounded-lg font-medium text-text-main hover:bg-input transition-colors" 
+
+        <h2
+          className="text-xl font-bold text-text-main mb-2"
+          id="confirm-modal-title"
+        >
+          {title}
+        </h2>
+        <p className="text-text-secondary text-[14px] leading-relaxed mb-7">
+          {description}
+        </p>
+
+        <div className="flex items-center justify-center gap-3">
+          <button
+            className="px-5 py-2.5 rounded-xl font-medium text-[14px] text-text-main border border-border hover:bg-input transition-colors"
             onClick={onCancel}
           >
             {cancelText}
           </button>
-          <button 
-            className="px-4 py-2 rounded-lg font-medium bg-danger text-white hover:brightness-110 transition-all" 
+          <button
+            className="px-5 py-2.5 rounded-xl font-medium text-[14px] bg-danger text-white hover:brightness-110 transition-all shadow-sm"
             onClick={onConfirm}
           >
             {confirmText}

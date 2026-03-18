@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
   Mail,
   Lock,
@@ -28,9 +28,19 @@ function LoginPage() {
   const [emailError, setEmailError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [socialExpanded, setSocialExpanded] = useState(false);
+  const [emailShake, setEmailShake] = useState(false);
+  const [formShake, setFormShake] = useState(false);
+  const [loginSuccess, setLoginSuccess] = useState(false);
+  const emailErrorKey = useRef(0);
+  const errorKey = useRef(0);
 
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  const triggerShake = useCallback((setter: (v: boolean) => void) => {
+    setter(true);
+    setTimeout(() => setter(false), 500);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,10 +52,15 @@ function LoginPage() {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
-      login(data);
-      navigate({ to: "/" });
+      setLoginSuccess(true);
+      setTimeout(() => {
+        login(data);
+        navigate({ to: "/" });
+      }, 600);
     } catch (err: any) {
+      errorKey.current += 1;
       setError(err.message || "Failed to login");
+      triggerShake(setFormShake);
     } finally {
       setIsLoading(false);
     }
@@ -53,7 +68,9 @@ function LoginPage() {
 
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-5 bg-bg text-text-main font-sans overflow-hidden auth-page-glow relative">
-      <div className="w-full max-w-[440px] bg-card rounded-[16px] px-6 sm:px-8 py-8 sm:py-10 relative z-10 flex flex-col mb-8">
+      <div
+        className={`w-full max-w-[440px] bg-card rounded-[16px] px-6 sm:px-8 py-8 sm:py-10 relative z-10 flex flex-col mb-8 transition-all duration-300${loginSuccess ? " success-glow" : ""}${formShake ? " field-shake" : ""}`}
+      >
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-3 md:mb-4">
@@ -76,30 +93,37 @@ function LoginPage() {
             <div className="flex justify-between items-center">
               <Label htmlFor="email">EMAIL</Label>
             </div>
-            <Input
-              id="email"
-              type="email"
-              placeholder="Enter your email"
-              icon={<Mail className="w-5 h-5" />}
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setEmailError("");
-              }}
-              onBlur={() => {
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (email && !emailRegex.test(email)) {
-                  setEmailError("Please enter a valid email address.");
-                } else {
+            <div className={emailShake ? "field-shake" : ""}>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                icon={<Mail className="w-5 h-5" />}
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
                   setEmailError("");
-                }
-              }}
-              autoComplete="email"
-              error={!!emailError}
-              required
-            />
+                }}
+                onBlur={() => {
+                  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                  if (email && !emailRegex.test(email)) {
+                    emailErrorKey.current += 1;
+                    setEmailError("Please enter a valid email address.");
+                    triggerShake(setEmailShake);
+                  } else {
+                    setEmailError("");
+                  }
+                }}
+                autoComplete="email"
+                error={!!emailError}
+                required
+              />
+            </div>
             {emailError && (
-              <p className="text-[13px] text-danger font-medium mt-1">
+              <p
+                key={emailErrorKey.current}
+                className="error-msg text-[13px] text-danger font-medium mt-1"
+              >
                 {emailError}
               </p>
             )}
@@ -169,15 +193,52 @@ function LoginPage() {
             </span>
           </label>
 
-          {error && <div className="text-danger text-sm mt-1">{error}</div>}
+          {error && (
+            <div
+              key={errorKey.current}
+              className="error-msg fade-in-down flex items-start gap-2 rounded-md bg-danger/10 border border-danger/30 px-3 py-2.5 text-danger text-sm mt-1"
+            >
+              <svg
+                className="w-4 h-4 mt-0.5 shrink-0"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span>{error}</span>
+            </div>
+          )}
 
           {/* Submit */}
           <Button
             type="submit"
-            className="mt-2 w-full"
-            disabled={isLoading || !!emailError}
+            className={`mt-2 w-full transition-all duration-300${loginSuccess ? " !bg-success hover:!bg-success" : ""}`}
+            disabled={isLoading || !!emailError || loginSuccess}
           >
-            {isLoading ? "Signing In..." : "Sign In \u2192"}
+            {loginSuccess ? (
+              <span className="flex items-center gap-2">
+                <svg
+                  className="w-4 h-4"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 00-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                Success!
+              </span>
+            ) : isLoading ? (
+              "Signing In..."
+            ) : (
+              "Sign In \u2192"
+            )}
           </Button>
         </form>
 
@@ -188,19 +249,6 @@ function LoginPage() {
 
         {/* Social buttons */}
         <div className="flex flex-col gap-3">
-          {/* Demo login */}
-          <Button
-            variant="social"
-            className="w-full text-[14px] font-medium h-[40px] border-accent/30 hover:border-accent/60"
-            onClick={() => {
-              setEmail("demo@ephemeral.app");
-              setPassword("Demo1234");
-              setEmailError("");
-            }}
-          >
-            <MessageSquare className="w-[20px] h-[20px] text-accent" />
-            Try Demo Account
-          </Button>
           <Button
             variant="social"
             className="w-full text-[14px] font-medium h-[40px]"

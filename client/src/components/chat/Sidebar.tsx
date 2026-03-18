@@ -61,8 +61,12 @@ export function Sidebar() {
 
     // Sort by last message timestamp (most recent first)
     list.sort((a, b) => {
-      const ta = a.lastMessageTimestamp ? new Date(a.lastMessageTimestamp).getTime() : 0;
-      const tb = b.lastMessageTimestamp ? new Date(b.lastMessageTimestamp).getTime() : 0;
+      const ta = a.lastMessageTimestamp
+        ? new Date(a.lastMessageTimestamp).getTime()
+        : 0;
+      const tb = b.lastMessageTimestamp
+        ? new Date(b.lastMessageTimestamp).getTime()
+        : 0;
       return tb - ta;
     });
 
@@ -199,7 +203,13 @@ export function Sidebar() {
         {filteredConversations.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-text-secondary text-[13px] gap-2">
             <Search className="w-5 h-5" />
-            <p>{searchQuery.trim() ? "No conversations found" : activeFilter !== "All" ? `No ${activeFilter.toLowerCase()} conversations` : "No conversations yet"}</p>
+            <p>
+              {searchQuery.trim()
+                ? "No conversations found"
+                : activeFilter !== "All"
+                  ? `No ${activeFilter.toLowerCase()} conversations`
+                  : "No conversations yet"}
+            </p>
           </div>
         )}
         {filteredConversations.map((chat) => (

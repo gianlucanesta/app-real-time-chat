@@ -8,7 +8,11 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import { useAuth } from "./AuthContext";
-import { useSocket, type MessagePayload, type TypedSocket } from "../hooks/useSocket";
+import {
+  useSocket,
+  type MessagePayload,
+  type TypedSocket,
+} from "../hooks/useSocket";
 import { apiFetch } from "../lib/api";
 
 // --- Types ---
@@ -200,11 +204,33 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         isMe,
       };
 
-      // Append to active message list (dedupe optimistic)
-      setActiveMessages((prev) => {
-        if (prev.some((m) => m.id === newMsg.id)) return prev;
-        return [...prev, newMsg];
-      });
+      // For own messages, the optimistic update + ack callback already manages
+      // the entry in the list (tempId → real id). Appending again here would
+      // cause the duplicate that disappears on refresh.
+      if (isMe) {
+        // Just upgrade the temp entry to the confirmed id/status if ack hasn't
+        // fired yet (race condition safety).
+        setActiveMessages((prev) => {
+          if (prev.some((m) => m.id === newMsg.id)) return prev;
+          // Replace the most recent "sending" entry from us with the real one
+          const idx = [...prev]
+            .reverse()
+            .findIndex((m) => m.isMe && m.status === "sending");
+          if (idx !== -1) {
+            const realIdx = prev.length - 1 - idx;
+            const updated = [...prev];
+            updated[realIdx] = newMsg;
+            return updated;
+          }
+          return prev;
+        });
+      } else {
+        // Incoming message from another user — append (dedupe by id)
+        setActiveMessages((prev) => {
+          if (prev.some((m) => m.id === newMsg.id)) return prev;
+          return [...prev, newMsg];
+        });
+      }
 
       // Update or CREATE conversation in sidebar
       setConversations((prev) => {

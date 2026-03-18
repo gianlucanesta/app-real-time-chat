@@ -4,6 +4,8 @@ import { useAuth } from "../contexts/AuthContext";
 import { getAccessToken, setAccessToken } from "../lib/api";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api";
+// Socket.IO connects to the server root (no /api prefix)
+const SOCKET_URL = API_BASE.replace(/\/api$/, "");
 
 export type MessageStatus = "sent" | "delivered" | "read";
 
@@ -76,13 +78,10 @@ export function useSocket() {
     }
 
     // Initialize socket connection
-    const socket: TypedSocket = io(
-      import.meta.env.VITE_API_URL || "http://localhost:5000",
-      {
-        auth: { token },
-        transports: ["websocket"],
-      },
-    );
+    const socket: TypedSocket = io(SOCKET_URL, {
+      auth: { token },
+      transports: ["websocket"],
+    });
 
     socket.on("connect", () => {
       console.log("Socket connected:", socket.id);
@@ -97,7 +96,11 @@ export function useSocket() {
     socket.on("connect_error", async (err) => {
       console.warn("[socket] connect_error:", err.message);
       // Attempt token refresh on auth failure
-      if (err.message?.includes("auth") || err.message?.includes("jwt") || err.message?.includes("token")) {
+      if (
+        err.message?.includes("auth") ||
+        err.message?.includes("jwt") ||
+        err.message?.includes("token")
+      ) {
         try {
           const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
             method: "POST",

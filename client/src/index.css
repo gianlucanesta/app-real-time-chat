@@ -3,10 +3,10 @@
 
 @theme {
   /* Colors — aligned with static prototype */
-  --color-bg: #0b1120;
-  --color-card: #131c2e;
-  --color-input: #1a2332;
-  --color-border: #1e293b;
+  --color-bg: #17212b;
+  --color-card: #1f2b38;
+  --color-input: #27384c;
+  --color-border: #2a3a4c;
   --color-accent: #2563eb;
   --color-accent-hover: #3b82f6;
   --color-accent-subtle: rgba(37, 99, 235, 0.12);
@@ -136,6 +136,93 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background-color: var(--color-text-secondary);
+}
+
+/* ── Auth form animations ───────────────────────────────── */
+@keyframes fieldShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  15% {
+    transform: translateX(-6px);
+  }
+  30% {
+    transform: translateX(6px);
+  }
+  45% {
+    transform: translateX(-4px);
+  }
+  60% {
+    transform: translateX(4px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+  90% {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes errorSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes successPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+@keyframes cardSuccessGlow {
+  0%,
+  100% {
+    box-shadow: none;
+  }
+  40% {
+    box-shadow:
+      0 0 0 2px rgba(34, 197, 94, 0.5),
+      0 0 24px rgba(34, 197, 94, 0.15);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.field-shake {
+  animation: fieldShake 0.45s ease-in-out;
+}
+.error-msg {
+  animation: errorSlideIn 0.2s ease-out forwards;
+}
+.success-glow {
+  animation:
+    successPulse 0.6s ease-out,
+    cardSuccessGlow 0.8s ease-out;
+}
+.fade-in-down {
+  animation: fadeInDown 0.25s ease-out forwards;
 }
 
 /* Base utility for auth pages bottom glow */
@@ -666,7 +753,7 @@ input:-webkit-autofill:active {
 .chat-empty-actions {
   display: flex;
   flex-direction: row;
-  gap: var(--space-4);
+  gap: 16px;
   align-items: flex-start;
   justify-content: center;
 }
@@ -675,15 +762,15 @@ input:-webkit-autofill:active {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-5);
+  gap: 12px;
+  padding: 20px;
   background-color: var(--color-card);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
+  border-radius: 16px;
   cursor: pointer;
-  color: var(--color-text);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-medium);
+  color: var(--color-text-main);
+  font-size: 12px;
+  font-weight: 500;
   width: 120px;
   transition:
     background-color var(--transition-fast),
@@ -702,6 +789,7 @@ input:-webkit-autofill:active {
   align-items: center;
   justify-content: center;
   color: var(--color-text-secondary);
+  transition: color var(--transition-fast);
 }
 
 .chat-empty-action-icon svg {

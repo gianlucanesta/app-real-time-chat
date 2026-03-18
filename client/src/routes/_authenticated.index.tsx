@@ -21,13 +21,20 @@ function ChatIndex() {
 
   return (
     <div className="h-screen max-h-screen flex overflow-hidden font-sans bg-bg text-text-main">
-      <div className={`${mobileShowChat ? "hidden" : "flex"} md:flex w-full md:w-auto`}>
+      <div
+        className={`${mobileShowChat ? "hidden" : "flex"} md:flex w-full md:w-auto`}
+      >
         <Sidebar onOpenNewChat={() => setIsModalOpen(true)} />
       </div>
-      <div className={`${mobileShowChat ? "flex" : "hidden"} md:flex flex-1 min-w-0`}>
+      <div
+        className={`${mobileShowChat ? "flex" : "hidden"} md:flex flex-1 min-w-0`}
+      >
         <ChatArea onMobileBack={() => setMobileShowChat(false)} />
       </div>
-      <NewChatModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <NewChatModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 }

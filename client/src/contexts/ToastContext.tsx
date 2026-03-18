@@ -74,10 +74,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 }
 
-const TYPE_STYLES: Record<
-  ToastType,
-  { bg: string; border: string }
-> = {
+const TYPE_STYLES: Record<ToastType, { bg: string; border: string }> = {
   info: { bg: "bg-toast-info-bg", border: "border-border" },
   success: { bg: "bg-toast-success-bg", border: "border-success" },
   error: { bg: "bg-toast-error-bg", border: "border-danger" },

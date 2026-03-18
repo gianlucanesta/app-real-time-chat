@@ -18,7 +18,11 @@ interface NewChatPanelProps {
   onOpenNewContact: () => void;
 }
 
-export function NewChatPanel({ isOpen, onClose, onOpenNewContact }: NewChatPanelProps) {
+export function NewChatPanel({
+  isOpen,
+  onClose,
+  onOpenNewContact,
+}: NewChatPanelProps) {
   const { user } = useAuth();
   const { addOrUpdateConversation, setActiveConversation } = useChat();
   const [query, setQuery] = useState("");
@@ -38,7 +42,9 @@ export function NewChatPanel({ isOpen, onClose, onOpenNewContact }: NewChatPanel
     setStatus("searching");
     timerRef.current = setTimeout(async () => {
       try {
-        const data = await apiFetch<{ users: SearchUser[] }>(`/users/search?q=${encodeURIComponent(q)}`);
+        const data = await apiFetch<{ users: SearchUser[] }>(
+          `/users/search?q=${encodeURIComponent(q)}`,
+        );
         setResults(data.users || []);
         setStatus(data.users?.length ? "idle" : "empty");
       } catch {
@@ -46,12 +52,18 @@ export function NewChatPanel({ isOpen, onClose, onOpenNewContact }: NewChatPanel
         setStatus("empty");
       }
     }, 300);
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, [query]);
 
   // Reset on close
   useEffect(() => {
-    if (!isOpen) { setQuery(""); setResults([]); setStatus("idle"); }
+    if (!isOpen) {
+      setQuery("");
+      setResults([]);
+      setStatus("idle");
+    }
   }, [isOpen]);
 
   const handleSelectUser = (u: SearchUser) => {
@@ -75,7 +87,10 @@ export function NewChatPanel({ isOpen, onClose, onOpenNewContact }: NewChatPanel
   };
 
   return (
-    <div className={`absolute inset-0 z-20 bg-bg md:bg-card flex flex-col transition-transform duration-200 ease-in-out ${isOpen ? "translate-x-0" : "translate-x-full"}`} aria-hidden={!isOpen}>
+    <div
+      className={`absolute inset-0 z-20 bg-bg md:bg-card flex flex-col transition-transform duration-200 ease-in-out ${isOpen ? "translate-x-0" : "translate-x-full"}`}
+      aria-hidden={!isOpen}
+    >
       <div className="flex items-center gap-3 p-4 border-b border-border bg-card shrink-0 h-[64px]">
         <button
           className="w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors"
@@ -107,7 +122,10 @@ export function NewChatPanel({ isOpen, onClose, onOpenNewContact }: NewChatPanel
           </div>
           New group
         </button>
-        <button className="flex items-center gap-4 px-4 py-3 bg-transparent border-none cursor-pointer text-text-main text-base text-left hover:bg-input transition-colors" onClick={onOpenNewContact}>
+        <button
+          className="flex items-center gap-4 px-4 py-3 bg-transparent border-none cursor-pointer text-text-main text-base text-left hover:bg-input transition-colors"
+          onClick={onOpenNewContact}
+        >
           <div className="w-11 h-11 rounded-full bg-accent flex items-center justify-center shrink-0">
             <UserPlus className="w-5 h-5 text-white" />
           </div>
@@ -123,16 +141,30 @@ export function NewChatPanel({ isOpen, onClose, onOpenNewContact }: NewChatPanel
 
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-toggle-off">
         <div className="px-4 pt-3 pb-2 text-xs text-text-secondary uppercase tracking-wider font-semibold shrink-0">
-          {query.trim().length >= 2 ? "Search results" : "Contacts on Ephemeral"}
+          {query.trim().length >= 2
+            ? "Search results"
+            : "Contacts on Ephemeral"}
         </div>
 
         {status === "searching" && (
           <div className="flex flex-col items-center justify-center py-10 text-text-secondary text-[13px] gap-2">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 animate-spin">
-              <line x1="12" y1="2" x2="12" y2="6" /><line x1="12" y1="18" x2="12" y2="22" />
-              <line x1="4.93" y1="4.93" x2="7.76" y2="7.76" /><line x1="16.24" y1="16.24" x2="19.07" y2="19.07" />
-              <line x1="2" y1="12" x2="6" y2="12" /><line x1="18" y1="12" x2="22" y2="12" />
-              <line x1="4.93" y1="19.07" x2="7.76" y2="16.24" /><line x1="16.24" y1="7.76" x2="19.07" y2="4.93" />
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="w-5 h-5 animate-spin"
+            >
+              <line x1="12" y1="2" x2="12" y2="6" />
+              <line x1="12" y1="18" x2="12" y2="22" />
+              <line x1="4.93" y1="4.93" x2="7.76" y2="7.76" />
+              <line x1="16.24" y1="16.24" x2="19.07" y2="19.07" />
+              <line x1="2" y1="12" x2="6" y2="12" />
+              <line x1="18" y1="12" x2="22" y2="12" />
+              <line x1="4.93" y1="19.07" x2="7.76" y2="16.24" />
+              <line x1="16.24" y1="7.76" x2="19.07" y2="4.93" />
             </svg>
             Searching...
           </div>
@@ -141,7 +173,11 @@ export function NewChatPanel({ isOpen, onClose, onOpenNewContact }: NewChatPanel
         {status === "idle" && query.trim().length < 2 && (
           <div className="flex flex-col items-center justify-center py-10 text-text-secondary text-[13px] gap-2">
             <Search className="w-6 h-6" />
-            <p className="text-center">Type at least 2 characters<br />to search for people</p>
+            <p className="text-center">
+              Type at least 2 characters
+              <br />
+              to search for people
+            </p>
           </div>
         )}
 
@@ -161,14 +197,24 @@ export function NewChatPanel({ isOpen, onClose, onOpenNewContact }: NewChatPanel
             <div className="relative inline-block shrink-0">
               <div
                 className="w-[42px] h-[42px] rounded-full flex items-center justify-center font-bold text-[13px] text-white"
-                style={{ background: u.avatar_gradient || "linear-gradient(135deg,#2563EB,#7C3AED)" }}
+                style={{
+                  background:
+                    u.avatar_gradient ||
+                    "linear-gradient(135deg,#2563EB,#7C3AED)",
+                }}
               >
                 {u.initials}
               </div>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-[14px] text-text-main truncate">{u.display_name}</div>
-              {u.email && <div className="text-[13px] text-text-secondary truncate">{u.email}</div>}
+              <div className="font-semibold text-[14px] text-text-main truncate">
+                {u.display_name}
+              </div>
+              {u.email && (
+                <div className="text-[13px] text-text-secondary truncate">
+                  {u.email}
+                </div>
+              )}
             </div>
           </div>
         ))}

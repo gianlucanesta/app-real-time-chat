@@ -15,6 +15,10 @@ import {
   ShieldAlert,
   Trash2,
   ChevronLeft,
+  ChevronDown,
+  Users2,
+  Link2,
+  Calendar,
 } from "lucide-react";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useClickOutside } from "../../hooks/useClickOutside";
@@ -36,7 +40,13 @@ function dateSeparatorLabel(dateStr: string): string {
   const diffDays = Math.round(diffMs / 86_400_000);
   if (diffDays === 0) return "TODAY";
   if (diffDays === 1) return "YESTERDAY";
-  return d.toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" }).toUpperCase();
+  return d
+    .toLocaleDateString(undefined, {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
+    .toUpperCase();
 }
 
 /** Group messages by day, returning [label, messages][] pairs. */
@@ -60,7 +70,13 @@ interface ChatAreaProps {
 }
 
 export function ChatArea({ onMobileBack }: ChatAreaProps) {
-  const { activeConversation, activeMessages, sendMessage, typingUsers, socket } = useChat();
+  const {
+    activeConversation,
+    activeMessages,
+    sendMessage,
+    typingUsers,
+    socket,
+  } = useChat();
   const toast = useToast();
 
   const [isContactInfoOpen, setIsContactInfoOpen] = useState(false);
@@ -94,11 +110,18 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
   };
 
   // Reactions state: messageId -> emoji -> count
-  const [reactions, setReactions] = useState<Record<string, Record<string, number>>>({});
+  const [reactions, setReactions] = useState<
+    Record<string, Record<string, number>>
+  >({});
 
-  const handleCopyMessage = useCallback((text: string) => {
-    navigator.clipboard.writeText(text).then(() => toast.success("Message copied!"));
-  }, [toast]);
+  const handleCopyMessage = useCallback(
+    (text: string) => {
+      navigator.clipboard
+        .writeText(text)
+        .then(() => toast.success("Message copied!"));
+    },
+    [toast],
+  );
 
   const handleDeleteMessage = useCallback((id: string) => {
     // TODO: API call DELETE /api/messages/:id
@@ -174,7 +197,10 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
     return (
       <main className="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden bg-bg">
         {/* Empty State — hidden on mobile */}
-        <div className="chat-empty-state w-full hidden md:flex" aria-hidden="false">
+        <div
+          className="chat-empty-state w-full hidden md:flex"
+          aria-hidden="false"
+        >
           <div className="chat-empty-actions">
             <button type="button" className="chat-empty-action">
               <div className="chat-empty-action-icon">
@@ -273,7 +299,7 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
       />
 
       {/* Chat Header */}
-      <div className="flex items-center justify-between px-4 md:px-6 py-4 border-b border-border h-[72px] shrink-0 bg-bg md:bg-transparent z-10">
+      <div className="chat-header z-10">
         <div
           className="flex items-center gap-3 md:gap-4 cursor-pointer hover:bg-input/50 p-1.5 md:p-2 -ml-1.5 md:-ml-2 rounded-xl transition-colors"
           onClick={handleOpenContactInfo}
@@ -283,7 +309,10 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
             <button
               type="button"
               className="md:hidden w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors shrink-0 -mr-1"
-              onClick={(e) => { e.stopPropagation(); onMobileBack(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onMobileBack();
+              }}
               aria-label="Back to conversations"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -306,9 +335,18 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
             {activeConversation?.isTyping ? (
               <div className="hidden md:flex items-center gap-1.5 text-[11px] md:text-[12px] text-accent mt-0.5">
                 <span className="flex gap-0.5">
-                  <span className="w-1 h-1 rounded-full bg-accent animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1 h-1 rounded-full bg-accent animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1 h-1 rounded-full bg-accent animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span
+                    className="w-1 h-1 rounded-full bg-accent animate-bounce"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <span
+                    className="w-1 h-1 rounded-full bg-accent animate-bounce"
+                    style={{ animationDelay: "150ms" }}
+                  />
+                  <span
+                    className="w-1 h-1 rounded-full bg-accent animate-bounce"
+                    style={{ animationDelay: "300ms" }}
+                  />
                 </span>
                 typing...
               </div>
@@ -329,19 +367,19 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
           {/* Call Dropdown Wrapper */}
           <div className="relative" ref={callMenuRef}>
             <button
-              className="chat-call-btn w-9 h-9 md:w-auto md:h-9 md:px-4 rounded-full flex items-center justify-center md:justify-center gap-2 text-text-secondary md:bg-accent md:text-white hover:text-text-main hover:bg-input md:hover:bg-accent hover:brightness-110 transition-colors shadow-sm"
+              className="chat-call-btn"
               onClick={() => setIsCallMenuOpen(!isCallMenuOpen)}
             >
-              <Phone className="w-5 h-5 md:w-4 md:h-4" />
-              <span className="hidden md:inline font-medium text-[13.5px]">
-                Call
-              </span>
+              <Video />
+              <span className="call-text">Call</span>
+              <ChevronDown className="call-chevron" />
             </button>
             {isCallMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border/80 rounded-xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2">
-                <div className="px-4 py-3 flex items-center gap-3 border-b border-border/50 mb-1">
+              <div className="absolute right-0 top-full mt-2 w-64 bg-card border border-border/80 rounded-xl shadow-xl py-3 z-50 animate-in fade-in slide-in-from-top-2">
+                {/* Contact header */}
+                <div className="px-4 py-2 flex items-center gap-3 mb-3">
                   <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-[10px] text-white shrink-0"
+                    className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-[11px] text-white shrink-0"
                     style={{ background: contactGradient }}
                   >
                     {contactInitials}
@@ -350,25 +388,41 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
                     {contactName}
                   </span>
                 </div>
-                <button
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors"
-                  onClick={() => {
-                    setIsCallMenuOpen(false);
-                    setIsCallScreenOpen(true);
-                  }}
-                >
-                  <Phone className="w-[18px] h-[18px] text-text-secondary" />{" "}
-                  Voice
+                {/* Voice / Video large accent buttons */}
+                <div className="grid grid-cols-2 gap-2 px-4 pb-3">
+                  <button
+                    className="flex flex-col items-center gap-2 py-3 bg-accent hover:brightness-110 text-white rounded-xl transition-all"
+                    onClick={() => {
+                      setIsCallMenuOpen(false);
+                      setIsCallScreenOpen(true);
+                    }}
+                  >
+                    <Phone className="w-5 h-5" />
+                    <span className="text-[12px] font-medium">Voice</span>
+                  </button>
+                  <button
+                    className="flex flex-col items-center gap-2 py-3 bg-accent hover:brightness-110 text-white rounded-xl transition-all"
+                    onClick={() => {
+                      setIsCallMenuOpen(false);
+                      setIsCallScreenOpen(true);
+                    }}
+                  >
+                    <Video className="w-5 h-5" />
+                    <span className="text-[12px] font-medium">Video</span>
+                  </button>
+                </div>
+                <div className="w-full h-px bg-border/50 mb-1" />
+                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors">
+                  <Users2 className="w-[18px] h-[18px] text-text-secondary" />{" "}
+                  New group call
                 </button>
-                <button
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors"
-                  onClick={() => {
-                    setIsCallMenuOpen(false);
-                    setIsCallScreenOpen(true);
-                  }}
-                >
-                  <Video className="w-[18px] h-[18px] text-text-secondary" />{" "}
-                  Video
+                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors">
+                  <Link2 className="w-[18px] h-[18px] text-text-secondary" />{" "}
+                  Send call link
+                </button>
+                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors">
+                  <Calendar className="w-[18px] h-[18px] text-text-secondary" />{" "}
+                  Schedule a call
                 </button>
               </div>
             )}
@@ -461,14 +515,12 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
         className={`flex-1 overflow-y-auto px-4 md:px-8 flex flex-col pt-6 pb-2 md:pb-4 scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-toggle-off ${isSelectMode ? "select-mode" : ""}`}
       >
         {groupMessagesByDate(activeMessages).map(([label, msgs]) => (
-          <div key={label}>
+          <div key={label} className="flex flex-col">
             {/* Date Separator */}
-            <div className="flex items-center justify-center gap-4 my-6">
-              <div className="w-12 h-px bg-border"></div>
-              <span className="text-[11px] font-medium text-text-secondary uppercase tracking-[1px]">
+            <div className="flex items-center justify-center my-6">
+              <span className="bg-input/70 text-text-secondary text-[11px] font-medium uppercase tracking-[1px] px-3 py-1 rounded-lg">
                 {label}
               </span>
-              <div className="w-12 h-px bg-border"></div>
             </div>
 
             {msgs.map((msg) => (
@@ -660,7 +712,8 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
                   sendMessage(e.currentTarget.value.trim());
                   e.currentTarget.value = "";
                   // Stop typing immediately on send
-                  if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+                  if (typingTimerRef.current)
+                    clearTimeout(typingTimerRef.current);
                   if (isTypingRef.current && activeConversation && socket) {
                     isTypingRef.current = false;
                     socket.emit("typing:stop", activeConversation.id);

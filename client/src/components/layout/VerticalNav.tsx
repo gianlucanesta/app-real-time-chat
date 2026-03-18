@@ -57,9 +57,9 @@ export function VerticalNav() {
   return (
     <>
       {/* --- DESKTOP VERTICAL NAVIGATION --- */}
-      <nav className="hidden md:flex flex-col w-[60px] h-screen fixed left-0 top-0 bottom-0 bg-bg border-r border-border py-4 items-center justify-between z-50">
+      <nav className="hidden md:flex flex-col w-[64px] min-w-[64px] h-screen fixed left-0 top-0 bottom-0 bg-card border-r border-border py-3 items-center justify-between z-10 shrink-0">
         {/* Top icons */}
-        <div className="flex flex-col gap-6 w-full items-center">
+        <div className="flex flex-col gap-1 w-full items-center">
           {desktopNavLinks.map((link) => {
             const Icon = link.icon;
             const active = isActive(link.path);
@@ -68,13 +68,13 @@ export function VerticalNav() {
                 key={link.path}
                 to={link.path}
                 title={link.label}
-                className={`p-3 rounded-xl transition-all relative ${
+                className={`w-11 h-11 rounded-md flex items-center justify-center relative transition-[color,background-color] duration-[150ms] cursor-pointer no-underline border-none ${
                   active
                     ? "text-accent bg-accent/10"
-                    : "text-text-secondary hover:text-text-main hover:bg-card"
+                    : "text-text-secondary hover:text-text-main hover:bg-input"
                 }`}
               >
-                <Icon size={24} strokeWidth={active ? 2.5 : 2} />
+                <Icon size={22} strokeWidth={active ? 2.5 : 2} />
                 {active && (
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-accent rounded-r-full" />
                 )}
@@ -84,25 +84,27 @@ export function VerticalNav() {
         </div>
 
         {/* Bottom icons */}
-        <div className="flex flex-col gap-6 w-full items-center">
+        <div className="flex flex-col gap-1 w-full items-center">
           <button
             onClick={toggleTheme}
-            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            className="p-3 rounded-xl transition-all text-text-secondary hover:text-text-main hover:bg-card"
+            title={
+              theme === "dark" ? "Switch to light mode" : "Switch to dark mode"
+            }
+            className="w-11 h-11 rounded-md flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-[color,background-color] duration-[150ms] cursor-pointer border-none bg-transparent"
           >
-            {theme === "dark" ? <Sun size={24} /> : <Moon size={24} />}
+            {theme === "dark" ? <Sun size={22} /> : <Moon size={22} />}
           </button>
 
           <Link
             to="/settings"
             title="Settings"
-            className={`p-3 rounded-xl transition-all ${
+            className={`w-11 h-11 rounded-md flex items-center justify-center transition-[color,background-color] duration-[150ms] cursor-pointer no-underline border-none ${
               isActive("/settings")
                 ? "text-accent bg-accent/10"
-                : "text-text-secondary hover:text-text-main hover:bg-card"
+                : "text-text-secondary hover:text-text-main hover:bg-input"
             }`}
           >
-            <Settings size={24} />
+            <Settings size={22} />
           </Link>
 
           <Link to="/settings" title="Profile">
@@ -146,7 +148,9 @@ export function VerticalNav() {
           className="flex flex-col items-center justify-center w-full h-full gap-1 transition-colors text-text-secondary hover:text-text-main"
         >
           {theme === "dark" ? <Sun size={22} /> : <Moon size={22} />}
-          <span className="text-[10px] font-medium">{theme === "dark" ? "Light" : "Dark"}</span>
+          <span className="text-[10px] font-medium">
+            {theme === "dark" ? "Light" : "Dark"}
+          </span>
         </button>
 
         {/* Profile Tab on Mobile */}
