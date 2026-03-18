@@ -227,6 +227,12 @@
   .selection-action-btn[data-sel-action="download"] {
     display: none;
   }
+  .modal-card {
+    max-width: 100%;
+    padding: var(--space-5);
+    margin: var(--space-3);
+    border-radius: var(--radius-md);
+  }
 }
 
 /* ── Call Screen Overlay ─────────────────────────────── */
@@ -359,4 +365,52 @@
 .call-end-btn:hover {
   filter: brightness(1.1);
   transform: scale(1.06);
+}
+.call-mobile-end {
+  display: none;
+}
+
+/* ── Call screen mobile responsive ───────────────────────── */
+@media (max-width: 767px) {
+  .call-screen {
+    padding: 48px 12px 28px;
+    gap: 12px;
+  }
+  .call-screen-bar {
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+  }
+  .call-bar-group {
+    background: transparent;
+    padding: 0;
+    gap: 0;
+  }
+  .call-bar-chevron {
+    display: none;
+  }
+  .call-screen-bar .call-bar-btn {
+    width: 44px;
+    height: 44px;
+  }
+  .call-screen-bar .call-bar-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+  .call-mobile-end {
+    display: flex;
+    justify-content: center;
+    padding: 4px 0 0;
+  }
+  .call-end-mobile-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    margin-left: 0;
+  }
+  .call-end-mobile-btn svg {
+    width: 24px;
+    height: 24px;
+  }
 }

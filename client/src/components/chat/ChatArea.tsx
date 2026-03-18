@@ -173,8 +173,8 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
   if (!activeConversation) {
     return (
       <main className="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden bg-bg">
-        {/* Empty State — centered via CSS class */}
-        <div className="chat-empty-state w-full" aria-hidden="false">
+        {/* Empty State — hidden on mobile */}
+        <div className="chat-empty-state w-full hidden md:flex" aria-hidden="false">
           <div className="chat-empty-actions">
             <button type="button" className="chat-empty-action">
               <div className="chat-empty-action-icon">
@@ -304,7 +304,7 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
               {contactName}
             </h2>
             {activeConversation?.isTyping ? (
-              <div className="flex items-center gap-1.5 text-[11px] md:text-[12px] text-accent mt-0.5">
+              <div className="hidden md:flex items-center gap-1.5 text-[11px] md:text-[12px] text-accent mt-0.5">
                 <span className="flex gap-0.5">
                   <span className="w-1 h-1 rounded-full bg-accent animate-bounce" style={{ animationDelay: '0ms' }} />
                   <span className="w-1 h-1 rounded-full bg-accent animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -313,7 +313,7 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
                 typing...
               </div>
             ) : activeConversation?.isOnline ? (
-              <div className="flex items-center gap-1.5 text-[11px] md:text-[12px] text-success mt-0.5">
+              <div className="hidden md:flex items-center gap-1.5 text-[11px] md:text-[12px] text-success mt-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
                 Online
               </div>
@@ -633,13 +633,13 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
         <div className="flex flex-col">
           <div className="flex items-center bg-input/80 backdrop-blur-md rounded-full border border-border/50 p-1.5 shadow-lg">
             <button
-              className="w-10 h-10 rounded-full flex items-center justify-center text-text-secondary shrink-0 hover:bg-card hover:text-text-main transition-colors"
+              className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center bg-accent text-white md:bg-transparent md:text-text-secondary shrink-0 hover:bg-card hover:text-text-main transition-colors"
               aria-label="Add attachment"
             >
               <Paperclip className="w-[18px] h-[18px]" />
             </button>
             <button
-              className="w-10 h-10 rounded-full flex items-center justify-center text-text-secondary shrink-0 hover:bg-card hover:text-text-main transition-colors mr-1"
+              className="w-10 h-10 rounded-full hidden md:flex items-center justify-center text-text-secondary shrink-0 hover:bg-card hover:text-text-main transition-colors mr-1"
               aria-label="Emoji"
             >
               <Smile className="w-[18px] h-[18px]" />

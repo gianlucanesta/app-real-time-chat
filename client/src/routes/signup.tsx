@@ -76,12 +76,12 @@ function SignupPage() {
       <div className="w-full max-w-[440px] bg-card rounded-[16px] px-6 sm:px-8 py-8 sm:py-10 relative z-10 flex flex-col mb-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 bg-accent rounded-md flex items-center justify-center text-white">
-              <MessageSquare className="w-7 h-7 fill-current" />
+          <div className="flex justify-center mb-3 md:mb-4">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-accent rounded-md flex items-center justify-center text-white">
+              <MessageSquare className="w-6 h-6 md:w-7 md:h-7 fill-current" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-text-main mb-1">
+          <h1 className="text-xl md:text-2xl font-bold text-text-main mb-1">
             Create Account
           </h1>
           <p className="text-[14px] text-text-secondary">

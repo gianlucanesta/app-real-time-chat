@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useRef } from "react";
-import { Grid, User, Bell, Shield, Lock, LogOut, Camera, Mail, Phone, Briefcase, Settings2, ShieldCheck, HelpCircle, Search, Volume2, MapPin, FileText, Keyboard } from "lucide-react";
+import { Grid, User, Bell, Shield, Lock, LogOut, Camera, Mail, Phone, Briefcase, Settings2, ShieldCheck, HelpCircle, Search, Volume2, MapPin, FileText, Keyboard, ChevronDown } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -104,36 +104,30 @@ function SettingsPage() {
           />
         </div>
 
-        <nav className="flex md:flex-col gap-1.5 overflow-x-auto md:overflow-y-auto scrollbar-none pb-2 md:pb-0">
-          <Link to="/settings" className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[14px] font-medium transition-colors bg-accent/10 text-accent shrink-0">
+        <nav className="flex flex-col md:flex-col gap-0 md:gap-1.5 overflow-x-auto md:overflow-y-auto scrollbar-none pb-2 md:pb-0">
+          <Link to="/settings" className="flex items-center gap-3 px-4 md:px-3.5 py-3.5 md:py-2.5 bg-input md:bg-accent/10 md:rounded-lg text-[14px] font-medium transition-colors text-accent border-b border-border md:border-b-0 rounded-t-xl md:rounded-t-lg first:rounded-t-xl shrink-0">
             <Grid className="w-4 h-4" />
-            <span>General</span>
+            <span className="flex-1">General</span>
+            <ChevronDown className="w-4 h-4 -rotate-90 md:hidden text-text-secondary" />
           </Link>
-          <a href="#" className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[14px] font-medium transition-colors text-text-secondary hover:bg-input hover:text-text-main shrink-0">
-            <User className="w-4 h-4" />
-            <span>Account</span>
-          </a>
-          <a href="#" className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[14px] font-medium transition-colors text-text-secondary hover:bg-input hover:text-text-main relative shrink-0">
-            <Bell className="w-4 h-4" />
-            <span>Notifications</span>
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-danger"></span>
-          </a>
-          <a href="#" className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[14px] font-medium transition-colors text-text-secondary hover:bg-input hover:text-text-main shrink-0">
-            <Shield className="w-4 h-4" />
-            <span>Privacy</span>
-          </a>
-          <a href="#" className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[14px] font-medium transition-colors text-text-secondary hover:bg-input hover:text-text-main shrink-0">
-            <Lock className="w-4 h-4" />
-            <span>Security</span>
-          </a>
-          <a href="#" className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[14px] font-medium transition-colors text-text-secondary hover:bg-input hover:text-text-main shrink-0">
-            <Keyboard className="w-4 h-4" />
-            <span>Keyboard Shortcuts</span>
-          </a>
-          <a href="#" className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[14px] font-medium transition-colors text-text-secondary hover:bg-input hover:text-text-main shrink-0">
-            <HelpCircle className="w-4 h-4" />
-            <span>Help &amp; Support</span>
-          </a>
+          {[
+            { icon: User, label: "Account" },
+            { icon: Bell, label: "Notifications", badge: true },
+            { icon: Shield, label: "Privacy" },
+            { icon: Lock, label: "Security" },
+            { icon: Keyboard, label: "Keyboard Shortcuts" },
+            { icon: HelpCircle, label: "Help & Support" },
+          ].map((item, i, arr) => {
+            const Icon = item.icon;
+            return (
+              <a key={item.label} href="#" className={`flex items-center gap-3 px-4 md:px-3.5 py-3.5 md:py-2.5 bg-input md:bg-transparent md:rounded-lg text-[14px] font-medium transition-colors text-text-secondary hover:bg-input hover:text-text-main border-b border-border md:border-b-0 ${i === arr.length - 1 ? 'rounded-b-xl border-b-0' : ''} shrink-0 relative`}>
+                <Icon className="w-4 h-4" />
+                <span className="flex-1">{item.label}</span>
+                {item.badge && <span className="absolute right-10 md:right-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-danger"></span>}
+                <ChevronDown className="w-4 h-4 -rotate-90 md:hidden text-text-secondary" />
+              </a>
+            );
+          })}
         </nav>
 
         <div className="hidden md:flex mt-auto pt-6 border-t border-border items-center gap-3">

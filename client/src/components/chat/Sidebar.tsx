@@ -90,7 +90,7 @@ export function Sidebar() {
 
       {/* Sidebar Header */}
       <div className="flex items-center justify-between p-4 h-[72px] shrink-0">
-        <h1 className="text-xl font-bold text-text-main">Chat</h1>
+        <h1 className="text-2xl md:text-xl font-bold text-text-main">Chat</h1>
         <div className="flex gap-1">
           <button
             onClick={() => setIsNewChatOpen(true)}
@@ -206,7 +206,7 @@ export function Sidebar() {
           <div
             key={chat.id}
             onClick={() => setActiveConversation(chat)}
-            className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors relative ${
+            className={`flex items-center gap-3 px-4 py-3.5 md:py-3 cursor-pointer transition-colors relative ${
               activeConversation?.id === chat.id
                 ? "bg-accent/5 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-accent before:rounded-r-full"
                 : "hover:bg-input/50"
@@ -214,7 +214,7 @@ export function Sidebar() {
           >
             <div className="relative inline-block shrink-0">
               <div
-                className="w-[42px] h-[42px] rounded-full flex items-center justify-center font-bold text-[13px] text-white"
+                className="w-[48px] h-[48px] min-w-[48px] md:w-[42px] md:h-[42px] md:min-w-[42px] rounded-full flex items-center justify-center font-bold text-[14px] md:text-[13px] text-white"
                 style={{ background: chat.gradient }}
               >
                 {chat.initials}
