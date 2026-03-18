@@ -6,7 +6,28 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../contexts/AuthContext";
 import { apiFetch } from "../lib/api";
+import { validatePasswordStrength } from "../lib/validation";
 import type { AuthResponse } from "../types";
+
+const COUNTRY_CODES = [
+  { code: "+1", label: "+1 US" },
+  { code: "+44", label: "+44 UK" },
+  { code: "+39", label: "+39 IT" },
+  { code: "+49", label: "+49 DE" },
+  { code: "+33", label: "+33 FR" },
+  { code: "+34", label: "+34 ES" },
+  { code: "+351", label: "+351 PT" },
+  { code: "+31", label: "+31 NL" },
+  { code: "+32", label: "+32 BE" },
+  { code: "+41", label: "+41 CH" },
+  { code: "+43", label: "+43 AT" },
+  { code: "+61", label: "+61 AU" },
+  { code: "+81", label: "+81 JP" },
+  { code: "+86", label: "+86 CN" },
+  { code: "+91", label: "+91 IN" },
+  { code: "+55", label: "+55 BR" },
+  { code: "+52", label: "+52 MX" },
+] as const;
 
 export const Route = createFileRoute("/signup")({
   component: SignupPage,
@@ -16,11 +37,14 @@ function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
+  const [countryCode, setCountryCode] = useState("+39");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [socialExpanded, setSocialExpanded] = useState(false);
 
@@ -33,9 +57,10 @@ function SignupPage() {
     setIsLoading(true);
 
     try {
+      const fullPhone = phone ? `${countryCode}${phone}` : "";
       const data = await apiFetch<AuthResponse>("/auth/register", {
         method: "POST",
-        body: JSON.stringify({ displayName, email, phone, password }),
+        body: JSON.stringify({ displayName, email, phone: fullPhone, password }),
       });
       login(data);
       navigate({ to: "/" });
@@ -115,17 +140,44 @@ function SignupPage() {
           {/* Phone */}
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center">
-              <Label htmlFor="phone">PHONE NUMBER</Label>
+              <Label htmlFor="phone">PHONE NUMBER <span className="text-danger">*</span></Label>
             </div>
-            <Input
-              id="phone"
-              type="tel"
-              placeholder="+1 (555) 000-0000"
-              icon={<Phone className="w-5 h-5" />}
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              autoComplete="tel"
-            />
+            <div className="flex gap-2">
+              <select
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                className="h-[44px] px-2 rounded-[10px] bg-input-bg border border-border text-text-main text-[14px] focus:outline-none focus:border-accent transition-colors flex-shrink-0"
+                style={{ maxWidth: 95 }}
+              >
+                {COUNTRY_CODES.map((c) => (
+                  <option key={c.code} value={c.code}>{c.label}</option>
+                ))}
+              </select>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="Phone number"
+                icon={<Phone className="w-5 h-5" />}
+                value={phone}
+                onChange={(e) => {
+                  setPhone(e.target.value);
+                  setPhoneError("");
+                }}
+                onBlur={() => {
+                  if (!phone.trim()) {
+                    setPhoneError("Phone number is required.");
+                  } else if (!/^\d{7,15}$/.test(phone.replace(/\s/g, ""))) {
+                    setPhoneError("Enter a valid phone number (7-15 digits).");
+                  } else {
+                    setPhoneError("");
+                  }
+                }}
+                autoComplete="tel"
+                error={!!phoneError}
+                required
+              />
+            </div>
+            {phoneError && <p className="text-[13px] text-danger font-medium mt-1">{phoneError}</p>}
           </div>
 
           {/* Password */}
@@ -139,8 +191,16 @@ function SignupPage() {
               placeholder="Create a password"
               icon={<Lock className="w-5 h-5" />}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setPasswordError("");
+              }}
+              onBlur={() => {
+                const err = validatePasswordStrength(password);
+                setPasswordError(err || "");
+              }}
               autoComplete="new-password"
+              error={!!passwordError}
               required
               rightIcon={
                 <button
@@ -157,6 +217,7 @@ function SignupPage() {
                 </button>
               }
             />
+            {passwordError && <p className="text-[13px] text-danger font-medium mt-1">{passwordError}</p>}
           </div>
 
           {/* Terms */}
@@ -189,7 +250,7 @@ function SignupPage() {
           {error && <div className="text-danger text-sm mt-1">{error}</div>}
 
           {/* Submit */}
-          <Button type="submit" className="mt-2 w-full" disabled={!termsAccepted || isLoading || !!emailError}>
+          <Button type="submit" className="mt-2 w-full" disabled={!termsAccepted || isLoading || !!emailError || !!phoneError || !!passwordError}>
             {isLoading ? "Creating..." : "Sign Up \u2192"}
           </Button>
         </form>

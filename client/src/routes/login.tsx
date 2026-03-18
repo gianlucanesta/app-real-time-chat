@@ -188,6 +188,19 @@ function LoginPage() {
 
         {/* Social buttons */}
         <div className="flex flex-col gap-3">
+          {/* Demo login */}
+          <Button
+            variant="social"
+            className="w-full text-[14px] font-medium h-[40px] border-accent/30 hover:border-accent/60"
+            onClick={() => {
+              setEmail("demo@ephemeral.app");
+              setPassword("Demo1234");
+              setEmailError("");
+            }}
+          >
+            <MessageSquare className="w-[20px] h-[20px] text-accent" />
+            Try Demo Account
+          </Button>
           <Button
             variant="social"
             className="w-full text-[14px] font-medium h-[40px]"
