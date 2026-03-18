@@ -196,11 +196,17 @@ export function Sidebar() {
                 </span>
               </div>
               <div className="flex items-center justify-between gap-2">
-                <span
-                  className={`text-[13px] whitespace-nowrap overflow-hidden text-ellipsis ${chat.unreadCount > 0 ? "text-text-main font-medium" : "text-text-secondary"}`}
-                >
-                  {chat.lastMessage}
-                </span>
+                {chat.isTyping ? (
+                  <span className="text-[13px] text-accent italic whitespace-nowrap overflow-hidden text-ellipsis">
+                    typing...
+                  </span>
+                ) : (
+                  <span
+                    className={`text-[13px] whitespace-nowrap overflow-hidden text-ellipsis ${chat.unreadCount > 0 ? "text-text-main font-medium" : "text-text-secondary"}`}
+                  >
+                    {chat.lastMessage}
+                  </span>
+                )}
                 {chat.unreadCount > 0 && (
                   <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-accent text-white text-[10px] font-bold px-1.5 shrink-0">
                     {chat.unreadCount}

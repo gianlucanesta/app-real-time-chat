@@ -8,7 +8,7 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import { useAuth } from "./AuthContext";
-import { useSocket, type MessagePayload } from "../hooks/useSocket";
+import { useSocket, type MessagePayload, type TypedSocket } from "../hooks/useSocket";
 import { apiFetch } from "../lib/api";
 
 // --- Types ---
@@ -18,7 +18,8 @@ export interface Message {
   senderName: string;
   text: string;
   timestamp: string;
-  status: "sending" | "sent" | "read";
+  rawTimestamp: string;
+  status: "sending" | "sent" | "delivered" | "read";
   isMe: boolean;
 }
 
@@ -34,12 +35,16 @@ export interface Conversation {
   unreadCount: number;
   isOnline?: boolean;
   participants: string[];
+  isTyping?: boolean;
+  typingName?: string;
 }
 
 interface ChatContextType {
   conversations: Conversation[];
   activeConversation: Conversation | null;
   activeMessages: Message[];
+  typingUsers: Record<string, { displayName: string }>;
+  socket: TypedSocket | null;
   setActiveConversation: (conv: Conversation | null) => void;
   sendMessage: (text: string) => void;
   loadConversations: () => Promise<void>;
@@ -64,6 +69,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [activeConversation, setActiveConversation] =
     useState<Conversation | null>(null);
   const [activeMessages, setActiveMessages] = useState<Message[]>([]);
+  const [typingUsers, setTypingUsers] = useState<
+    Record<string, { displayName: string }>
+  >({});
 
   // Keep a stable ref to activeConversation so socket handlers don't stale-close
   const activeConvRef = useRef<Conversation | null>(null);
@@ -128,14 +136,31 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                 : activeConversation.name,
             text: m.text,
             timestamp: fmtTime(m.createdAt),
-            status: (m.status === "delivered" ? "sent" : m.status) as
-              | "sent"
-              | "read",
+            rawTimestamp: m.createdAt,
+            status: m.status as "sent" | "delivered" | "read",
             isMe: m.sender === user?.id,
           })),
         );
         // Join the conversation room so we receive real-time events
         socket?.emit("join:conversation", activeConversation.id);
+
+        // Mark unread messages as read
+        const unreadIds = messages
+          .filter((m) => m.sender !== user?.id && m.status !== "read")
+          .map((m) => m._id);
+        if (unreadIds.length > 0 && socket) {
+          socket.emit("message:read", {
+            messageIds: unreadIds,
+            conversationId: activeConversation.id,
+          });
+        }
+
+        // Reset unread count in sidebar
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === activeConversation.id ? { ...c, unreadCount: 0 } : c,
+          ),
+        );
       })
       .catch((err) =>
         console.warn("[chat] load messages failed:", (err as Error).message),
@@ -168,9 +193,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           (isMe ? (user.displayName ?? "Me") : "Unknown"),
         text: msg.text,
         timestamp: msgTimestamp,
-        status: (msg.status === "delivered" ? "sent" : msg.status) as
-          | "sent"
-          | "read",
+        rawTimestamp: msg.createdAt,
+        status: msg.status as "sent" | "delivered" | "read",
         isMe,
       };
 
@@ -224,11 +248,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       messageIds: string[];
       status: "sent" | "delivered" | "read";
     }) => {
-      const uiStatus =
-        data.status === "delivered" ? "sent" : (data.status as "sent" | "read");
       setActiveMessages((prev) =>
         prev.map((m) =>
-          data.messageIds.includes(m.id) ? { ...m, status: uiStatus } : m,
+          data.messageIds.includes(m.id) ? { ...m, status: data.status } : m,
         ),
       );
     };
@@ -259,18 +281,66 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       );
     };
 
+    const handleTyping = (data: {
+      userId: string;
+      displayName: string;
+      typing: boolean;
+    }) => {
+      if (data.userId === user.id) return;
+      if (data.typing) {
+        setTypingUsers((prev) => ({
+          ...prev,
+          [data.userId]: { displayName: data.displayName },
+        }));
+      } else {
+        setTypingUsers((prev) => {
+          const next = { ...prev };
+          delete next[data.userId];
+          return next;
+        });
+      }
+      // Update sidebar typing indicator
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.participants.includes(data.userId)
+            ? { ...c, isTyping: data.typing, typingName: data.displayName }
+            : c,
+        ),
+      );
+    };
+
+    const handleMessageExpired = (data: { id: string }) => {
+      setActiveMessages((prev) => prev.filter((m) => m.id !== data.id));
+    };
+
+    // Emit delivered for incoming messages (not own)
+    const handleDeliverOnReceive = (msg: MessagePayload) => {
+      if (msg.sender !== user.id && msg.status === "sent") {
+        socket.emit("message:delivered", {
+          messageIds: [msg._id],
+          conversationId: msg.conversationId,
+        });
+      }
+    };
+
     socket.on("message:new", handleNewMessage);
+    socket.on("message:new", handleDeliverOnReceive);
     socket.on("message:status", handleMessageStatus);
+    socket.on("message:expired", handleMessageExpired);
     socket.on("presence:online", handlePresenceOnline);
     socket.on("presence:offline", handlePresenceOffline);
     socket.on("presence:list", handlePresenceList);
+    socket.on("typing", handleTyping);
 
     return () => {
       socket.off("message:new", handleNewMessage);
+      socket.off("message:new", handleDeliverOnReceive);
       socket.off("message:status", handleMessageStatus);
+      socket.off("message:expired", handleMessageExpired);
       socket.off("presence:online", handlePresenceOnline);
       socket.off("presence:offline", handlePresenceOffline);
       socket.off("presence:list", handlePresenceList);
+      socket.off("typing", handleTyping);
     };
   }, [socket, user]);
 
@@ -280,15 +350,17 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       if (!activeConversation || !user || !socket) return;
 
       const tempId = `temp-${Date.now()}`;
+      const now = new Date();
       const newMsg: Message = {
         id: tempId,
         senderId: user.id ?? "me",
         senderName: user.displayName ?? "Me",
         text,
-        timestamp: new Date().toLocaleTimeString([], {
+        timestamp: now.toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
         }),
+        rawTimestamp: now.toISOString(),
         status: "sending",
         isMe: true,
       };
@@ -335,6 +407,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         conversations,
         activeConversation,
         activeMessages,
+        typingUsers,
+        socket,
         setActiveConversation,
         sendMessage,
         loadConversations,

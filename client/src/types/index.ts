@@ -23,7 +23,7 @@ export interface Message {
   conversationId: string;
   sender: string;
   text: string;
-  status: "sent" | "delivered" | "read";
+  status: "sending" | "sent" | "delivered" | "read";
   expires_at?: Date | string;
   createdAt: Date | string;
 }

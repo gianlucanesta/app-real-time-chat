@@ -9,7 +9,7 @@ interface ChatMessageProps {
   isSent: boolean;
   contactInitials?: string;
   contactGradient?: string;
-  status?: "sending" | "sent" | "read";
+  status?: "sending" | "sent" | "delivered" | "read";
   isSelectMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: () => void;
@@ -82,14 +82,24 @@ export function ChatMessage({
           {/* Time and Status */}
           <div className={`text-[11px] text-text-secondary mt-1 flex items-center gap-1 ${isSent ? "justify-end mr-1" : "ml-1"}`}>
             {time}
-            {isSent && status === "read" && (
-              <span className="text-accent flex items-center" aria-label="Read">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><polyline points="20 6 9 17 4 12" /></svg>
+            {isSent && status === "sending" && (
+              <span className="text-text-secondary flex items-center animate-pulse" aria-label="Sending">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><circle cx="12" cy="12" r="10" strokeDasharray="31.4" strokeDashoffset="10" /></svg>
               </span>
             )}
             {isSent && status === "sent" && (
               <span className="text-text-secondary flex items-center" aria-label="Sent">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><polyline points="20 6 9 17 4 12" /></svg>
+              </span>
+            )}
+            {isSent && status === "delivered" && (
+              <span className="text-text-secondary flex items-center" aria-label="Delivered">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><polyline points="18 7 9.5 17 5 12" /><polyline points="23 7 14.5 17 12 14" /></svg>
+              </span>
+            )}
+            {isSent && status === "read" && (
+              <span className="text-accent flex items-center" aria-label="Read">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5"><polyline points="18 7 9.5 17 5 12" /><polyline points="23 7 14.5 17 12 14" /></svg>
               </span>
             )}
           </div>

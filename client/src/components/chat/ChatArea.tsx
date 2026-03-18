@@ -15,7 +15,7 @@ import {
   ShieldAlert,
   Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useClickOutside } from "../../hooks/useClickOutside";
 import { ContactProfilePanel } from "./ContactProfilePanel";
 import { EditContactPanel } from "./EditContactPanel";
@@ -25,7 +25,7 @@ import { ConfirmModal } from "./ConfirmModal";
 import { useChat } from "../../contexts/ChatContext";
 
 export function ChatArea() {
-  const { activeConversation, activeMessages, sendMessage } = useChat();
+  const { activeConversation, activeMessages, sendMessage, typingUsers, socket } = useChat();
 
   const [isContactInfoOpen, setIsContactInfoOpen] = useState(false);
   const [isEditContactOpen, setIsEditContactOpen] = useState(false);
@@ -66,6 +66,31 @@ export function ChatArea() {
   const contactName = activeConversation?.name || "";
   const contactInitials = activeConversation?.initials || "";
   const contactGradient = activeConversation?.gradient || "";
+
+  // Typing emit logic
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTypingRef = useRef(false);
+
+  const handleTypingEmit = useCallback(() => {
+    if (!activeConversation || !socket) return;
+    if (!isTypingRef.current) {
+      isTypingRef.current = true;
+      socket.emit("typing:start", activeConversation.id);
+    }
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+      socket.emit("typing:stop", activeConversation.id);
+    }, 2000);
+  }, [activeConversation, socket]);
+
+  // Stop typing when conversation changes
+  useEffect(() => {
+    return () => {
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      isTypingRef.current = false;
+    };
+  }, [activeConversation?.id]);
 
   if (!activeConversation) {
     return (
@@ -189,12 +214,21 @@ export function ChatArea() {
             <h2 className="text-[15px] md:text-[16px] font-semibold text-text-main leading-tight truncate">
               {contactName}
             </h2>
-            {activeConversation?.isOnline && (
+            {activeConversation?.isTyping ? (
+              <div className="flex items-center gap-1.5 text-[11px] md:text-[12px] text-accent mt-0.5">
+                <span className="flex gap-0.5">
+                  <span className="w-1 h-1 rounded-full bg-accent animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1 h-1 rounded-full bg-accent animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1 h-1 rounded-full bg-accent animate-bounce" style={{ animationDelay: '300ms' }} />
+                </span>
+                typing...
+              </div>
+            ) : activeConversation?.isOnline ? (
               <div className="flex items-center gap-1.5 text-[11px] md:text-[12px] text-success mt-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
                 Online
               </div>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -518,6 +552,7 @@ export function ChatArea() {
               type="text"
               placeholder="Type your message..."
               className="flex-1 bg-transparent border-none outline-none text-[14px] text-text-main placeholder:text-text-secondary px-2"
+              onChange={handleTypingEmit}
               onKeyDown={(e) => {
                 if (
                   e.key === "Enter" &&
@@ -527,6 +562,12 @@ export function ChatArea() {
                   e.preventDefault();
                   sendMessage(e.currentTarget.value.trim());
                   e.currentTarget.value = "";
+                  // Stop typing immediately on send
+                  if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+                  if (isTypingRef.current && activeConversation && socket) {
+                    isTypingRef.current = false;
+                    socket.emit("typing:stop", activeConversation.id);
+                  }
                 }
               }}
             />
