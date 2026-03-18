@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { Grid, User, Bell, Shield, Lock, LogOut, Camera, Mail, Phone, Briefcase, Settings2, ShieldCheck, HelpCircle } from "lucide-react";
+import { useState, useRef } from "react";
+import { Grid, User, Bell, Shield, Lock, LogOut, Camera, Mail, Phone, Briefcase, Settings2, ShieldCheck, HelpCircle, Search, Volume2, MapPin, FileText, Keyboard } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -20,8 +20,14 @@ function SettingsPage() {
   const [displayName, setDisplayName] = useState(user?.displayName || "");
   const [phone, setPhone] = useState(user?.phone || "");
   const [role, setRole] = useState(user?.role || "");
+  const [bio, setBio] = useState("");
+  const [location, setLocation] = useState("");
+  const [volume, setVolume] = useState(75);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState({ text: "", type: "" });
+  const [navSearch, setNavSearch] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLogout = () => {
     logout();
@@ -52,6 +58,19 @@ function SettingsPage() {
     }
   };
 
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setAvatarPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveAvatar = () => {
+    setAvatarPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const initials = user?.displayName ? user.displayName.substring(0, 2).toUpperCase() : "GN";
   const userRole = user?.role || "Member";
   const avatarGradient = user?.avatarGradient || "linear-gradient(135deg, #2563EB, #7C3AED)";
@@ -72,6 +91,18 @@ function SettingsPage() {
         </div>
         
         <h2 className="text-xl font-bold md:hidden mb-4">Settings</h2>
+
+        {/* Search */}
+        <div className="relative mb-4">
+          <Search className="w-4 h-4 text-text-secondary absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search settings"
+            value={navSearch}
+            onChange={(e) => setNavSearch(e.target.value)}
+            className="w-full h-9 pl-9 pr-3 rounded-lg bg-input border border-border text-[13px] text-text-main placeholder:text-text-secondary focus:outline-none focus:border-accent transition-colors"
+          />
+        </div>
 
         <nav className="flex md:flex-col gap-1.5 overflow-x-auto md:overflow-y-auto scrollbar-none pb-2 md:pb-0">
           <Link to="/settings" className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[14px] font-medium transition-colors bg-accent/10 text-accent shrink-0">
@@ -94,6 +125,14 @@ function SettingsPage() {
           <a href="#" className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[14px] font-medium transition-colors text-text-secondary hover:bg-input hover:text-text-main shrink-0">
             <Lock className="w-4 h-4" />
             <span>Security</span>
+          </a>
+          <a href="#" className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[14px] font-medium transition-colors text-text-secondary hover:bg-input hover:text-text-main shrink-0">
+            <Keyboard className="w-4 h-4" />
+            <span>Keyboard Shortcuts</span>
+          </a>
+          <a href="#" className="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[14px] font-medium transition-colors text-text-secondary hover:bg-input hover:text-text-main shrink-0">
+            <HelpCircle className="w-4 h-4" />
+            <span>Help &amp; Support</span>
           </a>
         </nav>
 
@@ -126,13 +165,32 @@ function SettingsPage() {
           {/* Profile Card */}
           <div className="p-6 bg-card rounded-2xl border border-border flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-8 hover:border-border/80 transition-colors shadow-sm">
             <div className="relative shrink-0">
-              <div 
-                className="w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center font-bold text-[28px] text-white shadow-lg"
-                style={{ background: avatarGradient }}
+              {avatarPreview ? (
+                <img
+                  src={avatarPreview}
+                  alt="Avatar preview"
+                  className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover shadow-lg"
+                />
+              ) : (
+                <div 
+                  className="w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center font-bold text-[28px] text-white shadow-lg"
+                  style={{ background: avatarGradient }}
+                >
+                  {initials}
+                </div>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                className="hidden"
+              />
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute bottom-0 right-0 w-8 h-8 bg-accent rounded-full flex items-center justify-center border-[3px] border-card cursor-pointer hover:scale-105 active:scale-95 transition-transform" 
+                aria-label="Change avatar"
               >
-                {initials}
-              </div>
-              <button className="absolute bottom-0 right-0 w-8 h-8 bg-accent rounded-full flex items-center justify-center border-[3px] border-card cursor-pointer hover:scale-105 active:scale-95 transition-transform" aria-label="Change avatar">
                 <Camera className="w-4 h-4 text-white" />
               </button>
             </div>
@@ -140,8 +198,8 @@ function SettingsPage() {
               <div className="text-[18px] md:text-[20px] font-bold text-text-main">{displayName || "Gianluca Nesta"}</div>
               <div className="text-[14px] text-text-secondary mb-3">{userRole}</div>
               <div className="flex gap-3">
-                <Button size="sm" className="h-9 px-4 rounded-full text-[13px] font-medium shadow-sm">Change Photo</Button>
-                <Button size="sm" variant="outline" className="h-9 px-4 rounded-full text-[13px] font-medium border-border hover:bg-input text-text-secondary hover:text-text-main">Remove</Button>
+                <Button size="sm" className="h-9 px-4 rounded-full text-[13px] font-medium shadow-sm" onClick={() => fileInputRef.current?.click()}>Change Photo</Button>
+                <Button size="sm" variant="outline" className="h-9 px-4 rounded-full text-[13px] font-medium border-border hover:bg-input text-text-secondary hover:text-text-main" onClick={handleRemoveAvatar}>Remove</Button>
               </div>
             </div>
           </div>
@@ -192,6 +250,29 @@ function SettingsPage() {
                 className="h-11 bg-input/50 focus:bg-input rounded-xl border-border/50 text-[14px]"
               />
             </div>
+            <div className="flex flex-col gap-2 md:col-span-2">
+              <Label htmlFor="bio" className="text-[12px] font-semibold text-text-secondary uppercase tracking-[0.5px]">Bio</Label>
+              <textarea 
+                id="bio" 
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Write something about yourself..."
+                rows={3}
+                className="w-full px-3 py-2.5 rounded-xl bg-input/50 border border-border/50 text-[14px] text-text-main placeholder:text-text-secondary focus:outline-none focus:border-accent focus:bg-input transition-colors resize-none"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="location" className="text-[12px] font-semibold text-text-secondary uppercase tracking-[0.5px]">Location</Label>
+              <Input 
+                id="location" 
+                type="text" 
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="City, Country"
+                icon={<MapPin className="w-[18px] h-[18px] text-text-secondary" />} 
+                className="h-11 bg-input/50 focus:bg-input rounded-xl border-border/50 text-[14px]"
+              />
+            </div>
           </div>
 
           {/* Preferences Section */}
@@ -219,9 +300,31 @@ function SettingsPage() {
                   <div className="text-[13px] text-text-secondary mt-0.5">Let others know when you've read messages</div>
                 </div>
                 <label className="relative flex items-center cursor-pointer">
-                  <input type="checkbox" defaultChecked className="sr-only peer" />
+                  <input type="checkbox" className="sr-only peer" />
                   <div className="w-11 h-6 bg-toggle-off peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
                 </label>
+              </div>
+
+              {/* Volume Slider */}
+              <div className="flex flex-col gap-2 px-6 py-4 hover:bg-input/20 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-text-main text-[14px]">Notification Volume</div>
+                    <div className="text-[13px] text-text-secondary mt-0.5">Adjust notification sound volume</div>
+                  </div>
+                  <span className="text-[14px] text-accent font-semibold">{volume}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={volume}
+                  onChange={(e) => setVolume(Number(e.target.value))}
+                  className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-accent bg-border"
+                  style={{
+                    background: `linear-gradient(to right, var(--color-accent) 0%, var(--color-accent) ${volume}%, var(--color-border) ${volume}%, var(--color-border) 100%)`,
+                  }}
+                />
               </div>
             </div>
           </div>
