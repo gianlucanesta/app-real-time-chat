@@ -30,14 +30,26 @@ export async function findByEmail(
 }
 
 /** Full-text search on display_name (simple ILIKE). */
-export async function search(query: string, limit = 20): Promise<IUser[]> {
+export async function search(
+  query: string,
+  limit = 20,
+  excludeUserId?: string,
+): Promise<IUser[]> {
+  const params: (string | number)[] = [`%${query}%`];
+  let whereClause = `WHERE display_name ILIKE $1`;
+  if (excludeUserId) {
+    whereClause += ` AND id <> $2`;
+    params.push(excludeUserId);
+  }
+  params.push(limit);
+  const limitIdx = params.length;
   const { rows } = await pool.query<IUser>(
     `SELECT id, email, display_name, initials, avatar_gradient, avatar_url
      FROM users
-     WHERE display_name ILIKE $1
+     ${whereClause}
      ORDER BY display_name
-     LIMIT $2`,
-    [`%${query}%`, limit],
+     LIMIT $${limitIdx}`,
+    params,
   );
   return rows;
 }
@@ -61,7 +73,13 @@ export async function create({
     `INSERT INTO users (email, password_hash, display_name, phone, initials)
      VALUES ($1, $2, $3, $4, $5)
      RETURNING ${SAFE_COLUMNS}`,
-    [email.toLowerCase().trim(), passwordHash, displayName.trim(), phone, initials],
+    [
+      email.toLowerCase().trim(),
+      passwordHash,
+      displayName.trim(),
+      phone,
+      initials,
+    ],
   );
   return rows[0];
 }

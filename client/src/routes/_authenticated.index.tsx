@@ -12,6 +12,8 @@ export const Route = createFileRoute("/_authenticated/")({
 function ChatIndex() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mobileShowChat, setMobileShowChat] = useState(false);
+  const [isNewContactOpen, setIsNewContactOpen] = useState(false);
+  const [isNewGroupOpen, setIsNewGroupOpen] = useState(false);
   const { activeConversation, setActiveConversation, setMobileInChat } =
     useChat();
 
@@ -31,7 +33,15 @@ function ChatIndex() {
       <div
         className={`${mobileShowChat ? "hidden" : "flex"} md:flex w-full md:w-auto`}
       >
-        <Sidebar onOpenNewChat={() => setIsModalOpen(true)} />
+        <Sidebar
+          onOpenNewChat={() => setIsModalOpen(true)}
+          isNewContactOpen={isNewContactOpen}
+          onOpenNewContact={() => setIsNewContactOpen(true)}
+          onCloseNewContact={() => setIsNewContactOpen(false)}
+          isNewGroupOpen={isNewGroupOpen}
+          onOpenNewGroup={() => setIsNewGroupOpen(true)}
+          onCloseNewGroup={() => setIsNewGroupOpen(false)}
+        />
       </div>
       <div
         className={`${mobileShowChat ? "flex" : "hidden"} md:flex flex-1 min-w-0`}
@@ -41,6 +51,8 @@ function ChatIndex() {
             setMobileShowChat(false);
             setActiveConversation(null);
           }}
+          onOpenNewContact={() => setIsNewContactOpen(true)}
+          onOpenNewGroup={() => setIsNewGroupOpen(true)}
         />
       </div>
       <NewChatModal

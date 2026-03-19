@@ -27,7 +27,8 @@ export async function create(
     if (phone) {
       try {
         const found = await UserModel.findByPhone(phone.trim());
-        if (found) linkedUserId = found.id;
+        // Prevent self-linking: don't link a contact to the owner
+        if (found && found.id !== req.user!.sub) linkedUserId = found.id;
       } catch {
         // non-critical — proceed without linking
       }

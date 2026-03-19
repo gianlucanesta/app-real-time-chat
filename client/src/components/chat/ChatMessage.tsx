@@ -191,7 +191,9 @@ export function ChatMessage({
             {!isSelectMode && isContextMenuOpen && (
               <div
                 className={`absolute ${
-                  menuDirection === "down" ? "top-full mt-1" : "bottom-full mb-1"
+                  menuDirection === "down"
+                    ? "top-full mt-1"
+                    : "bottom-full mb-1"
                 } w-48 bg-card border border-border/80 rounded-xl shadow-xl py-2 z-50 animate-in fade-in zoom-in-95 ${
                   isSent ? "right-0" : "left-0"
                 }`}
@@ -278,7 +280,7 @@ export function ChatMessage({
             {time}
             {isSent && status === "sending" && (
               <span
-                className="text-text-secondary flex items-center animate-pulse"
+                className="text-text-secondary flex items-center"
                 aria-label="Sending"
               >
                 <svg
@@ -288,7 +290,7 @@ export function ChatMessage({
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="w-3.5 h-3.5"
+                  className="w-3.5 h-3.5 animate-spin"
                 >
                   <circle
                     cx="12"
@@ -354,7 +356,6 @@ export function ChatMessage({
               </span>
             )}
           </div>
-
         </div>
       </div>
     </div>

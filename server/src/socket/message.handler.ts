@@ -102,6 +102,9 @@ export function registerMessageHandlers(
       } catch (err) {
         console.error("[socket] message:send error:", (err as Error).message);
         socket.emit("error", { message: "Failed to save message" });
+        if (typeof ack === "function") {
+          ack({ ok: false });
+        }
       }
     },
   );

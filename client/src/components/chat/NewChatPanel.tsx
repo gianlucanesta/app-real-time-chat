@@ -45,8 +45,10 @@ export function NewChatPanel({
         const data = await apiFetch<{ users: SearchUser[] }>(
           `/users/search?q=${encodeURIComponent(q)}`,
         );
-        setResults(data.users || []);
-        setStatus(data.users?.length ? "idle" : "empty");
+        // Filter out the current user (safety net)
+        const filtered = (data.users || []).filter((u) => u.id !== user?.id);
+        setResults(filtered);
+        setStatus(filtered.length ? "idle" : "empty");
       } catch {
         setResults([]);
         setStatus("empty");

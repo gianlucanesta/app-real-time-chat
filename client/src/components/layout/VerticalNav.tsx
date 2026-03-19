@@ -15,7 +15,13 @@ import { useChat } from "../../contexts/ChatContext";
 export function VerticalNav() {
   const { pathname } = useLocation();
   const { user } = useAuth();
-  const { mobileInChat } = useChat();
+  const { mobileInChat, conversations } = useChat();
+
+  // Compute total unread messages across all conversations
+  const totalUnread = conversations.reduce(
+    (sum, c) => sum + (c.unreadCount || 0),
+    0,
+  );
 
   // A helper function to determine if a route is active
   const isActive = (path: string) => {
@@ -60,6 +66,7 @@ export function VerticalNav() {
           {desktopNavLinks.map((link) => {
             const Icon = link.icon;
             const active = isActive(link.path);
+            const showBadge = link.path === "/" && totalUnread > 0;
             return (
               <Link
                 key={link.path}
@@ -72,6 +79,11 @@ export function VerticalNav() {
                 }`}
               >
                 <Icon size={22} strokeWidth={active ? 2.5 : 2} />
+                {showBadge && (
+                  <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-accent text-white text-[10px] font-bold px-1 shadow-sm">
+                    {totalUnread > 99 ? "99+" : totalUnread}
+                  </span>
+                )}
                 {active && (
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-accent rounded-r-full" />
                 )}
@@ -106,17 +118,28 @@ export function VerticalNav() {
           {mobileNavLinks.map((link) => {
             const Icon = link.icon;
             const active = isActive(link.path);
+            const showBadge = link.path === "/" && totalUnread > 0;
             return (
               <Link
                 key={link.path}
                 to={link.path}
-                className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${
+                className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors relative ${
                   active
                     ? "text-accent"
                     : "text-text-secondary hover:text-text-main"
                 }`}
               >
-                <Icon size={active ? 24 : 22} strokeWidth={active ? 2.5 : 2} />
+                <div className="relative">
+                  <Icon
+                    size={active ? 24 : 22}
+                    strokeWidth={active ? 2.5 : 2}
+                  />
+                  {showBadge && (
+                    <span className="absolute -top-1.5 -right-2.5 inline-flex items-center justify-center min-w-[16px] h-[16px] rounded-full bg-accent text-white text-[9px] font-bold px-1 shadow-sm">
+                      {totalUnread > 99 ? "99+" : totalUnread}
+                    </span>
+                  )}
+                </div>
                 <span className="text-[10px] font-medium">{link.label}</span>
               </Link>
             );

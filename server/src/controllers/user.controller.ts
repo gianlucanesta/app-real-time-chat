@@ -34,7 +34,7 @@ export async function search(
         .json({ error: 'Query parameter "q" must be at least 2 characters' });
       return;
     }
-    const users = await UserModel.search(q.trim());
+    const users = await UserModel.search(q.trim(), 20, req.user!.sub);
     res.status(200).json({ users });
   } catch (err) {
     next(err);
@@ -51,9 +51,7 @@ export async function update(
     const userId = req.params.id;
 
     if (req.user!.sub !== userId) {
-      res
-        .status(403)
-        .json({ error: "Cannot update another user's profile" });
+      res.status(403).json({ error: "Cannot update another user's profile" });
       return;
     }
 

@@ -9,12 +9,25 @@ import {
   LogOut,
   ChevronDown,
   Lock,
+  Plus,
+  ListPlus,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useClickOutside } from "../../hooks/useClickOutside";
 import { useChat } from "../../contexts/ChatContext";
 import { NewChatPanel } from "./NewChatPanel";
 import { NewContactPanel } from "./NewContactPanel";
+import { NewGroupPanel } from "./NewGroupPanel";
+
+interface SidebarProps {
+  onOpenNewChat?: () => void;
+  isNewContactOpen?: boolean;
+  onOpenNewContact?: () => void;
+  onCloseNewContact?: () => void;
+  isNewGroupOpen?: boolean;
+  onOpenNewGroup?: () => void;
+  onCloseNewGroup?: () => void;
+}
 
 function SidebarStatus({
   status,
@@ -31,7 +44,7 @@ function SidebarStatus({
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="w-3 h-3 animate-pulse"
+          className="w-3 h-3 animate-spin"
         >
           <circle
             cx="12"
@@ -98,12 +111,21 @@ function SidebarStatus({
   );
 }
 
-export function Sidebar() {
+export function Sidebar({
+  isNewContactOpen: isNewContactOpenProp,
+  onOpenNewContact,
+  onCloseNewContact,
+  isNewGroupOpen: isNewGroupOpenProp,
+  onCloseNewGroup,
+}: SidebarProps = {}) {
   const [activeFilter, setActiveFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
-  const [isNewContactOpen, setIsNewContactOpen] = useState(false);
+
+  // Panels controlled by parent (ChatIndex) so ChatArea can also open them
+  const isNewContactOpen = isNewContactOpenProp ?? false;
+  const isNewGroupOpen = isNewGroupOpenProp ?? false;
 
   const menuRef = useClickOutside<HTMLDivElement>(() => setIsMenuOpen(false));
 
@@ -161,17 +183,21 @@ export function Sidebar() {
       <NewChatPanel
         isOpen={isNewChatOpen}
         onClose={() => setIsNewChatOpen(false)}
-        onOpenNewContact={() => setIsNewContactOpen(true)}
+        onOpenNewContact={() => onOpenNewContact?.()}
       />
       <NewContactPanel
         isOpen={isNewContactOpen}
-        onClose={() => setIsNewContactOpen(false)}
+        onClose={() => onCloseNewContact?.()}
         onContactSaved={(conv) => {
           addOrUpdateConversation(conv);
           setActiveConversation(conv);
-          setIsNewContactOpen(false);
+          onCloseNewContact?.();
           setIsNewChatOpen(false);
         }}
+      />
+      <NewGroupPanel
+        isOpen={isNewGroupOpen}
+        onClose={() => onCloseNewGroup?.()}
       />
 
       {/* Sidebar Header */}
@@ -234,21 +260,23 @@ export function Sidebar() {
       </div>
 
       {/* Filter Chips */}
-      <div className="px-4 pb-3 flex items-center gap-2 overflow-x-auto scrollbar-none">
-        {filters.map((filter) => (
-          <button
-            key={filter}
-            onClick={() => setActiveFilter(filter)}
-            className={`px-3.5 py-1.5 rounded-full text-[12.5px] font-medium transition-colors whitespace-nowrap ${
-              activeFilter === filter
-                ? "bg-accent text-white shadow-sm"
-                : "bg-input/60 text-text-secondary hover:text-text-main hover:bg-input"
-            }`}
-          >
-            {filter}
-          </button>
-        ))}
-        {/* More filters dropdown */}
+      <div className="px-4 pb-3 flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none flex-1 min-w-0">
+          {filters.map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setActiveFilter(filter)}
+              className={`px-3.5 py-1.5 rounded-full text-[12.5px] font-medium transition-colors whitespace-nowrap ${
+                activeFilter === filter
+                  ? "bg-accent text-white shadow-sm"
+                  : "bg-input/60 text-text-secondary hover:text-text-main hover:bg-input"
+              }`}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
+        {/* More filters dropdown — outside the scrollable container */}
         <div className="relative shrink-0" ref={filterMenuRef}>
           <button
             onClick={() => setIsFilterMenuOpen(!isFilterMenuOpen)}
@@ -258,23 +286,30 @@ export function Sidebar() {
             <ChevronDown className="w-3.5 h-3.5" />
           </button>
           {isFilterMenuOpen && (
-            <div className="absolute left-0 top-full mt-2 w-40 bg-card border border-border/80 rounded-xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2">
-              {["Groups", "Archived", "Muted"].map((opt) => (
-                <button
-                  key={opt}
-                  onClick={() => {
-                    setActiveFilter(opt);
-                    setIsFilterMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center px-4 py-2.5 text-[13px] transition-colors ${
-                    activeFilter === opt
-                      ? "text-accent font-medium"
-                      : "text-text-main hover:bg-input/80"
-                  }`}
-                >
-                  {opt}
-                </button>
-              ))}
+            <div className="absolute right-0 top-full mt-2 w-44 bg-card border border-border/80 rounded-xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2">
+              <button
+                onClick={() => {
+                  setActiveFilter("Groups");
+                  setIsFilterMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 text-[13px] transition-colors ${
+                  activeFilter === "Groups"
+                    ? "text-accent font-medium"
+                    : "text-text-main hover:bg-input/80"
+                }`}
+              >
+                <Users className="w-4 h-4 text-text-secondary" />
+                Groups
+              </button>
+              <button
+                onClick={() => {
+                  setIsFilterMenuOpen(false);
+                }}
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-text-main hover:bg-input/80 transition-colors"
+              >
+                <Plus className="w-4 h-4 text-text-secondary" />
+                New list
+              </button>
             </div>
           )}
         </div>

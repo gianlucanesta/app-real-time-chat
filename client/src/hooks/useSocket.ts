@@ -81,6 +81,7 @@ export function useSocket() {
     const socket: TypedSocket = io(SOCKET_URL, {
       auth: { token },
       transports: ["websocket"],
+      reconnection: false, // Manual reconnect in connect_error to avoid race with token refresh
     });
 
     socket.on("connect", () => {

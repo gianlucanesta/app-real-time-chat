@@ -29,6 +29,9 @@ import type { User as UserType } from "../types";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsRoot,
+  validateSearch: (search: Record<string, unknown>) => ({
+    section: typeof search.section === "string" ? search.section : undefined,
+  }),
 });
 
 // Settings nav items
@@ -44,14 +47,19 @@ const NAV_ITEMS = [
 ];
 
 function SettingsPage() {
+  const { section: initialSection } = Route.useSearch();
   const { user, updateUser, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   // Mobile: null = hub, string = active section
-  const [mobileSection, setMobileSection] = useState<string | null>(null);
+  const [mobileSection, setMobileSection] = useState<string | null>(
+    initialSection ?? null,
+  );
   // Desktop: always shows sidebar; tracks which section is selected
-  const [desktopSection, setDesktopSection] = useState<string>("general");
+  const [desktopSection, setDesktopSection] = useState<string>(
+    initialSection ?? "general",
+  );
   const [navSearch, setNavSearch] = useState("");
 
   // Profile form state
@@ -401,11 +409,14 @@ function SettingsPage() {
 // ── Desktop wrapper — renders only on md+ screens ─────────────────────────
 // We need a separate component to avoid React hook ordering issues
 function SettingsPageDesktop() {
+  const { section: initialSection } = Route.useSearch();
   const { user, updateUser, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
-  const [desktopSection, setDesktopSection] = useState<string>("general");
+  const [desktopSection, setDesktopSection] = useState<string>(
+    initialSection ?? "general",
+  );
   const [navSearch, setNavSearch] = useState("");
 
   const nameParts = (user?.displayName || "").split(" ");
@@ -474,7 +485,7 @@ function SettingsPageDesktop() {
   return (
     <div className="hidden md:flex h-full bg-bg text-text-main overflow-hidden">
       {/* Desktop sidebar */}
-      <aside className="w-[280px] min-w-[280px] bg-card border-r border-border flex flex-col shrink-0">
+      <aside className="w-[var(--width-sidebar)] min-w-[var(--width-sidebar)] bg-card border-r border-border flex flex-col shrink-0">
         <div className="p-5 border-b border-border">
           <div className="relative">
             <Search className="w-4 h-4 text-text-secondary absolute left-3 top-1/2 -translate-y-1/2" />

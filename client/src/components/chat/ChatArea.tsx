@@ -21,6 +21,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { useClickOutside } from "../../hooks/useClickOutside";
 import { ContactProfilePanel } from "./ContactProfilePanel";
 import { EditContactPanel } from "./EditContactPanel";
@@ -67,9 +68,17 @@ function groupMessagesByDate(messages: Message[]): [string, Message[]][] {
 
 interface ChatAreaProps {
   onMobileBack?: () => void;
+  onOpenNewContact?: () => void;
+  onOpenNewGroup?: () => void;
 }
 
-export function ChatArea({ onMobileBack }: ChatAreaProps) {
+export function ChatArea({
+  onMobileBack,
+  onOpenNewContact,
+  onOpenNewGroup,
+}: ChatAreaProps) {
+  const navigate = useNavigate();
+
   const {
     conversations,
     activeConversation,
@@ -79,17 +88,20 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
     socket,
     deleteMessages,
     clearMessages,
+    deleteConversation,
   } = useChat();
   const toast = useToast();
 
-  // Derive live typing state from the conversations array (activeConversation is a stale copy)
-  const isContactTyping =
-    conversations.find((c) => c.id === activeConversation?.id)?.isTyping ??
-    false;
+  // Derive live state from the conversations array (activeConversation is a stale copy)
+  const liveConv = conversations.find((c) => c.id === activeConversation?.id);
+  const isContactTyping = liveConv?.isTyping ?? false;
+  const isContactOnline = liveConv?.isOnline ?? false;
 
   const [isContactInfoOpen, setIsContactInfoOpen] = useState(false);
   const [isEditContactOpen, setIsEditContactOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
+  const [offlineTextVisible, setOfflineTextVisible] = useState(true);
+  const offlineTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Dropdowns
   const [isCallMenuOpen, setIsCallMenuOpen] = useState(false);
@@ -234,6 +246,7 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
   // Stop typing and clear input when conversation changes
   useEffect(() => {
     setInputValue("");
+    setOfflineTextVisible(true);
     return () => {
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
       isTypingRef.current = false;
@@ -249,7 +262,11 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
           aria-hidden="false"
         >
           <div className="chat-empty-actions">
-            <button type="button" className="chat-empty-action">
+            <button
+              type="button"
+              className="chat-empty-action"
+              onClick={() => onOpenNewContact?.()}
+            >
               <div className="chat-empty-action-icon">
                 <svg
                   viewBox="0 0 24 24"
@@ -267,7 +284,11 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
               </div>
               <span>New contact</span>
             </button>
-            <button type="button" className="chat-empty-action">
+            <button
+              type="button"
+              className="chat-empty-action"
+              onClick={() => onOpenNewGroup?.()}
+            >
               <div className="chat-empty-action-icon">
                 <svg
                   viewBox="0 0 24 24"
@@ -285,7 +306,13 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
               </div>
               <span>New group</span>
             </button>
-            <button type="button" className="chat-empty-action">
+            <button
+              type="button"
+              className="chat-empty-action"
+              onClick={() =>
+                navigate({ to: "/settings", search: { section: "privacy" } })
+              }
+            >
               <div className="chat-empty-action-icon">
                 <svg
                   viewBox="0 0 24 24"
@@ -372,15 +399,39 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
             >
               {contactInitials}
             </div>
-            <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-success border-2 border-bg box-content"></span>
+            {isContactOnline && (
+              <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-success border-2 border-bg box-content"></span>
+            )}
           </div>
 
-          <div className="flex-1 min-w-0">
-            <h2 className="text-[15px] md:text-[16px] font-semibold text-text-main leading-tight truncate">
+          <div
+            className="flex-1 min-w-0"
+            onMouseEnter={() => {
+              if (!isContactOnline && !isContactTyping) {
+                if (offlineTimerRef.current)
+                  clearTimeout(offlineTimerRef.current);
+                offlineTimerRef.current = setTimeout(() => {
+                  setOfflineTextVisible(false);
+                }, 2000);
+              }
+            }}
+            onMouseLeave={() => {
+              if (offlineTimerRef.current)
+                clearTimeout(offlineTimerRef.current);
+              if (!offlineTextVisible) setOfflineTextVisible(true);
+            }}
+          >
+            <h2
+              className={`font-semibold text-text-main leading-tight truncate transition-all duration-300 ease-in-out ${
+                !isContactOnline && !isContactTyping && !offlineTextVisible
+                  ? "text-[17px] md:text-[18px] translate-y-[2px]"
+                  : "text-[15px] md:text-[16px]"
+              }`}
+            >
               {contactName}
             </h2>
             {isContactTyping ? (
-              <div className="flex items-center gap-1.5 text-[11px] md:text-[12px] text-accent mt-0.5">
+              <div className="flex items-center gap-1.5 text-[11px] md:text-[12px] text-accent mt-0.5 transition-all duration-300 ease-in-out">
                 <span className="flex gap-0.5">
                   <span
                     className="w-1 h-1 rounded-full bg-accent animate-bounce"
@@ -397,12 +448,21 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
                 </span>
                 typing...
               </div>
-            ) : activeConversation?.isOnline ? (
-              <div className="hidden md:flex items-center gap-1.5 text-[11px] md:text-[12px] text-success mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-success"></span>
+            ) : isContactOnline ? (
+              <div className="hidden md:flex items-center gap-1.5 text-[11px] md:text-[12px] text-success mt-0.5 transition-all duration-300 ease-in-out">
                 Online
               </div>
-            ) : null}
+            ) : (
+              <div
+                className={`hidden md:flex items-center text-[11px] md:text-[12px] text-text-secondary mt-0.5 transition-all duration-300 ease-in-out overflow-hidden ${
+                  offlineTextVisible
+                    ? "max-h-6 opacity-100"
+                    : "max-h-0 opacity-0"
+                }`}
+              >
+                Offline
+              </div>
+            )}
           </div>
         </div>
 
@@ -850,7 +910,7 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
         description="This contact and all messages will be permanently removed. This cannot be undone."
         confirmText="Delete chat"
         onConfirm={() => {
-          // TODO: API call DELETE /api/contacts/:id + clear messages
+          deleteConversation();
           setActiveModal(null);
           toast.showToast("Chat deleted", "success");
         }}

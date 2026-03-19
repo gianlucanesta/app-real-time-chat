@@ -209,7 +209,10 @@ export function NewContactPanel({
                     type="tel"
                     id="ncp-phone"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) =>
+                      setPhone(e.target.value.replace(/\D/g, ""))
+                    }
+                    inputMode="numeric"
                     className="w-full bg-transparent text-text-main px-0 py-1.5 outline-none text-[15px] placeholder:text-text-secondary/50 pr-8"
                     placeholder="Phone number"
                     autoComplete="off"

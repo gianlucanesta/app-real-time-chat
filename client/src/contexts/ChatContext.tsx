@@ -61,6 +61,7 @@ interface ChatContextType {
   addOrUpdateConversation: (conv: Conversation) => void;
   deleteMessages: (ids: string[]) => void;
   clearMessages: () => void;
+  deleteConversation: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -159,8 +160,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             isMe: m.sender === user?.id,
           })),
         );
-        // Join the conversation room so we receive real-time events
-        socket?.emit("join:conversation", activeConversation.id);
 
         // Mark unread messages as read
         const unreadIds = messages
@@ -183,7 +182,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       .catch((err) =>
         console.warn("[chat] load messages failed:", (err as Error).message),
       );
-  }, [activeConversation?.id]);
+  }, [activeConversation?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── (Re-)join conversation room whenever socket or active conversation changes
+  useEffect(() => {
+    if (!socket || !activeConversation) return;
+    socket.emit("join:conversation", activeConversation.id);
+  }, [socket, activeConversation?.id]);
 
   // ── Add or overwrite a single conversation (used after contact creation) ──
   const addOrUpdateConversation = useCallback((conv: Conversation) => {
@@ -225,18 +230,20 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         // Just upgrade the temp entry to the confirmed id/status if ack hasn't
         // fired yet (race condition safety).
         setActiveMessages((prev) => {
-          if (prev.some((m) => m.id === newMsg.id)) return prev;
+          const hasRealId = prev.some((m) => m.id === newMsg.id);
+          if (hasRealId) return prev;
           // Replace the most recent "sending" entry from us with the real one
-          const idx = [...prev]
+          const sendingIdx = [...prev]
             .reverse()
             .findIndex((m) => m.isMe && m.status === "sending");
-          if (idx !== -1) {
-            const realIdx = prev.length - 1 - idx;
+          if (sendingIdx !== -1) {
+            const realIdx = prev.length - 1 - sendingIdx;
             const updated = [...prev];
             updated[realIdx] = newMsg;
             return updated;
           }
-          return prev;
+          // Fallback: no sending slot found, append
+          return [...prev, newMsg];
         });
       } else {
         // Only append to the active conversation's message list
@@ -476,13 +483,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           if (res.ok && res.messageId) {
             // Register the real message id → convId for future status tracking
             sentMsgsRef.current.set(res.messageId!, activeConversation.id);
-            setActiveMessages((prev) =>
-              prev.map((m) =>
+            setActiveMessages((prev) => {
+              const alreadyReal = prev.some((m) => m.id === res.messageId);
+              if (alreadyReal && !prev.find((m) => m.id === tempId)) {
+                // message:new already replaced the temp — nothing to do
+                return prev;
+              }
+              return prev.map((m) =>
                 m.id === tempId
                   ? { ...m, id: res.messageId!, status: "sent" }
                   : m,
-              ),
-            );
+              );
+            });
             // Upgrade sidebar: tempId → real id, status sending → sent
             const convId = activeConversation.id;
             setConversations((prev) =>
@@ -522,11 +534,43 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const clearMessages = useCallback(() => {
     if (!activeConversation) return;
     const convId = activeConversation.id;
-    // Optimistic local clear
+    // Optimistic local clear — keep conversation in sidebar, just empty its messages
     setActiveMessages([]);
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === convId
+          ? {
+              ...c,
+              lastMessage: "",
+              lastMessageTime: undefined,
+              lastMessageId: undefined,
+              lastMessageStatus: undefined,
+              unreadCount: 0,
+            }
+          : c,
+      ),
+    );
     // Persist on server
     apiFetch(`/messages/${convId}`, { method: "DELETE" }).catch((err) =>
       console.warn("[chat] clear conversation failed:", (err as Error).message),
+    );
+  }, [activeConversation]);
+
+  const deleteConversation = useCallback(() => {
+    if (!activeConversation) return;
+    const convId = activeConversation.id;
+    // Clear messages locally
+    setActiveMessages([]);
+    // Remove conversation from sidebar
+    setConversations((prev) => prev.filter((c) => c.id !== convId));
+    // Deselect active conversation
+    setActiveConversation(null);
+    // Delete messages on server
+    apiFetch(`/messages/${convId}`, { method: "DELETE" }).catch((err) =>
+      console.warn(
+        "[chat] delete conversation failed:",
+        (err as Error).message,
+      ),
     );
   }, [activeConversation]);
 
@@ -546,6 +590,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         addOrUpdateConversation,
         deleteMessages,
         clearMessages,
+        deleteConversation,
       }}
     >
       {children}
