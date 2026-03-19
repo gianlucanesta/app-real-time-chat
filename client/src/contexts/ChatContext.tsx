@@ -507,20 +507,17 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     [activeConversation, user, socket],
   );
 
-  const deleteMessages = useCallback(
-    (ids: string[]) => {
-      // Optimistic local removal
-      setActiveMessages((prev) => prev.filter((m) => !ids.includes(m.id)));
-      // Persist deletion on server
-      apiFetch("/messages", {
-        method: "DELETE",
-        body: JSON.stringify({ messageIds: ids }),
-      }).catch((err) =>
-        console.warn("[chat] delete messages failed:", (err as Error).message),
-      );
-    },
-    [],
-  );
+  const deleteMessages = useCallback((ids: string[]) => {
+    // Optimistic local removal
+    setActiveMessages((prev) => prev.filter((m) => !ids.includes(m.id)));
+    // Persist deletion on server
+    apiFetch("/messages", {
+      method: "DELETE",
+      body: JSON.stringify({ messageIds: ids }),
+    }).catch((err) =>
+      console.warn("[chat] delete messages failed:", (err as Error).message),
+    );
+  }, []);
 
   const clearMessages = useCallback(() => {
     if (!activeConversation) return;
