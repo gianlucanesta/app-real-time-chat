@@ -12,7 +12,8 @@ export const Route = createFileRoute("/_authenticated/")({
 function ChatIndex() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mobileShowChat, setMobileShowChat] = useState(false);
-  const { activeConversation, setMobileInChat } = useChat();
+  const { activeConversation, setActiveConversation, setMobileInChat } =
+    useChat();
 
   // When a conversation is selected, show chat on mobile
   useEffect(() => {
@@ -35,7 +36,12 @@ function ChatIndex() {
       <div
         className={`${mobileShowChat ? "flex" : "hidden"} md:flex flex-1 min-w-0`}
       >
-        <ChatArea onMobileBack={() => setMobileShowChat(false)} />
+        <ChatArea
+          onMobileBack={() => {
+            setMobileShowChat(false);
+            setActiveConversation(null);
+          }}
+        />
       </div>
       <NewChatModal
         isOpen={isModalOpen}

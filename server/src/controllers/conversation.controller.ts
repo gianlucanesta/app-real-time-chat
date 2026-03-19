@@ -39,7 +39,7 @@ export async function list(
         const [lastMsg, unreadCount, partner] = await Promise.all([
           Message.findOne(
             { conversationId: convId, expires_at: { $gt: new Date() } },
-            { text: 1, createdAt: 1, sender: 1 },
+            { text: 1, createdAt: 1, sender: 1, status: 1 },
           )
             .sort({ createdAt: -1 })
             .lean(),
@@ -53,10 +53,14 @@ export async function list(
         ]);
 
         const msgDoc = lastMsg as {
+          _id: { toString(): string };
           text: string;
           createdAt: Date;
           sender: string;
+          status: string;
         } | null;
+
+        const lastMessageIsMine = msgDoc ? msgDoc.sender === userId : false;
 
         return {
           id: convId,
@@ -67,12 +71,15 @@ export async function list(
             "linear-gradient(135deg,#2563EB,#7C3AED)",
           initials: partner?.initials ?? "??",
           lastMessage: msgDoc
-            ? msgDoc.sender === userId
+            ? lastMessageIsMine
               ? `You: ${msgDoc.text}`
               : msgDoc.text
             : "",
           // ISO string — client formats to "HH:mm"
           lastMessageTime: msgDoc ? msgDoc.createdAt.toISOString() : "",
+          lastMessageId: msgDoc ? msgDoc._id.toString() : undefined,
+          lastMessageIsMine,
+          lastMessageStatus: msgDoc ? msgDoc.status : undefined,
           unreadCount,
           isOnline: false,
           participants: parts,

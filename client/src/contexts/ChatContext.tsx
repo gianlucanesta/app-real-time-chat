@@ -37,6 +37,9 @@ export interface Conversation {
   lastMessage?: string;
   lastMessageTime?: string;
   lastMessageTimestamp?: string;
+  lastMessageId?: string;
+  lastMessageIsMine?: boolean;
+  lastMessageStatus?: "sending" | "sent" | "delivered" | "read";
   unreadCount: number;
   isOnline?: boolean;
   participants: string[];
@@ -56,6 +59,8 @@ interface ChatContextType {
   sendMessage: (text: string) => void;
   loadConversations: () => Promise<void>;
   addOrUpdateConversation: (conv: Conversation) => void;
+  deleteMessages: (ids: string[]) => void;
+  clearMessages: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -84,6 +89,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   // Keep a stable ref to activeConversation so socket handlers don't stale-close
   const activeConvRef = useRef<Conversation | null>(null);
   activeConvRef.current = activeConversation;
+
+  // Track sent messageId → convId so status updates can find the right conversation
+  // even when lastMessageId isn't populated from the server yet
+  const sentMsgsRef = useRef<Map<string, string>>(new Map());
 
   // ── Load conversation list from server ──────────────────────────────────
   const loadConversations = useCallback(async () => {
@@ -211,6 +220,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       // the entry in the list (tempId → real id). Appending again here would
       // cause the duplicate that disappears on refresh.
       if (isMe) {
+        // Register real id in the sent-messages map for status tracking
+        sentMsgsRef.current.set(msg._id, msg.conversationId);
         // Just upgrade the temp entry to the confirmed id/status if ack hasn't
         // fired yet (race condition safety).
         setActiveMessages((prev) => {
@@ -250,6 +261,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
               lastMessage: isMe ? `You: ${newMsg.text}` : newMsg.text,
               lastMessageTime: msgTimestamp,
               lastMessageTimestamp: msg.createdAt,
+              lastMessageId: msg._id,
+              lastMessageIsMine: isMe,
+              lastMessageStatus: isMe
+                ? (msg.status as "sent" | "delivered" | "read")
+                : undefined,
               unreadCount: isMe || isActive ? c.unreadCount : c.unreadCount + 1,
             };
           });
@@ -287,6 +303,26 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         prev.map((m) =>
           data.messageIds.includes(m.id) ? { ...m, status: data.status } : m,
         ),
+      );
+      // Build the set of conversation IDs whose sent messages are affected
+      const affectedConvIds = new Set<string>();
+      for (const msgId of data.messageIds) {
+        const convId = sentMsgsRef.current.get(msgId);
+        if (convId) affectedConvIds.add(convId);
+      }
+      // Update sidebar last-message status:
+      // primary check  → lastMessageId match (populated from server or ack)
+      // fallback check → sentMsgsRef match (populated when message is sent)
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.lastMessageId && data.messageIds.includes(c.lastMessageId)) {
+            return { ...c, lastMessageStatus: data.status };
+          }
+          if (affectedConvIds.has(c.id) && c.lastMessageIsMine) {
+            return { ...c, lastMessageStatus: data.status };
+          }
+          return c;
+        }),
       );
     };
 
@@ -425,6 +461,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                 ...c,
                 lastMessage: `You: ${text}`,
                 lastMessageTime: newMsg.timestamp,
+                lastMessageId: tempId,
+                lastMessageIsMine: true,
+                lastMessageStatus: "sending",
               }
             : c,
         ),
@@ -435,11 +474,28 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         { conversationId: activeConversation.id, text },
         (res) => {
           if (res.ok && res.messageId) {
+            // Register the real message id → convId for future status tracking
+            sentMsgsRef.current.set(res.messageId!, activeConversation.id);
             setActiveMessages((prev) =>
               prev.map((m) =>
                 m.id === tempId
                   ? { ...m, id: res.messageId!, status: "sent" }
                   : m,
+              ),
+            );
+            // Upgrade sidebar: tempId → real id, status sending → sent
+            const convId = activeConversation.id;
+            setConversations((prev) =>
+              prev.map((c) =>
+                c.id === convId &&
+                (c.lastMessageId === tempId ||
+                  c.lastMessageId === res.messageId!)
+                  ? {
+                      ...c,
+                      lastMessageId: res.messageId!,
+                      lastMessageStatus: "sent",
+                    }
+                  : c,
               ),
             );
           } else {
@@ -450,6 +506,32 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     },
     [activeConversation, user, socket],
   );
+
+  const deleteMessages = useCallback(
+    (ids: string[]) => {
+      // Optimistic local removal
+      setActiveMessages((prev) => prev.filter((m) => !ids.includes(m.id)));
+      // Persist deletion on server
+      apiFetch("/messages", {
+        method: "DELETE",
+        body: JSON.stringify({ messageIds: ids }),
+      }).catch((err) =>
+        console.warn("[chat] delete messages failed:", (err as Error).message),
+      );
+    },
+    [],
+  );
+
+  const clearMessages = useCallback(() => {
+    if (!activeConversation) return;
+    const convId = activeConversation.id;
+    // Optimistic local clear
+    setActiveMessages([]);
+    // Persist on server
+    apiFetch(`/messages/${convId}`, { method: "DELETE" }).catch((err) =>
+      console.warn("[chat] clear conversation failed:", (err as Error).message),
+    );
+  }, [activeConversation]);
 
   return (
     <ChatContext.Provider
@@ -465,6 +547,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         sendMessage,
         loadConversations,
         addOrUpdateConversation,
+        deleteMessages,
+        clearMessages,
       }}
     >
       {children}

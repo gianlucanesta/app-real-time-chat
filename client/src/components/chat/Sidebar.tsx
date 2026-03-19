@@ -16,6 +16,88 @@ import { useChat } from "../../contexts/ChatContext";
 import { NewChatPanel } from "./NewChatPanel";
 import { NewContactPanel } from "./NewContactPanel";
 
+function SidebarStatus({
+  status,
+}: {
+  status: "sending" | "sent" | "delivered" | "read";
+}) {
+  if (status === "sending") {
+    return (
+      <span className="shrink-0 inline-flex items-center text-text-secondary">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="w-3 h-3 animate-pulse"
+        >
+          <circle
+            cx="12"
+            cy="12"
+            r="10"
+            strokeDasharray="31.4"
+            strokeDashoffset="10"
+          />
+        </svg>
+      </span>
+    );
+  }
+  if (status === "sent") {
+    return (
+      <span className="shrink-0 inline-flex items-center text-text-secondary">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="w-3 h-3"
+        >
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      </span>
+    );
+  }
+  if (status === "delivered") {
+    return (
+      <span className="shrink-0 inline-flex items-center text-text-secondary">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="w-3 h-3"
+        >
+          <polyline points="18 7 9.5 17 5 12" />
+          <polyline points="23 7 14.5 17 12 14" />
+        </svg>
+      </span>
+    );
+  }
+  // read
+  return (
+    <span className="shrink-0 inline-flex items-center text-accent">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="w-3 h-3"
+      >
+        <polyline points="18 7 9.5 17 5 12" />
+        <polyline points="23 7 14.5 17 12 14" />
+      </svg>
+    </span>
+  );
+}
+
 export function Sidebar() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -247,14 +329,19 @@ export function Sidebar() {
               </div>
               <div className="flex items-center justify-between gap-2">
                 {chat.isTyping ? (
-                  <span className="text-[13px] text-accent italic whitespace-nowrap overflow-hidden text-ellipsis">
+                  <span className="text-[13px] text-accent italic whitespace-nowrap overflow-hidden text-ellipsis min-w-0">
                     typing...
                   </span>
                 ) : (
-                  <span
-                    className={`text-[13px] whitespace-nowrap overflow-hidden text-ellipsis ${chat.unreadCount > 0 ? "text-text-main font-medium" : "text-text-secondary"}`}
-                  >
-                    {chat.lastMessage}
+                  <span className="flex items-center gap-1 min-w-0 overflow-hidden">
+                    {chat.lastMessageIsMine && chat.lastMessageStatus && (
+                      <SidebarStatus status={chat.lastMessageStatus} />
+                    )}
+                    <span
+                      className={`text-[13px] whitespace-nowrap overflow-hidden text-ellipsis ${chat.unreadCount > 0 ? "text-text-main font-medium" : "text-text-secondary"}`}
+                    >
+                      {chat.lastMessage}
+                    </span>
                   </span>
                 )}
                 {chat.unreadCount > 0 && (

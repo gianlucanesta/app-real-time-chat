@@ -71,13 +71,21 @@ interface ChatAreaProps {
 
 export function ChatArea({ onMobileBack }: ChatAreaProps) {
   const {
+    conversations,
     activeConversation,
     activeMessages,
     sendMessage,
     typingUsers,
     socket,
+    deleteMessages,
+    clearMessages,
   } = useChat();
   const toast = useToast();
+
+  // Derive live typing state from the conversations array (activeConversation is a stale copy)
+  const isContactTyping =
+    conversations.find((c) => c.id === activeConversation?.id)?.isTyping ??
+    false;
 
   const [isContactInfoOpen, setIsContactInfoOpen] = useState(false);
   const [isEditContactOpen, setIsEditContactOpen] = useState(false);
@@ -119,15 +127,18 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
     (text: string) => {
       navigator.clipboard
         .writeText(text)
-        .then(() => toast.success("Message copied!"));
+        .then(() => toast.showToast("Message copied!", "success"));
     },
     [toast],
   );
 
-  const handleDeleteMessage = useCallback((id: string) => {
-    // TODO: API call DELETE /api/messages/:id
-    setSelectedMessages((prev) => prev.filter((m) => m !== id));
-  }, []);
+  const handleDeleteMessage = useCallback(
+    (id: string) => {
+      deleteMessages([id]);
+      setSelectedMessages((prev) => prev.filter((m) => m !== id));
+    },
+    [deleteMessages],
+  );
 
   const handleReaction = useCallback((msgId: string, emoji: string) => {
     setReactions((prev) => {
@@ -153,7 +164,10 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
       .map((m) => m.text)
       .join("\n");
     navigator.clipboard.writeText(texts).then(() => {
-      toast.success(`${selectedMessages.length} message(s) copied!`);
+      toast.showToast(
+        `${selectedMessages.length} message(s) copied!`,
+        "success",
+      );
       setIsSelectMode(false);
       setSelectedMessages([]);
     });
@@ -181,6 +195,13 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
       behavior: isConvSwitch ? "instant" : "smooth",
     });
   }, [activeMessages, activeConversation?.id]);
+
+  // Scroll to bottom when typing indicator appears
+  useEffect(() => {
+    if (isContactTyping && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [isContactTyping]);
 
   // Typing emit logic
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -358,8 +379,8 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
             <h2 className="text-[15px] md:text-[16px] font-semibold text-text-main leading-tight truncate">
               {contactName}
             </h2>
-            {activeConversation?.isTyping ? (
-              <div className="hidden md:flex items-center gap-1.5 text-[11px] md:text-[12px] text-accent mt-0.5">
+            {isContactTyping ? (
+              <div className="flex items-center gap-1.5 text-[11px] md:text-[12px] text-accent mt-0.5">
                 <span className="flex gap-0.5">
                   <span
                     className="w-1 h-1 rounded-full bg-accent animate-bounce"
@@ -386,10 +407,6 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
         </div>
 
         <div className="flex items-center gap-1 md:gap-2">
-          <button className="hidden md:flex w-9 h-9 rounded-full items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors">
-            <Search className="w-5 h-5" />
-          </button>
-
           {/* Call Dropdown Wrapper */}
           <div className="relative" ref={callMenuRef}>
             <button
@@ -415,26 +432,26 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
                   </span>
                 </div>
                 {/* Voice / Video large accent buttons */}
-                <div className="grid grid-cols-2 gap-2 px-4 pb-3">
+                <div className="grid grid-cols-2 gap-3 px-4 pb-3">
                   <button
-                    className="flex flex-col items-center gap-2 py-3 bg-accent hover:brightness-110 text-white rounded-xl transition-all"
+                    className="flex flex-row items-center justify-center gap-2.5 py-3 px-3 bg-accent hover:brightness-110 text-white rounded-2xl transition-all"
                     onClick={() => {
                       setIsCallMenuOpen(false);
                       setIsCallScreenOpen(true);
                     }}
                   >
-                    <Phone className="w-5 h-5" />
-                    <span className="text-[12px] font-medium">Voice</span>
+                    <Phone className="w-5 h-5 shrink-0" />
+                    <span className="text-[13px] font-semibold">Voice</span>
                   </button>
                   <button
-                    className="flex flex-col items-center gap-2 py-3 bg-accent hover:brightness-110 text-white rounded-xl transition-all"
+                    className="flex flex-row items-center justify-center gap-2.5 py-3 px-3 bg-accent hover:brightness-110 text-white rounded-2xl transition-all"
                     onClick={() => {
                       setIsCallMenuOpen(false);
                       setIsCallScreenOpen(true);
                     }}
                   >
-                    <Video className="w-5 h-5" />
-                    <span className="text-[12px] font-medium">Video</span>
+                    <Video className="w-5 h-5 shrink-0" />
+                    <span className="text-[13px] font-semibold">Video</span>
                   </button>
                 </div>
                 <div className="w-full h-px bg-border/50 mb-1" />
@@ -453,6 +470,10 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
               </div>
             )}
           </div>
+
+          <button className="hidden md:flex w-9 h-9 rounded-full items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors">
+            <Search className="w-5 h-5" />
+          </button>
 
           {/* More Options Dropdown Wrapper */}
           <div className="relative" ref={moreMenuRef}>
@@ -570,9 +591,33 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
               />
             ))}
           </div>
-        ))}{" "}
+        ))}
+
+        {/* Typing indicator bubble */}
+        {isContactTyping && (
+          <div className="flex items-end mb-4 self-start">
+            <div
+              className="px-4 py-3 bg-card border border-border/50 rounded-2xl rounded-bl-sm shadow-sm flex items-center gap-[6px]"
+              aria-label="Contact is typing"
+            >
+              <span
+                className="w-2.5 h-2.5 rounded-full bg-accent/70 animate-bounce"
+                style={{ animationDelay: "0ms" }}
+              />
+              <span
+                className="w-2.5 h-2.5 rounded-full bg-accent/70 animate-bounce"
+                style={{ animationDelay: "160ms" }}
+              />
+              <span
+                className="w-2.5 h-2.5 rounded-full bg-accent/70 animate-bounce"
+                style={{ animationDelay: "320ms" }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* Scroll anchor */}
-        <div ref={messagesEndRef} className="shrink-0" />{" "}
+        <div ref={messagesEndRef} className="shrink-0" />
       </div>
 
       {/* Selection Action Bar */}
@@ -779,11 +824,11 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
         description={`Delete ${selectedMessages.length} selected message(s)? This action cannot be undone.`}
         confirmText="Delete"
         onConfirm={() => {
-          // TODO: API call DELETE /api/messages with { messageIds: selectedMessages }
+          deleteMessages(selectedMessages);
           setActiveModal(null);
           setIsSelectMode(false);
           setSelectedMessages([]);
-          toast.success("Messages deleted");
+          toast.showToast("Messages deleted", "success");
         }}
         onCancel={() => setActiveModal(null)}
       />
@@ -793,9 +838,9 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
         description="All messages in this conversation will be permanently deleted. This cannot be undone."
         confirmText="Clear chat"
         onConfirm={() => {
-          // TODO: API call DELETE /api/messages/:conversationId
+          clearMessages();
           setActiveModal(null);
-          toast.success("Chat cleared");
+          toast.showToast("Chat cleared", "success");
         }}
         onCancel={() => setActiveModal(null)}
       />
@@ -807,7 +852,7 @@ export function ChatArea({ onMobileBack }: ChatAreaProps) {
         onConfirm={() => {
           // TODO: API call DELETE /api/contacts/:id + clear messages
           setActiveModal(null);
-          toast.success("Chat deleted");
+          toast.showToast("Chat deleted", "success");
         }}
         onCancel={() => setActiveModal(null)}
       />
