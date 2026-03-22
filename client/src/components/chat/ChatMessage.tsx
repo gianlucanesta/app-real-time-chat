@@ -12,6 +12,7 @@ import {
   ChevronDown,
   Timer,
   CircleDot,
+  X,
 } from "lucide-react";
 import { useState, useRef, useCallback } from "react";
 import { useClickOutside } from "../../hooks/useClickOutside";
@@ -38,6 +39,7 @@ interface ChatMessageProps {
   reactions?: Record<string, number>;
   onReaction?: (emoji: string) => void;
   onViewOnceOpen?: () => void;
+  onOpenMedia?: () => void;
 }
 
 const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
@@ -63,26 +65,65 @@ export function ChatMessage({
   reactions,
   onReaction,
   onViewOnceOpen,
+  onOpenMedia,
 }: ChatMessageProps) {
   const [isReactionMenuOpen, setIsReactionMenuOpen] = useState(false);
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
   const [menuDirection, setMenuDirection] = useState<"down" | "up">("down");
+  const [viewOnceConsumed, setViewOnceConsumed] = useState(false);
+  const [showViewOnceViewer, setShowViewOnceViewer] = useState(false);
   const chevronRef = useRef<HTMLButtonElement>(null);
+  const viewOnceMarkedRef = useRef(false);
 
   // Determine if view-once content should be hidden
   const isViewOnceHidden =
     viewOnce &&
     (isSent || // Sender always sees placeholder
-      (!isSent && !!viewedAt)); // Receiver sees placeholder after opening
+      (!isSent && (viewOnceConsumed || !!viewedAt))); // Receiver: after consuming or server-confirmed
 
-  // Track if we already fired viewOnce open for this message
-  const viewOnceMarkedRef = useRef(false);
-  const handleViewOnceInteraction = useCallback(() => {
-    if (viewOnce && !isSent && !viewedAt && !viewOnceMarkedRef.current) {
+  // Whether bubble is a borderless media bubble (image/video fills it entirely)
+  const isMediaBubble =
+    !!mediaUrl &&
+    (mediaType === "image" || mediaType === "video") &&
+    !isViewOnceHidden;
+
+  // ── View-once handlers ──
+  // Mark opened on server (fires only once)
+  const fireViewOnceOpen = useCallback(() => {
+    if (!viewOnceMarkedRef.current) {
       viewOnceMarkedRef.current = true;
       onViewOnceOpen?.();
     }
-  }, [viewOnce, isSent, viewedAt, onViewOnceOpen]);
+  }, [onViewOnceOpen]);
+
+  // Image/Video view-once: click opens full-screen viewer
+  const handleViewOnceMediaClick = useCallback(() => {
+    if (viewOnce && !isSent && !viewedAt && !viewOnceConsumed) {
+      setShowViewOnceViewer(true);
+    }
+  }, [viewOnce, isSent, viewedAt, viewOnceConsumed]);
+
+  // View-once viewer close → consume AND mark opened on server
+  const handleViewOnceViewerClose = useCallback(() => {
+    setShowViewOnceViewer(false);
+    if (viewOnce && !isSent) {
+      setViewOnceConsumed(true);
+      fireViewOnceOpen();
+    }
+  }, [viewOnce, isSent, fireViewOnceOpen]);
+
+  // View-once audio finished → consume AND mark opened
+  const handleViewOnceAudioFinish = useCallback(() => {
+    if (viewOnce && !isSent) {
+      setViewOnceConsumed(true);
+      fireViewOnceOpen();
+    }
+  }, [viewOnce, isSent, fireViewOnceOpen]);
+
+  // Normal media click → open gallery viewer
+  const handleMediaClick = useCallback(() => {
+    onOpenMedia?.();
+  }, [onOpenMedia]);
 
   const viewOnceLabel =
     mediaType === "audio"
@@ -142,13 +183,17 @@ export function ChatMessage({
           <div className="relative">
             {/* Message Bubble */}
             <div
-              className={`group/bubble relative pr-8 px-4 py-3 text-[14px] leading-relaxed break-words shadow-sm rounded-2xl overflow-hidden ${
-                isSent
-                  ? "text-white rounded-br-sm"
-                  : "bg-card border border-border/50 text-text-main rounded-bl-sm"
+              className={`group/bubble relative ${
+                isMediaBubble
+                  ? `rounded-2xl overflow-hidden shadow-sm ${isSent ? "rounded-br-sm" : "rounded-bl-sm"}`
+                  : `pr-8 px-4 py-3 text-[14px] leading-relaxed break-words shadow-sm rounded-2xl overflow-hidden ${
+                      isSent
+                        ? "text-white rounded-br-sm"
+                        : "bg-card border border-border/50 text-text-main rounded-bl-sm"
+                    }`
               }`}
               style={
-                isSent
+                isSent && !isMediaBubble
                   ? { background: "linear-gradient(135deg, #2563EB, #3B82F6)" }
                   : undefined
               }
@@ -173,29 +218,48 @@ export function ChatMessage({
               ) : (
                 <>
                   {mediaUrl && mediaType === "image" && (
-                    <a
-                      href={mediaUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block -mx-4 -mt-3 mb-2"
-                      onClick={handleViewOnceInteraction}
+                    <div
+                      className="cursor-pointer"
+                      onClick={
+                        viewOnce && !isSent && !viewedAt && !viewOnceConsumed
+                          ? handleViewOnceMediaClick
+                          : handleMediaClick
+                      }
                     >
                       <img
                         src={mediaUrl}
                         alt=""
-                        className="w-full max-w-[320px] rounded-t-2xl object-cover"
+                        className="w-[300px] h-[200px] object-cover"
                         loading="lazy"
                       />
-                    </a>
+                    </div>
                   )}
                   {mediaUrl && mediaType === "video" && (
-                    <div className="-mx-4 -mt-3 mb-2">
+                    <div
+                      className="relative cursor-pointer"
+                      onClick={
+                        viewOnce && !isSent && !viewedAt && !viewOnceConsumed
+                          ? handleViewOnceMediaClick
+                          : handleMediaClick
+                      }
+                    >
                       <video
                         src={mediaUrl}
-                        controls
-                        className="w-full max-w-[320px] rounded-t-2xl"
-                        onPlay={handleViewOnceInteraction}
+                        className="w-full max-w-[320px]"
+                        preload="metadata"
                       />
+                      {/* Play overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center backdrop-blur-sm">
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="white"
+                            className="w-6 h-6 ml-0.5"
+                          >
+                            <polygon points="5,3 19,12 5,21" />
+                          </svg>
+                        </div>
+                      </div>
                     </div>
                   )}
                   {mediaUrl && mediaType === "audio" && (
@@ -206,37 +270,81 @@ export function ChatMessage({
                         isSent={isSent}
                         contactInitials={contactInitials}
                         contactGradient={contactGradient}
-                        onPlay={handleViewOnceInteraction}
+                        onFinish={
+                          viewOnce && !isSent
+                            ? handleViewOnceAudioFinish
+                            : undefined
+                        }
                       />
                     </div>
                   )}
                 </>
               )}
-              {text && !isViewOnceHidden && <span>{text}</span>}
-              {!isSelectMode && (
-                <button
-                  ref={chevronRef}
-                  type="button"
-                  aria-label="Message options"
-                  className={`absolute inset-y-0 right-0 w-8 flex items-center justify-center opacity-0 group-hover/bubble:opacity-100 transition-opacity backdrop-blur-sm ${
+              {/* Caption below media */}
+              {text && !isViewOnceHidden && isMediaBubble && (
+                <div
+                  className={`px-3 py-2 text-[14px] leading-relaxed ${isSent ? "text-white" : "text-text-main"}`}
+                  style={
                     isSent
-                      ? "bg-gradient-to-l from-blue-600/60 to-transparent text-white/90 hover:text-white"
-                      : "bg-gradient-to-l from-card/80 to-transparent text-text-secondary hover:text-text-main"
-                  }`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!isContextMenuOpen && chevronRef.current) {
-                      const rect = chevronRef.current.getBoundingClientRect();
-                      const spaceBelow = window.innerHeight - rect.bottom;
-                      setMenuDirection(spaceBelow > 320 ? "down" : "up");
-                    }
-                    setIsContextMenuOpen(!isContextMenuOpen);
-                    setIsReactionMenuOpen(false);
-                  }}
+                      ? {
+                          background:
+                            "linear-gradient(135deg, #2563EB, #3B82F6)",
+                        }
+                      : { background: "var(--card)" }
+                  }
                 >
-                  <ChevronDown className="w-4 h-4" />
-                </button>
+                  <span>{text}</span>
+                </div>
               )}
+              {/* Inline text for non-media bubbles */}
+              {text && !isViewOnceHidden && !isMediaBubble && (
+                <span>{text}</span>
+              )}
+              {/* Chevron — overlaid on media or at right edge for text */}
+              {!isSelectMode &&
+                (isMediaBubble ? (
+                  <button
+                    ref={chevronRef}
+                    type="button"
+                    aria-label="Message options"
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center opacity-0 group-hover/bubble:opacity-100 transition-opacity bg-black/40 text-white/90 hover:text-white z-10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isContextMenuOpen && chevronRef.current) {
+                        const rect = chevronRef.current.getBoundingClientRect();
+                        const spaceBelow = window.innerHeight - rect.bottom;
+                        setMenuDirection(spaceBelow > 320 ? "down" : "up");
+                      }
+                      setIsContextMenuOpen(!isContextMenuOpen);
+                      setIsReactionMenuOpen(false);
+                    }}
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    ref={chevronRef}
+                    type="button"
+                    aria-label="Message options"
+                    className={`absolute inset-y-0 right-0 w-8 flex items-center justify-center opacity-0 group-hover/bubble:opacity-100 transition-opacity backdrop-blur-sm ${
+                      isSent
+                        ? "bg-gradient-to-l from-blue-600/60 to-transparent text-white/90 hover:text-white"
+                        : "bg-gradient-to-l from-card/80 to-transparent text-text-secondary hover:text-text-main"
+                    }`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isContextMenuOpen && chevronRef.current) {
+                        const rect = chevronRef.current.getBoundingClientRect();
+                        const spaceBelow = window.innerHeight - rect.bottom;
+                        setMenuDirection(spaceBelow > 320 ? "down" : "up");
+                      }
+                      setIsContextMenuOpen(!isContextMenuOpen);
+                      setIsReactionMenuOpen(false);
+                    }}
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                ))}
             </div>
 
             {/* Smile — outside bubble, vertically centered on bubble height */}
@@ -454,6 +562,42 @@ export function ChatMessage({
           </div>
         </div>
       </div>
+
+      {/* View-once full-screen viewer (image or video) */}
+      {showViewOnceViewer && mediaUrl && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center"
+          onClick={handleViewOnceViewerClose}
+        >
+          {mediaType === "image" && (
+            <img
+              src={mediaUrl}
+              alt=""
+              className="max-w-[90vw] max-h-[80vh] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
+          {mediaType === "video" && (
+            <video
+              src={mediaUrl}
+              controls
+              autoPlay
+              className="max-w-[90vw] max-h-[80vh] rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
+          <button
+            type="button"
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+            onClick={handleViewOnceViewerClose}
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <p className="text-white/50 text-xs mt-4">
+            View once — closes after viewing
+          </p>
+        </div>
+      )}
     </div>
   );
 }

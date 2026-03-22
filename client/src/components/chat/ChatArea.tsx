@@ -34,6 +34,7 @@ import { DeleteChoiceModal } from "./DeleteChoiceModal";
 import { AttachmentMenu } from "./AttachmentMenu";
 import { VoiceRecorder } from "./VoiceRecorder";
 import { MediaPreviewScreen } from "./MediaPreviewScreen";
+import { MediaViewer, type MediaItem } from "./MediaViewer";
 import { useChat, type Message } from "../../contexts/ChatContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "../../contexts/ToastContext";
@@ -153,6 +154,26 @@ export function ChatArea({
     }>
   >([]);
   const addMoreInputRef = useRef<HTMLInputElement>(null);
+
+  // Media gallery viewer state (null = closed)
+  const [mediaViewerIndex, setMediaViewerIndex] = useState<number | null>(null);
+
+  // Build gallery items from all non-view-once image/video messages
+  const allMedia: MediaItem[] = activeMessages
+    .filter(
+      (m) =>
+        m.mediaUrl &&
+        (m.mediaType === "image" || m.mediaType === "video") &&
+        !m.viewOnce,
+    )
+    .map((m) => ({
+      messageId: m.id,
+      url: m.mediaUrl!,
+      type: m.mediaType as "image" | "video",
+      caption: m.text || undefined,
+      time: m.timestamp,
+      isSent: m.isMe,
+    }));
 
   const toggleMessageSelection = (id: string) => {
     setSelectedMessages((prev) =>
@@ -392,6 +413,7 @@ export function ChatArea({
     setInputValue("");
     setOfflineTextVisible(true);
     setViewOnce(false);
+    setMediaViewerIndex(null);
     setPreviewFiles((prev) => {
       prev.forEach((f) => URL.revokeObjectURL(f.previewUrl));
       return [];
@@ -808,6 +830,10 @@ export function ChatArea({
                 reactions={reactions[msg.id]}
                 onReaction={(emoji) => handleReaction(msg.id, emoji)}
                 onViewOnceOpen={() => markViewOnceOpened(msg.id)}
+                onOpenMedia={() => {
+                  const idx = allMedia.findIndex((m) => m.messageId === msg.id);
+                  if (idx >= 0) setMediaViewerIndex(idx);
+                }}
               />
             ))}
           </div>
@@ -1086,6 +1112,16 @@ export function ChatArea({
             setPreviewFiles([]);
           }}
           onAddMore={handleAddMoreFiles}
+        />
+      )}
+
+      {/* Media Gallery Viewer */}
+      {mediaViewerIndex !== null && allMedia.length > 0 && (
+        <MediaViewer
+          items={allMedia}
+          initialIndex={mediaViewerIndex}
+          contactName={contactName}
+          onClose={() => setMediaViewerIndex(null)}
         />
       )}
 

@@ -9,6 +9,7 @@ interface AudioPlayerProps {
   contactInitials?: string;
   contactGradient?: string;
   onPlay?: () => void;
+  onFinish?: () => void;
 }
 
 const SPEEDS = [1, 1.5, 2];
@@ -20,6 +21,7 @@ export function AudioPlayer({
   contactInitials,
   contactGradient,
   onPlay,
+  onFinish,
 }: AudioPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
@@ -66,6 +68,7 @@ export function AudioPlayer({
       setIsPlaying(false);
       setCurrentTime(0);
       setProgress(0);
+      onFinish?.();
     });
 
     ws.on("seeking", () => {
