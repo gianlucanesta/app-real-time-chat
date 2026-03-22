@@ -25,6 +25,11 @@ export interface Message {
   conversationId: string;
   sender: string;
   text: string;
+  mediaUrl?: string | null;
+  mediaType?: "image" | "video" | "audio" | null;
+  mediaDuration?: number | null;
+  viewOnce?: boolean;
+  viewedAt?: Date | string | null;
   status: "sending" | "sent" | "delivered" | "read";
   expires_at?: Date | string;
   createdAt: Date | string;

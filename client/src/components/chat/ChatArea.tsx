@@ -19,6 +19,7 @@ import {
   Users2,
   Link2,
   Calendar,
+  X,
 } from "lucide-react";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
@@ -29,10 +30,15 @@ import { ChatMessage } from "./ChatMessage";
 import { CallScreen } from "./CallScreen";
 import { IncomingCallBanner } from "./IncomingCallBanner";
 import { ConfirmModal } from "./ConfirmModal";
+import { DeleteChoiceModal } from "./DeleteChoiceModal";
+import { AttachmentMenu } from "./AttachmentMenu";
+import { VoiceRecorder } from "./VoiceRecorder";
+import { MediaPreviewScreen } from "./MediaPreviewScreen";
 import { useChat, type Message } from "../../contexts/ChatContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "../../contexts/ToastContext";
 import { useWebRTC } from "../../hooks/useWebRTC";
+import { getAccessToken } from "../../lib/api";
 
 /** Return a human-friendly date label for a message group separator. */
 function dateSeparatorLabel(dateStr: string): string {
@@ -88,9 +94,13 @@ export function ChatArea({
     activeConversation,
     activeMessages,
     sendMessage,
+    sendMediaMessage,
     typingUsers,
     socket,
     deleteMessages,
+    deleteForMe,
+    deleteForEveryone,
+    markViewOnceOpened,
     clearMessages,
     deleteConversation,
   } = useChat();
@@ -128,6 +138,22 @@ export function ChatArea({
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedMessages, setSelectedMessages] = useState<string[]>([]);
 
+  // Attachment menu & voice recording
+  const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [viewOnce, setViewOnce] = useState(false);
+
+  // Media preview state
+  const [previewFiles, setPreviewFiles] = useState<
+    Array<{
+      file: File;
+      type: "image" | "video" | "audio" | "document";
+      previewUrl: string;
+    }>
+  >([]);
+  const addMoreInputRef = useRef<HTMLInputElement>(null);
+
   const toggleMessageSelection = (id: string) => {
     setSelectedMessages((prev) =>
       prev.includes(id) ? prev.filter((msgId) => msgId !== id) : [...prev, id],
@@ -146,14 +172,6 @@ export function ChatArea({
         .then(() => toast.showToast("Message copied!", "success"));
     },
     [toast],
-  );
-
-  const handleDeleteMessage = useCallback(
-    (id: string) => {
-      deleteMessages([id]);
-      setSelectedMessages((prev) => prev.filter((m) => m !== id));
-    },
-    [deleteMessages],
   );
 
   const handleReaction = useCallback((msgId: string, emoji: string) => {
@@ -198,6 +216,18 @@ export function ChatArea({
   const contactName = activeConversation?.name || "";
   const contactInitials = activeConversation?.initials || "";
   const contactGradient = activeConversation?.gradient || "";
+
+  // Derive current user's initials & gradient for sent audio messages
+  const myInitials = user?.displayName
+    ? user.displayName
+        .split(" ")
+        .map((w) => w[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "";
+  const myGradient =
+    user?.avatarGradient || "linear-gradient(135deg,#2563EB,#7C3AED)";
 
   // Scroll-to-bottom logic
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -247,10 +277,125 @@ export function ChatArea({
     }
   }, [inputValue, sendMessage, activeConversation, socket]);
 
+  // Handle file selection from AttachmentMenu → open preview screen
+  const handleFileSelected = useCallback(
+    (file: File, type: "image" | "video" | "audio" | "document") => {
+      const previewUrl = URL.createObjectURL(file);
+      setPreviewFiles([{ file, type, previewUrl }]);
+      setIsAttachmentMenuOpen(false);
+    },
+    [],
+  );
+
+  // Handle "add more" from preview screen
+  const handleAddMoreFiles = useCallback(() => {
+    addMoreInputRef.current?.click();
+  }, []);
+
+  const handleAddMoreChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      let type: "image" | "video" | "audio" | "document" = "document";
+      if (file.type.startsWith("image/")) type = "image";
+      else if (file.type.startsWith("video/")) type = "video";
+      else if (file.type.startsWith("audio/")) type = "audio";
+      const previewUrl = URL.createObjectURL(file);
+      setPreviewFiles((prev) => [...prev, { file, type, previewUrl }]);
+      e.target.value = "";
+    },
+    [],
+  );
+
+  // Upload file to Cloudinary via server
+  const handleFileUpload = useCallback(
+    async (file: File, type: "image" | "video" | "audio", caption?: string) => {
+      if (!activeConversation) return;
+      setIsUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const token = getAccessToken();
+        const API_BASE =
+          import.meta.env.VITE_API_URL ?? "http://localhost:3001/api";
+        const res = await fetch(`${API_BASE}/upload`, {
+          method: "POST",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          credentials: "include",
+          body: formData,
+        });
+        if (!res.ok) {
+          const err = await res
+            .json()
+            .catch(() => ({ error: "Upload failed" }));
+          throw new Error(err.error || "Upload failed");
+        }
+        const data: {
+          url: string;
+          mediaType: "image" | "video" | "audio";
+          duration: number | null;
+        } = await res.json();
+        sendMediaMessage({
+          mediaUrl: data.url,
+          mediaType: data.mediaType,
+          mediaDuration: data.duration ?? undefined,
+          text: caption || undefined,
+          viewOnce,
+        });
+        if (viewOnce) setViewOnce(false);
+      } catch (err) {
+        toast.error((err as Error).message || "Failed to upload file");
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [activeConversation, sendMediaMessage, toast, viewOnce],
+  );
+
+  // Handle voice recording send
+  const handleVoiceSend = useCallback(
+    async (blob: Blob, duration: number) => {
+      setIsRecording(false);
+      // Preserve the actual mime type from the recorder
+      const ext = blob.type.includes("ogg") ? "ogg" : "webm";
+      const file = new File([blob], `voice-message.${ext}`, {
+        type: blob.type || "audio/webm",
+      });
+      await handleFileUpload(file, "audio");
+    },
+    [handleFileUpload],
+  );
+
+  // Send files from preview screen — upload each and send
+  const handlePreviewSend = useCallback(
+    async (
+      files: Array<{
+        file: File;
+        type: "image" | "video" | "audio" | "document";
+        previewUrl: string;
+      }>,
+      caption: string,
+    ) => {
+      setPreviewFiles([]);
+      files.forEach((f) => URL.revokeObjectURL(f.previewUrl));
+
+      for (const f of files) {
+        const uploadType = f.type === "document" ? ("image" as const) : f.type;
+        await handleFileUpload(f.file, uploadType, caption);
+      }
+    },
+    [handleFileUpload],
+  );
+
   // Stop typing and clear input when conversation changes
   useEffect(() => {
     setInputValue("");
     setOfflineTextVisible(true);
+    setViewOnce(false);
+    setPreviewFiles((prev) => {
+      prev.forEach((f) => URL.revokeObjectURL(f.previewUrl));
+      return [];
+    });
     return () => {
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
       isTypingRef.current = false;
@@ -648,16 +793,21 @@ export function ChatArea({
                 time={msg.timestamp}
                 isSent={msg.isMe}
                 status={msg.status}
-                contactInitials={!msg.isMe ? contactInitials : undefined}
-                contactGradient={!msg.isMe ? contactGradient : undefined}
+                mediaUrl={msg.mediaUrl}
+                mediaType={msg.mediaType}
+                mediaDuration={msg.mediaDuration}
+                viewOnce={msg.viewOnce}
+                viewedAt={msg.viewedAt}
+                contactInitials={msg.isMe ? myInitials : contactInitials}
+                contactGradient={msg.isMe ? myGradient : contactGradient}
                 isSelectMode={isSelectMode}
                 isSelected={selectedMessages.includes(msg.id)}
                 onToggleSelect={() => toggleMessageSelection(msg.id)}
                 onCopy={() => handleCopyMessage(msg.text)}
-                onDelete={() => handleDeleteMessage(msg.id)}
                 onEnterSelectMode={() => handleEnterSelectMode(msg.id)}
                 reactions={reactions[msg.id]}
                 onReaction={(emoji) => handleReaction(msg.id, emoji)}
+                onViewOnceOpen={() => markViewOnceOpened(msg.id)}
               />
             ))}
           </div>
@@ -825,59 +975,119 @@ export function ChatArea({
 
       {/* Chat Input Area */}
       <div className="absolute bottom-0 left-0 right-0 px-3 pb-2 md:px-4 md:pb-2 pt-12 bg-gradient-to-t from-bg via-bg to-transparent">
-        <div className="flex items-center bg-input/80 backdrop-blur-md rounded-full border border-border/50 p-1.5 shadow-lg">
-          {/* + button: blue circle on mobile, plain on desktop */}
-          <button
-            className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center bg-accent text-white md:bg-transparent md:text-text-secondary shrink-0 hover:brightness-110 md:hover:bg-card md:hover:text-text-main transition-colors"
-            aria-label="Add attachment"
-          >
-            <Plus className="w-[18px] h-[18px]" />
-          </button>
-
-          {/* Emoji: always on desktop; on mobile only when input is empty */}
-          <button
-            className={`w-10 h-10 rounded-full flex items-center justify-center text-text-secondary shrink-0 hover:bg-card hover:text-text-main transition-colors mr-1 ${inputValue ? "hidden md:flex" : "flex"}`}
-            aria-label="Emoji"
-          >
-            <Smile className="w-[18px] h-[18px]" />
-          </button>
-
-          <input
-            type="text"
-            placeholder="Write a message..."
-            value={inputValue}
-            className="flex-1 bg-transparent border-none outline-none text-[14px] text-text-main placeholder:text-text-secondary px-2"
-            onChange={(e) => {
-              setInputValue(e.target.value);
-              handleTypingEmit();
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
+        {isRecording ? (
+          <VoiceRecorder
+            onSend={handleVoiceSend}
+            onCancel={() => setIsRecording(false)}
+            viewOnce={viewOnce}
+            onToggleViewOnce={() => setViewOnce((v) => !v)}
           />
+        ) : (
+          <div className="flex items-center bg-input/80 backdrop-blur-md rounded-full border border-border/50 p-1.5 shadow-lg">
+            {/* + button: opens attachment menu */}
+            <div className="relative">
+              <button
+                className={`w-10 h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                  isAttachmentMenuOpen
+                    ? "bg-accent text-white rotate-45"
+                    : "bg-accent text-white md:bg-transparent md:text-text-secondary hover:brightness-110 md:hover:bg-card md:hover:text-text-main"
+                }`}
+                aria-label="Add attachment"
+                onClick={() => setIsAttachmentMenuOpen(!isAttachmentMenuOpen)}
+              >
+                {isAttachmentMenuOpen ? (
+                  <X className="w-[22px] h-[22px]" />
+                ) : (
+                  <Plus className="w-[22px] h-[22px]" />
+                )}
+              </button>
+              {isAttachmentMenuOpen && (
+                <AttachmentMenu
+                  onClose={() => setIsAttachmentMenuOpen(false)}
+                  onSelectFile={handleFileSelected}
+                />
+              )}
+            </div>
 
-          <div className="flex items-center gap-1.5 ml-2">
-            {/* Mic: only when input is empty */}
+            {/* Emoji: always on desktop; on mobile only when input is empty */}
             <button
-              className={`w-10 h-10 rounded-full flex items-center justify-center text-text-secondary shrink-0 hover:bg-card hover:text-text-main transition-colors ${inputValue ? "hidden" : "flex"}`}
-              aria-label="Voice note"
+              className={`w-11 h-11 rounded-full flex items-center justify-center text-text-secondary shrink-0 hover:bg-card hover:text-text-main transition-colors mr-1 ${inputValue ? "hidden md:flex" : "flex"}`}
+              aria-label="Emoji"
             >
-              <Mic className="w-[18px] h-[18px]" />
+              <Smile className="w-[22px] h-[22px]" />
             </button>
-            {/* Send: only when input has text */}
-            <button
-              className={`w-10 h-10 rounded-full bg-accent flex items-center justify-center text-white shrink-0 hover:brightness-110 shadow-md transition-all ${inputValue ? "flex" : "hidden"}`}
-              aria-label="Send message"
-              onClick={handleSend}
-            >
-              <Send className="w-[18px] h-[18px] ml-0.5" />
-            </button>
+
+            {isUploading ? (
+              <div className="flex-1 flex items-center justify-center px-2">
+                <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                <span className="ml-2 text-sm text-text-secondary">
+                  Uploading...
+                </span>
+              </div>
+            ) : (
+              <input
+                type="text"
+                placeholder="Write a message..."
+                value={inputValue}
+                className="flex-1 bg-transparent border-none outline-none text-[14px] text-text-main placeholder:text-text-secondary px-2"
+                onChange={(e) => {
+                  setInputValue(e.target.value);
+                  handleTypingEmit();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+              />
+            )}
+
+            <div className="flex items-center gap-1.5 ml-2">
+              {/* Mic: only when input is empty */}
+              <button
+                className={`w-11 h-11 rounded-full flex items-center justify-center text-text-secondary shrink-0 hover:bg-card hover:text-text-main transition-colors ${inputValue ? "hidden" : "flex"}`}
+                aria-label="Voice note"
+                onClick={() => setIsRecording(true)}
+              >
+                <Mic className="w-[22px] h-[22px]" />
+              </button>
+              {/* Send: only when input has text */}
+              <button
+                className={`w-11 h-11 rounded-full bg-accent flex items-center justify-center text-white shrink-0 hover:brightness-110 shadow-md transition-all ${inputValue ? "flex" : "hidden"}`}
+                aria-label="Send message"
+                onClick={handleSend}
+              >
+                <Send className="w-[22px] h-[22px] ml-0.5" />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
+
+      {/* Hidden input for "add more" in preview */}
+      <input
+        ref={addMoreInputRef}
+        type="file"
+        accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar"
+        className="hidden"
+        onChange={handleAddMoreChange}
+      />
+
+      {/* Media Preview Screen */}
+      {previewFiles.length > 0 && (
+        <MediaPreviewScreen
+          files={previewFiles}
+          viewOnce={viewOnce}
+          onToggleViewOnce={() => setViewOnce((v) => !v)}
+          onSend={handlePreviewSend}
+          onClose={() => {
+            previewFiles.forEach((f) => URL.revokeObjectURL(f.previewUrl));
+            setPreviewFiles([]);
+          }}
+          onAddMore={handleAddMoreFiles}
+        />
+      )}
 
       {/* Incoming Call Banner */}
       {webrtc.incomingCall && webrtc.status === "incoming" && (
@@ -908,13 +1118,30 @@ export function ChatArea({
       />
 
       {/* Confirmation Modals */}
-      <ConfirmModal
+      <DeleteChoiceModal
         isOpen={activeModal === "delete-messages"}
-        title="Delete messages?"
-        description={`Delete ${selectedMessages.length} selected message(s)? This action cannot be undone.`}
-        confirmText="Delete"
-        onConfirm={() => {
-          deleteMessages(selectedMessages);
+        count={selectedMessages.length}
+        hasOwnMessages={selectedMessages.some((id) =>
+          activeMessages.find((m) => m.id === id && m.isMe),
+        )}
+        onDeleteForMe={() => {
+          deleteForMe(selectedMessages);
+          setActiveModal(null);
+          setIsSelectMode(false);
+          setSelectedMessages([]);
+          toast.showToast("Messages hidden", "success");
+        }}
+        onDeleteForEveryone={() => {
+          const ownIds = selectedMessages.filter((id) =>
+            activeMessages.find((m) => m.id === id && m.isMe),
+          );
+          const otherIds = selectedMessages.filter(
+            (id) => !activeMessages.find((m) => m.id === id && m.isMe),
+          );
+          // Delete own messages for everyone
+          if (ownIds.length > 0) deleteForEveryone(ownIds);
+          // Hide others' messages locally
+          if (otherIds.length > 0) deleteForMe(otherIds);
           setActiveModal(null);
           setIsSelectMode(false);
           setSelectedMessages([]);

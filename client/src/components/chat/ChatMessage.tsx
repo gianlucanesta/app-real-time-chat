@@ -10,9 +10,12 @@ import {
   Trash2,
   Info,
   ChevronDown,
+  Timer,
+  CircleDot,
 } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useClickOutside } from "../../hooks/useClickOutside";
+import { AudioPlayer } from "./AudioPlayer";
 
 interface ChatMessageProps {
   id: string;
@@ -21,15 +24,20 @@ interface ChatMessageProps {
   isSent: boolean;
   contactInitials?: string;
   contactGradient?: string;
+  mediaUrl?: string | null;
+  mediaType?: "image" | "video" | "audio" | null;
+  mediaDuration?: number | null;
+  viewOnce?: boolean;
+  viewedAt?: string | null;
   status?: "sending" | "sent" | "delivered" | "read";
   isSelectMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: () => void;
   onCopy?: () => void;
-  onDelete?: () => void;
   onEnterSelectMode?: () => void;
   reactions?: Record<string, number>;
   onReaction?: (emoji: string) => void;
+  onViewOnceOpen?: () => void;
 }
 
 const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
@@ -41,20 +49,49 @@ export function ChatMessage({
   isSent,
   contactInitials,
   contactGradient,
+  mediaUrl,
+  mediaType,
+  mediaDuration,
+  viewOnce,
+  viewedAt,
   status,
   isSelectMode = false,
   isSelected = false,
   onToggleSelect,
   onCopy,
-  onDelete,
   onEnterSelectMode,
   reactions,
   onReaction,
+  onViewOnceOpen,
 }: ChatMessageProps) {
   const [isReactionMenuOpen, setIsReactionMenuOpen] = useState(false);
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
   const [menuDirection, setMenuDirection] = useState<"down" | "up">("down");
   const chevronRef = useRef<HTMLButtonElement>(null);
+
+  // Determine if view-once content should be hidden
+  const isViewOnceHidden =
+    viewOnce &&
+    (isSent || // Sender always sees placeholder
+      (!isSent && !!viewedAt)); // Receiver sees placeholder after opening
+
+  // Track if we already fired viewOnce open for this message
+  const viewOnceMarkedRef = useRef(false);
+  const handleViewOnceInteraction = useCallback(() => {
+    if (viewOnce && !isSent && !viewedAt && !viewOnceMarkedRef.current) {
+      viewOnceMarkedRef.current = true;
+      onViewOnceOpen?.();
+    }
+  }, [viewOnce, isSent, viewedAt, onViewOnceOpen]);
+
+  const viewOnceLabel =
+    mediaType === "audio"
+      ? "Voice message"
+      : mediaType === "video"
+        ? "Video"
+        : mediaType === "image"
+          ? "Photo"
+          : "Message";
 
   const reactionMenuRef = useClickOutside<HTMLDivElement>(() =>
     setIsReactionMenuOpen(false),
@@ -116,7 +153,66 @@ export function ChatMessage({
                   : undefined
               }
             >
-              {text}
+              {/* Media content or view-once placeholder */}
+              {isViewOnceHidden ? (
+                <div className="flex items-center gap-2 py-1">
+                  {isSent && viewedAt ? (
+                    <>
+                      <CircleDot className="w-5 h-5 opacity-70" />
+                      <span className="text-sm opacity-90">Opened</span>
+                    </>
+                  ) : (
+                    <>
+                      <Timer className="w-5 h-5 opacity-70" />
+                      <span className="text-sm opacity-90">
+                        {viewOnceLabel}
+                      </span>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <>
+                  {mediaUrl && mediaType === "image" && (
+                    <a
+                      href={mediaUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block -mx-4 -mt-3 mb-2"
+                      onClick={handleViewOnceInteraction}
+                    >
+                      <img
+                        src={mediaUrl}
+                        alt=""
+                        className="w-full max-w-[320px] rounded-t-2xl object-cover"
+                        loading="lazy"
+                      />
+                    </a>
+                  )}
+                  {mediaUrl && mediaType === "video" && (
+                    <div className="-mx-4 -mt-3 mb-2">
+                      <video
+                        src={mediaUrl}
+                        controls
+                        className="w-full max-w-[320px] rounded-t-2xl"
+                        onPlay={handleViewOnceInteraction}
+                      />
+                    </div>
+                  )}
+                  {mediaUrl && mediaType === "audio" && (
+                    <div className="min-w-[280px] w-full">
+                      <AudioPlayer
+                        src={mediaUrl}
+                        duration={mediaDuration ?? undefined}
+                        isSent={isSent}
+                        contactInitials={contactInitials}
+                        contactGradient={contactGradient}
+                        onPlay={handleViewOnceInteraction}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+              {text && !isViewOnceHidden && <span>{text}</span>}
               {!isSelectMode && (
                 <button
                   ref={chevronRef}
@@ -241,7 +337,7 @@ export function ChatMessage({
                 <button
                   className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-danger hover:bg-danger/10 transition-colors font-medium"
                   onClick={() => {
-                    onDelete?.();
+                    onEnterSelectMode?.();
                     setIsContextMenuOpen(false);
                   }}
                 >

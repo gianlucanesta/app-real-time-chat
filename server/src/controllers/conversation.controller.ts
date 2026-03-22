@@ -39,7 +39,14 @@ export async function list(
         const [lastMsg, unreadCount, partner] = await Promise.all([
           Message.findOne(
             { conversationId: convId, expires_at: { $gt: new Date() } },
-            { text: 1, createdAt: 1, sender: 1, status: 1 },
+            {
+              text: 1,
+              createdAt: 1,
+              sender: 1,
+              status: 1,
+              mediaType: 1,
+              mediaDuration: 1,
+            },
           )
             .sort({ createdAt: -1 })
             .lean(),
@@ -58,6 +65,8 @@ export async function list(
           createdAt: Date;
           sender: string;
           status: string;
+          mediaType?: "image" | "video" | "audio" | null;
+          mediaDuration?: number | null;
         } | null;
 
         const lastMessageIsMine = msgDoc ? msgDoc.sender === userId : false;
@@ -80,6 +89,8 @@ export async function list(
           lastMessageId: msgDoc ? msgDoc._id.toString() : undefined,
           lastMessageIsMine,
           lastMessageStatus: msgDoc ? msgDoc.status : undefined,
+          lastMediaType: msgDoc?.mediaType || null,
+          lastMediaDuration: msgDoc?.mediaDuration || null,
           unreadCount,
           isOnline: false,
           participants: parts,

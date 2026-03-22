@@ -2,6 +2,7 @@ import IORedis from "ioredis";
 import type { Server } from "socket.io";
 import type { Model, Document } from "mongoose";
 import { env } from "./env.js";
+import { deleteCloudinaryAsset } from "../services/cloudinary.service.js";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const RedisClass = (IORedis as any).default ?? IORedis;
@@ -71,6 +72,17 @@ export async function initKeyspaceExpiry(
           .conversationId as string;
         io.to("conv:" + convId).emit("message:expired", { id: msgId });
         console.log(`[ttl] removed message ${msgId} from conv ${convId}`);
+
+        // Clean up Cloudinary media if present
+        const mediaUrl = (msg as Record<string, unknown>).mediaUrl as
+          | string
+          | undefined;
+        const mediaType = (msg as Record<string, unknown>).mediaType as
+          | string
+          | undefined;
+        if (mediaUrl && mediaType) {
+          deleteCloudinaryAsset(mediaUrl, mediaType).catch(() => {});
+        }
       }
     } catch (err) {
       console.error(

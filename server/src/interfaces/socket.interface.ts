@@ -7,6 +7,11 @@ export interface MessagePayload {
   conversationId: string;
   sender: string;
   text: string;
+  mediaUrl?: string | null;
+  mediaType?: "image" | "video" | "audio" | null;
+  mediaDuration?: number | null;
+  viewOnce?: boolean;
+  viewedAt?: string | null;
   status: MessageStatus;
   expires_at: string;
   createdAt: string;
@@ -21,6 +26,14 @@ export interface ServerToClientEvents {
   "message:status": (data: {
     messageIds: string[];
     status: MessageStatus;
+  }) => void;
+  "message:deleted": (data: {
+    messageIds: string[];
+    conversationId: string;
+  }) => void;
+  "message:viewOnce:opened": (data: {
+    messageId: string;
+    conversationId: string;
   }) => void;
   typing: (data: {
     userId: string;
@@ -53,9 +66,13 @@ export interface ClientToServerEvents {
   "join:conversation": (conversationId: string) => void;
   "leave:conversation": (conversationId: string) => void;
   "message:send": (
-    data: { conversationId: string; text: string },
+    data: { conversationId: string; text: string; viewOnce?: boolean },
     ack: (res: { ok: boolean; messageId?: string }) => void,
   ) => void;
+  "message:viewOnce:open": (data: {
+    messageId: string;
+    conversationId: string;
+  }) => void;
   "typing:start": (conversationId: string) => void;
   "typing:stop": (conversationId: string) => void;
   "message:delivered": (data: {
@@ -66,6 +83,10 @@ export interface ClientToServerEvents {
     messageIds: string[];
     conversationId: string;
   }) => void;
+  "message:deleteForEveryone": (
+    data: { messageIds: string[]; conversationId: string },
+    ack: (res: { ok: boolean; deleted?: number }) => void,
+  ) => void;
 
   // ── WebRTC call signaling ──
   "call:offer": (data: {

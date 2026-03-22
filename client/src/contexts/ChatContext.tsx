@@ -21,6 +21,11 @@ export interface Message {
   senderId: string;
   senderName: string;
   text: string;
+  mediaUrl?: string | null;
+  mediaType?: "image" | "video" | "audio" | null;
+  mediaDuration?: number | null;
+  viewOnce?: boolean;
+  viewedAt?: string | null;
   timestamp: string;
   rawTimestamp: string;
   status: "sending" | "sent" | "delivered" | "read";
@@ -40,6 +45,10 @@ export interface Conversation {
   lastMessageId?: string;
   lastMessageIsMine?: boolean;
   lastMessageStatus?: "sending" | "sent" | "delivered" | "read";
+  lastMediaType?: "image" | "video" | "audio" | null;
+  lastMediaDuration?: number | null;
+  lastMessageViewOnce?: boolean;
+  lastMessageViewedAt?: string | null;
   unreadCount: number;
   isOnline?: boolean;
   participants: string[];
@@ -57,9 +66,19 @@ interface ChatContextType {
   setActiveConversation: (conv: Conversation | null) => void;
   setMobileInChat: (v: boolean) => void;
   sendMessage: (text: string) => void;
+  sendMediaMessage: (media: {
+    mediaUrl: string;
+    mediaType: "image" | "video" | "audio";
+    mediaDuration?: number;
+    text?: string;
+    viewOnce?: boolean;
+  }) => void;
   loadConversations: () => Promise<void>;
   addOrUpdateConversation: (conv: Conversation) => void;
   deleteMessages: (ids: string[]) => void;
+  deleteForMe: (ids: string[]) => void;
+  deleteForEveryone: (ids: string[]) => void;
+  markViewOnceOpened: (messageId: string) => void;
   clearMessages: () => void;
   deleteConversation: () => void;
 }
@@ -86,6 +105,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     Record<string, { displayName: string }>
   >({});
   const [mobileInChat, setMobileInChat] = useState(false);
+  const [hiddenMessageIds, setHiddenMessageIds] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem("hiddenMessageIds");
+      return stored ? new Set(JSON.parse(stored) as string[]) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
 
   // Keep a stable ref to activeConversation so socket handlers don't stale-close
   const activeConvRef = useRef<Conversation | null>(null);
@@ -146,6 +173,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         _id: string;
         sender: string;
         text: string;
+        mediaUrl?: string | null;
+        mediaType?: "image" | "video" | "audio" | null;
+        mediaDuration?: number | null;
+        viewOnce?: boolean;
+        viewedAt?: string | null;
         status: string;
         createdAt: string;
       }>;
@@ -160,6 +192,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                 ? (user?.displayName ?? "Me")
                 : activeConversation.name,
             text: m.text,
+            mediaUrl: m.mediaUrl || null,
+            mediaType: m.mediaType || null,
+            mediaDuration: m.mediaDuration || null,
+            viewOnce: m.viewOnce || false,
+            viewedAt: m.viewedAt || null,
             timestamp: fmtTime(m.createdAt),
             rawTimestamp: m.createdAt,
             status: m.status as "sent" | "delivered" | "read",
@@ -232,6 +269,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           msg.senderDisplayName ??
           (isMe ? (user.displayName ?? "Me") : "Unknown"),
         text: msg.text,
+        mediaUrl: msg.mediaUrl || null,
+        mediaType: msg.mediaType || null,
+        mediaDuration: msg.mediaDuration || null,
+        viewOnce: msg.viewOnce || false,
+        viewedAt: msg.viewedAt || null,
         timestamp: msgTimestamp,
         rawTimestamp: msg.createdAt,
         status: msg.status as "sent" | "delivered" | "read",
@@ -290,6 +332,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
               lastMessageStatus: isMe
                 ? (msg.status as "sent" | "delivered" | "read")
                 : undefined,
+              lastMediaType: msg.mediaType || null,
+              lastMediaDuration: msg.mediaDuration || null,
+              lastMessageViewOnce: msg.viewOnce || false,
+              lastMessageViewedAt: msg.viewedAt || null,
               unreadCount: isMe || isActive ? c.unreadCount : c.unreadCount + 1,
             };
           });
@@ -308,6 +354,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             lastMessage: newMsg.text,
             lastMessageTime: msgTimestamp,
             lastMessageTimestamp: msg.createdAt,
+            lastMediaType: msg.mediaType || null,
+            lastMediaDuration: msg.mediaDuration || null,
+            lastMessageViewOnce: msg.viewOnce || false,
+            lastMessageViewedAt: msg.viewedAt || null,
             unreadCount: 1,
             isOnline: false,
             participants: parts,
@@ -414,6 +464,35 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setActiveMessages((prev) => prev.filter((m) => m.id !== data.id));
     };
 
+    const handleMessageDeleted = (data: {
+      messageIds: string[];
+      conversationId: string;
+    }) => {
+      setActiveMessages((prev) =>
+        prev.filter((m) => !data.messageIds.includes(m.id)),
+      );
+    };
+
+    const handleViewOnceOpened = (data: {
+      messageId: string;
+      conversationId: string;
+    }) => {
+      const now = new Date().toISOString();
+      setActiveMessages((prev) =>
+        prev.map((m) =>
+          m.id === data.messageId ? { ...m, viewedAt: now } : m,
+        ),
+      );
+      // Update sidebar — if this view-once message is the last message, mark it opened
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === data.conversationId && c.lastMessageId === data.messageId
+            ? { ...c, lastMessageViewedAt: now }
+            : c,
+        ),
+      );
+    };
+
     // Emit read/delivered status for incoming messages (not own)
     const handleDeliverOnReceive = (msg: MessagePayload) => {
       if (msg.sender === user.id) return;
@@ -443,6 +522,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     socket.on("message:new", handleDeliverOnReceive);
     socket.on("message:status", handleMessageStatus);
     socket.on("message:expired", handleMessageExpired);
+    socket.on("message:deleted", handleMessageDeleted);
+    socket.on("message:viewOnce:opened", handleViewOnceOpened);
     socket.on("presence:online", handlePresenceOnline);
     socket.on("presence:offline", handlePresenceOffline);
     socket.on("presence:list", handlePresenceList);
@@ -453,6 +534,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       socket.off("message:new", handleDeliverOnReceive);
       socket.off("message:status", handleMessageStatus);
       socket.off("message:expired", handleMessageExpired);
+      socket.off("message:deleted", handleMessageDeleted);
+      socket.off("message:viewOnce:opened", handleViewOnceOpened);
       socket.off("presence:online", handlePresenceOnline);
       socket.off("presence:offline", handlePresenceOffline);
       socket.off("presence:list", handlePresenceList);
@@ -554,6 +637,35 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const deleteForMe = useCallback((ids: string[]) => {
+    // Hide messages locally without touching the server
+    setHiddenMessageIds((prev) => {
+      const next = new Set(prev);
+      ids.forEach((id) => next.add(id));
+      localStorage.setItem("hiddenMessageIds", JSON.stringify([...next]));
+      return next;
+    });
+  }, []);
+
+  const deleteForEveryone = useCallback(
+    (ids: string[]) => {
+      if (!socket || !activeConversation) return;
+      // Optimistic local removal
+      setActiveMessages((prev) => prev.filter((m) => !ids.includes(m.id)));
+      // Ask server via socket to delete and notify all participants
+      socket.emit(
+        "message:deleteForEveryone",
+        { messageIds: ids, conversationId: activeConversation.id },
+        (res) => {
+          if (!res.ok) {
+            console.warn("[chat] deleteForEveryone failed");
+          }
+        },
+      );
+    },
+    [socket, activeConversation],
+  );
+
   const clearMessages = useCallback(() => {
     if (!activeConversation) return;
     const convId = activeConversation.id;
@@ -597,21 +709,158 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     );
   }, [activeConversation]);
 
+  // ── Send media message ───────────────────────────────────────────────────
+  const sendMediaMessage = useCallback(
+    (media: {
+      mediaUrl: string;
+      mediaType: "image" | "video" | "audio";
+      mediaDuration?: number;
+      text?: string;
+      viewOnce?: boolean;
+    }) => {
+      if (!activeConversation || !user || !socket) return;
+
+      const tempId = `temp-${Date.now()}`;
+      const now = new Date();
+      const label =
+        media.mediaType === "audio"
+          ? "🎤 Voice message"
+          : media.mediaType === "video"
+            ? "🎬 Video"
+            : "📷 Photo";
+      const sidebarLabel = media.viewOnce
+        ? `🔒 ${label.replace(/^.+\s/, "")}`
+        : label;
+      const newMsg: Message = {
+        id: tempId,
+        senderId: user.id ?? "me",
+        senderName: user.displayName ?? "Me",
+        text: media.text || "",
+        mediaUrl: media.mediaUrl,
+        mediaType: media.mediaType,
+        mediaDuration: media.mediaDuration || null,
+        viewOnce: media.viewOnce || false,
+        viewedAt: null,
+        timestamp: now.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        rawTimestamp: now.toISOString(),
+        status: "sending",
+        isMe: true,
+      };
+
+      setActiveMessages((prev) => [...prev, newMsg]);
+
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === activeConversation.id
+            ? {
+                ...c,
+                lastMessage: `You: ${sidebarLabel}`,
+                lastMessageTime: newMsg.timestamp,
+                lastMessageId: tempId,
+                lastMessageIsMine: true,
+                lastMessageStatus: "sending",
+              }
+            : c,
+        ),
+      );
+
+      socket.emit(
+        "message:send",
+        {
+          conversationId: activeConversation.id,
+          text: media.text || "",
+          mediaUrl: media.mediaUrl,
+          mediaType: media.mediaType,
+          mediaDuration: media.mediaDuration,
+          viewOnce: media.viewOnce || false,
+        },
+        (res) => {
+          if (res.ok && res.messageId) {
+            sentMsgsRef.current.set(res.messageId!, activeConversation.id);
+            setActiveMessages((prev) =>
+              prev.map((m) =>
+                m.id === tempId
+                  ? { ...m, id: res.messageId!, status: "sent" }
+                  : m,
+              ),
+            );
+            const convId = activeConversation.id;
+            setConversations((prev) =>
+              prev.map((c) =>
+                c.id === convId &&
+                (c.lastMessageId === tempId ||
+                  c.lastMessageId === res.messageId!)
+                  ? {
+                      ...c,
+                      lastMessageId: res.messageId!,
+                      lastMessageStatus: "sent",
+                    }
+                  : c,
+              ),
+            );
+          } else {
+            setActiveMessages((prev) => prev.filter((m) => m.id !== tempId));
+          }
+        },
+      );
+    },
+    [activeConversation, user, socket],
+  );
+
+  // ── Mark view-once message as opened ─────────────────────────────────────
+  const markViewOnceOpened = useCallback(
+    (messageId: string) => {
+      if (!activeConversation || !socket) return;
+
+      const now = new Date().toISOString();
+
+      // Optimistically mark as viewed locally
+      setActiveMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, viewedAt: now } : m)),
+      );
+
+      // Update sidebar if this is the last message
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === activeConversation.id && c.lastMessageId === messageId
+            ? { ...c, lastMessageViewedAt: now }
+            : c,
+        ),
+      );
+
+      // Notify server
+      socket.emit("message:viewOnce:open", {
+        messageId,
+        conversationId: activeConversation.id,
+      });
+    },
+    [activeConversation, socket],
+  );
+
   return (
     <ChatContext.Provider
       value={{
         conversations,
         activeConversation,
-        activeMessages,
+        activeMessages: activeMessages.filter(
+          (m) => !hiddenMessageIds.has(m.id),
+        ),
         typingUsers,
         socket,
         mobileInChat,
         setActiveConversation,
         setMobileInChat,
         sendMessage,
+        sendMediaMessage,
         loadConversations,
         addOrUpdateConversation,
         deleteMessages,
+        deleteForMe,
+        deleteForEveryone,
+        markViewOnceOpened,
         clearMessages,
         deleteConversation,
       }}

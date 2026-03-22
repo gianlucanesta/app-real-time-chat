@@ -7,6 +7,7 @@ import type {
 } from "../interfaces/socket.interface.js";
 import { Message, MESSAGE_TTL_SECONDS } from "../models/message.model.js";
 import { redis } from "../config/redis.js";
+import { deleteCloudinaryAssetsForMessages } from "../services/cloudinary.service.js";
 import * as UserModel from "../models/user.model.js";
 
 type TypedSocket = Socket<
@@ -28,23 +29,44 @@ export function registerMessageHandlers(
   socket.on(
     "message:send",
     async (
-      data: { conversationId: string; text: string },
+      data: {
+        conversationId: string;
+        text: string;
+        mediaUrl?: string;
+        mediaType?: "image" | "video" | "audio";
+        mediaDuration?: number;
+        viewOnce?: boolean;
+      },
       ack: (res: { ok: boolean; messageId?: string }) => void,
     ) => {
-      const { conversationId, text } = data || {};
+      const {
+        conversationId,
+        text,
+        mediaUrl,
+        mediaType,
+        mediaDuration,
+        viewOnce,
+      } = data || {};
 
-      if (
-        !conversationId ||
-        !text ||
-        typeof text !== "string" ||
-        text.trim().length === 0
-      ) {
+      if (!conversationId) {
         socket.emit("error", {
-          message: "conversationId and text are required",
+          message: "conversationId is required",
         });
         return;
       }
-      if (text.length > 4096) {
+
+      // Must have either text or media
+      const hasText =
+        text && typeof text === "string" && text.trim().length > 0;
+      const hasMedia = mediaUrl && mediaType;
+
+      if (!hasText && !hasMedia) {
+        socket.emit("error", {
+          message: "text or media is required",
+        });
+        return;
+      }
+      if (hasText && text.length > 4096) {
         socket.emit("error", { message: "Message exceeds 4096 characters" });
         return;
       }
@@ -54,7 +76,11 @@ export function registerMessageHandlers(
         const msg = await Message.create({
           conversationId,
           sender: userId,
-          text: text.trim(),
+          text: hasText ? text.trim() : "",
+          mediaUrl: mediaUrl || null,
+          mediaType: mediaType || null,
+          mediaDuration: mediaDuration || null,
+          viewOnce: !!viewOnce,
           expires_at,
         });
 
@@ -178,6 +204,116 @@ export function registerMessageHandlers(
           .emit("message:status", payload);
       } else {
         socket.to("conv:" + conversationId).emit("message:status", payload);
+      }
+    },
+  );
+
+  // ── message:deleteForEveryone ──
+  socket.on(
+    "message:deleteForEveryone",
+    async (
+      data: { messageIds: string[]; conversationId: string },
+      ack: (res: { ok: boolean; deleted?: number }) => void,
+    ) => {
+      const { messageIds, conversationId } = data;
+      if (
+        !Array.isArray(messageIds) ||
+        messageIds.length === 0 ||
+        !conversationId
+      ) {
+        if (typeof ack === "function") ack({ ok: false });
+        return;
+      }
+      if (messageIds.length > 500) {
+        if (typeof ack === "function") ack({ ok: false });
+        return;
+      }
+
+      try {
+        // Only allow deleting own messages
+        const messages = await Message.find(
+          { _id: { $in: messageIds }, sender: userId },
+          { mediaUrl: 1, mediaType: 1 },
+        ).lean();
+
+        const ownIds = messages.map((m) => String(m._id));
+        if (ownIds.length === 0) {
+          if (typeof ack === "function") ack({ ok: true, deleted: 0 });
+          return;
+        }
+
+        await Message.deleteMany({ _id: { $in: ownIds } });
+
+        // Delete Cloudinary assets (fire-and-forget)
+        deleteCloudinaryAssetsForMessages(messages).catch(() => {});
+
+        // Notify all participants in the conversation
+        const parts = conversationId.split("___");
+        const otherId2 =
+          parts.length === 2 ? parts.find((id: string) => id !== userId) : null;
+        const deletePayload = { messageIds: ownIds, conversationId };
+
+        if (otherId2) {
+          io.to("conv:" + conversationId)
+            .to("user:" + otherId2)
+            .emit("message:deleted", deletePayload);
+        } else {
+          io.to("conv:" + conversationId).emit(
+            "message:deleted",
+            deletePayload,
+          );
+        }
+
+        if (typeof ack === "function")
+          ack({ ok: true, deleted: ownIds.length });
+      } catch (err) {
+        console.error(
+          "[socket] message:deleteForEveryone error:",
+          (err as Error).message,
+        );
+        if (typeof ack === "function") ack({ ok: false });
+      }
+    },
+  );
+
+  // ── message:viewOnce:open ──
+  socket.on(
+    "message:viewOnce:open",
+    async (data: { messageId: string; conversationId: string }) => {
+      const { messageId, conversationId } = data;
+      if (!messageId || !conversationId) return;
+
+      try {
+        // Only mark as viewed if it's a viewOnce message not sent by this user
+        // and not already viewed
+        const msg = await Message.findOneAndUpdate(
+          {
+            _id: messageId,
+            viewOnce: true,
+            sender: { $ne: userId },
+            viewedAt: null,
+          },
+          { $set: { viewedAt: new Date() } },
+          { new: true },
+        );
+
+        if (!msg) return;
+
+        // Notify the sender that their view-once message was opened
+        const parts = conversationId.split("___");
+        const senderId = msg.sender;
+
+        io.to("user:" + senderId)
+          .to("conv:" + conversationId)
+          .emit("message:viewOnce:opened", {
+            messageId,
+            conversationId,
+          });
+      } catch (err) {
+        console.error(
+          "[socket] message:viewOnce:open error:",
+          (err as Error).message,
+        );
       }
     },
   );

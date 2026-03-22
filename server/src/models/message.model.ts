@@ -17,6 +17,29 @@ const messageSchema = new mongoose.Schema({
     default: "",
     maxlength: 4096,
   },
+  // Media attachment fields
+  mediaUrl: {
+    type: String,
+    default: null,
+  },
+  mediaType: {
+    type: String,
+    enum: ["image", "video", "audio", null],
+    default: null,
+  },
+  mediaDuration: {
+    type: Number, // audio/video duration in seconds
+    default: null,
+  },
+  // View-once: content can only be opened once by the recipient
+  viewOnce: {
+    type: Boolean,
+    default: false,
+  },
+  viewedAt: {
+    type: Date,
+    default: null,
+  },
   // Message delivery status: sent → delivered → read
   status: {
     type: String,

@@ -5,6 +5,7 @@ import type {
 } from "../interfaces/api.interface.js";
 import { Message, MESSAGE_TTL_SECONDS } from "../models/message.model.js";
 import { redis } from "../config/redis.js";
+import { deleteCloudinaryAssetsForMessages } from "../services/cloudinary.service.js";
 
 const MAX_TEXT_LENGTH = 4096;
 
@@ -105,10 +106,20 @@ export async function deleteMessages(
       return;
     }
 
+    // Fetch messages first to get media URLs for Cloudinary cleanup
+    const messages = await Message.find(
+      { _id: { $in: messageIds }, sender: req.user!.sub },
+      { mediaUrl: 1, mediaType: 1 },
+    ).lean();
+
     const result = await Message.deleteMany({
       _id: { $in: messageIds },
       sender: req.user!.sub,
     });
+
+    // Delete associated Cloudinary assets (fire-and-forget)
+    deleteCloudinaryAssetsForMessages(messages).catch(() => {});
+
     res.status(200).json({ deleted: result.deletedCount });
   } catch (err) {
     next(err);
@@ -135,7 +146,17 @@ export async function clearConversation(
       return;
     }
 
+    // Fetch messages first to get media URLs for Cloudinary cleanup
+    const messages = await Message.find(
+      { conversationId },
+      { mediaUrl: 1, mediaType: 1 },
+    ).lean();
+
     await Message.deleteMany({ conversationId });
+
+    // Delete associated Cloudinary assets (fire-and-forget)
+    deleteCloudinaryAssetsForMessages(messages).catch(() => {});
+
     res.status(200).json({ cleared: true });
   } catch (err) {
     next(err);

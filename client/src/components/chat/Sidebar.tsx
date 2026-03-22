@@ -11,6 +11,11 @@ import {
   Lock,
   Plus,
   ListPlus,
+  Mic,
+  Camera,
+  Video,
+  Timer,
+  RotateCcw,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useClickOutside } from "../../hooks/useClickOutside";
@@ -372,11 +377,86 @@ export function Sidebar({
                     {chat.lastMessageIsMine && chat.lastMessageStatus && (
                       <SidebarStatus status={chat.lastMessageStatus} />
                     )}
-                    <span
-                      className={`text-[13px] whitespace-nowrap overflow-hidden text-ellipsis ${chat.unreadCount > 0 ? "text-text-main font-medium" : "text-text-secondary"}`}
-                    >
-                      {chat.lastMessage}
-                    </span>
+                    {chat.lastMessageViewOnce &&
+                    chat.lastMessageIsMine &&
+                    chat.lastMessageViewedAt ? (
+                      <>
+                        <RotateCcw className="w-3.5 h-3.5 shrink-0 text-accent" />
+                        <span className="text-[13px] whitespace-nowrap text-accent">
+                          Opened
+                        </span>
+                      </>
+                    ) : chat.lastMessageViewOnce && chat.lastMessageIsMine ? (
+                      <>
+                        <Timer className="w-3.5 h-3.5 shrink-0 text-text-secondary" />
+                        <span
+                          className={`text-[13px] whitespace-nowrap ${chat.unreadCount > 0 ? "text-text-main font-medium" : "text-text-secondary"}`}
+                        >
+                          {chat.lastMediaType === "audio"
+                            ? "Voice message"
+                            : chat.lastMediaType === "video"
+                              ? "Video"
+                              : "Photo"}
+                        </span>
+                      </>
+                    ) : chat.lastMessageViewOnce &&
+                      !chat.lastMessageIsMine &&
+                      chat.lastMessageViewedAt ? (
+                      <>
+                        <Timer className="w-3.5 h-3.5 shrink-0 text-accent" />
+                        <span className="text-[13px] whitespace-nowrap text-accent">
+                          Opened
+                        </span>
+                      </>
+                    ) : chat.lastMessageViewOnce && !chat.lastMessageIsMine ? (
+                      <>
+                        <Timer className="w-3.5 h-3.5 shrink-0 text-text-secondary" />
+                        <span
+                          className={`text-[13px] whitespace-nowrap ${chat.unreadCount > 0 ? "text-text-main font-medium" : "text-text-secondary"}`}
+                        >
+                          {chat.lastMediaType === "audio"
+                            ? "Voice message"
+                            : chat.lastMediaType === "video"
+                              ? "Video"
+                              : "Photo"}
+                        </span>
+                      </>
+                    ) : chat.lastMediaType === "audio" ? (
+                      <>
+                        <Mic className="w-3.5 h-3.5 shrink-0 text-text-secondary" />
+                        <span
+                          className={`text-[13px] whitespace-nowrap ${chat.unreadCount > 0 ? "text-text-main font-medium" : "text-text-secondary"}`}
+                        >
+                          {chat.lastMediaDuration
+                            ? `${Math.floor(chat.lastMediaDuration / 60)}:${String(Math.floor(chat.lastMediaDuration % 60)).padStart(2, "0")}`
+                            : "0:00"}
+                        </span>
+                      </>
+                    ) : chat.lastMediaType === "image" ? (
+                      <>
+                        <Camera className="w-3.5 h-3.5 shrink-0 text-text-secondary" />
+                        <span
+                          className={`text-[13px] whitespace-nowrap overflow-hidden text-ellipsis ${chat.unreadCount > 0 ? "text-text-main font-medium" : "text-text-secondary"}`}
+                        >
+                          {chat.lastMessage || "Photo"}
+                        </span>
+                      </>
+                    ) : chat.lastMediaType === "video" ? (
+                      <>
+                        <Video className="w-3.5 h-3.5 shrink-0 text-text-secondary" />
+                        <span
+                          className={`text-[13px] whitespace-nowrap overflow-hidden text-ellipsis ${chat.unreadCount > 0 ? "text-text-main font-medium" : "text-text-secondary"}`}
+                        >
+                          {chat.lastMessage || "Video"}
+                        </span>
+                      </>
+                    ) : (
+                      <span
+                        className={`text-[13px] whitespace-nowrap overflow-hidden text-ellipsis ${chat.unreadCount > 0 ? "text-text-main font-medium" : "text-text-secondary"}`}
+                      >
+                        {chat.lastMessage}
+                      </span>
+                    )}
                   </span>
                 )}
                 {chat.unreadCount > 0 && (
