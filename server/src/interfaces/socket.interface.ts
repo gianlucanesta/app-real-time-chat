@@ -31,6 +31,22 @@ export interface ServerToClientEvents {
   "presence:offline": (data: { userId: string }) => void;
   "presence:list": (userIds: string[]) => void;
   error: (data: { message: string }) => void;
+
+  // ── WebRTC call signaling ──
+  "call:incoming": (data: {
+    from: string;
+    fromName: string;
+    withVideo: boolean;
+    offer: RTCSessionDescriptionInit;
+  }) => void;
+  "call:answer": (data: {
+    from: string;
+    answer: RTCSessionDescriptionInit;
+  }) => void;
+  "call:ice": (data: { from: string; candidate: RTCIceCandidateInit }) => void;
+  "call:ended": (data: { from: string }) => void;
+  "call:rejected": (data: { from: string }) => void;
+  "call:busy": (data: { from: string }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -50,6 +66,20 @@ export interface ClientToServerEvents {
     messageIds: string[];
     conversationId: string;
   }) => void;
+
+  // ── WebRTC call signaling ──
+  "call:offer": (data: {
+    to: string;
+    withVideo: boolean;
+    offer: RTCSessionDescriptionInit;
+  }) => void;
+  "call:answer": (data: {
+    to: string;
+    answer: RTCSessionDescriptionInit;
+  }) => void;
+  "call:ice": (data: { to: string; candidate: RTCIceCandidateInit }) => void;
+  "call:end": (data: { to: string }) => void;
+  "call:reject": (data: { to: string }) => void;
 }
 
 export interface SocketData {

@@ -303,7 +303,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: auto 16px 48px;
+  padding: 0 16px 36px;
   transform: translateY(100%);
   transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -317,6 +317,9 @@
   gap: 16px;
   flex: 1;
   justify-content: center;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
 }
 .call-avatar {
   width: 130px;
@@ -382,6 +385,9 @@
   width: 100%;
   max-width: 600px;
   flex-wrap: wrap;
+  position: relative;
+  z-index: 20;
+  padding-bottom: 8px;
 }
 .call-bar-group {
   display: flex;
@@ -481,5 +487,202 @@
   .call-end-mobile-btn svg {
     width: 24px;
     height: 24px;
+  }
+}
+
+/* ── Video call elements ─────────────────────────────────── */
+.call-remote-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  inset: 0;
+  border-radius: 0;
+}
+
+.call-local-pip {
+  position: absolute;
+  bottom: 120px;
+  right: 20px;
+  width: 160px;
+  height: 120px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  z-index: 10;
+}
+
+.call-local-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.call-status-text {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.3px;
+  animation: call-pulse 2s ease-in-out infinite;
+}
+
+.call-status-failed {
+  color: var(--color-danger);
+  font-size: 14px;
+  max-width: 280px;
+  text-align: center;
+  line-height: 1.5;
+  animation: none;
+}
+
+@keyframes call-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ── Incoming call banner ────────────────────────────────── */
+.incoming-call-banner {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 320px;
+  max-width: 440px;
+  width: 90%;
+  padding: 14px 18px;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  animation: banner-slide-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes banner-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-24px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+.incoming-call-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.incoming-call-icon-ring {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  animation: ring-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes ring-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--accent-rgb, 37 99 235), 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(var(--accent-rgb, 37 99 235), 0);
+  }
+}
+
+.incoming-call-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.incoming-call-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.incoming-call-label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.incoming-call-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.incoming-call-reject {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-danger);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.incoming-call-reject:hover {
+  filter: brightness(1.15);
+}
+
+.incoming-call-accept {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #22c55e;
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.incoming-call-accept:hover {
+  filter: brightness(1.15);
+}
+
+/* ── Video call mobile responsive ────────────────────────── */
+@media (max-width: 767px) {
+  .call-local-pip {
+    width: 110px;
+    height: 82px;
+    bottom: 140px;
+    right: 12px;
+  }
+
+  .incoming-call-banner {
+    top: 56px;
+    min-width: 0;
+    width: calc(100% - 24px);
   }
 }

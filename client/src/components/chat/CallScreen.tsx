@@ -1,46 +1,89 @@
 import {
   Video,
   Mic,
-  Smile,
-  Hand,
   MonitorUp,
-  UserPlus,
-  Type,
   PhoneOff,
-  ChevronUp,
   MicOff,
   VideoOff,
+  MonitorOff,
+  RotateCw,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import type { CallStatus } from "../../hooks/useWebRTC";
 
 interface CallScreenProps {
-  isOpen: boolean;
+  status: CallStatus;
   contactName: string;
   contactInitials: string;
+  contactGradient: string;
+  localStream: MediaStream | null;
+  remoteStream: MediaStream | null;
+  isMuted: boolean;
+  isCameraOff: boolean;
+  isScreenSharing: boolean;
+  callWithVideo: boolean;
   onEndCall: () => void;
+  onToggleMute: () => void;
+  onToggleCamera: () => void;
+  onToggleScreenShare: () => void;
+  onRetry: () => void;
 }
 
 export function CallScreen({
-  isOpen,
+  status,
   contactName,
   contactInitials,
+  contactGradient,
+  localStream,
+  remoteStream,
+  isMuted,
+  isCameraOff,
+  isScreenSharing,
+  callWithVideo,
   onEndCall,
+  onToggleMute,
+  onToggleCamera,
+  onToggleScreenShare,
+  onRetry,
 }: CallScreenProps) {
-  const [isMicOn, setIsMicOn] = useState(true);
-  const [isCameraOn, setIsCameraOn] = useState(false);
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const [timer, setTimer] = useState(0);
 
+  const isOpen =
+    status === "calling" ||
+    status === "connecting" ||
+    status === "connected" ||
+    status === "reconnecting" ||
+    status === "failed";
+
+  // Timer — runs only when connected
   useEffect(() => {
     let interval: number;
-    if (isOpen) {
+    if (status === "connected") {
       interval = window.setInterval(() => {
         setTimer((prev) => prev + 1);
       }, 1000);
-    } else {
+    }
+    if (status === "idle" || status === "ended") {
       setTimer(0);
     }
     return () => window.clearInterval(interval);
-  }, [isOpen]);
+  }, [status]);
+
+  // Attach local stream
+  useEffect(() => {
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream]);
+
+  // Attach remote stream
+  useEffect(() => {
+    if (remoteVideoRef.current && remoteStream) {
+      remoteVideoRef.current.srcObject = remoteStream;
+    }
+  }, [remoteStream]);
 
   const formatTimer = (seconds: number) => {
     const m = Math.floor(seconds / 60)
@@ -52,140 +95,155 @@ export function CallScreen({
 
   if (!isOpen) return null;
 
+  const hasRemoteVideo =
+    remoteStream && remoteStream.getVideoTracks().length > 0;
+  const showLocalPip = localStream && callWithVideo;
+
   return (
-    <div
-      className={`call-screen open`}
-      aria-hidden={!isOpen}
-      role="dialog"
-      aria-label="Active call"
-    >
+    <div className="call-screen open" role="dialog" aria-label="Active call">
+      {/* Video / Avatar area */}
       <div className="call-screen-content">
-        <div className="call-avatar" id="call-screen-avatar">
-          {contactInitials}
-        </div>
-        <div className="call-name" id="call-screen-name">
-          {contactName}
-        </div>
+        {/* Remote video (full area) */}
+        {hasRemoteVideo && status === "connected" ? (
+          <video
+            ref={remoteVideoRef}
+            autoPlay
+            playsInline
+            className="call-remote-video"
+          />
+        ) : (
+          <>
+            <div
+              className="call-avatar"
+              style={{ background: contactGradient }}
+            >
+              {contactInitials}
+            </div>
+            <div className="call-name">{contactName}</div>
 
-        {/* Animated Waveform */}
-        <div className="call-waveform" aria-hidden="true">
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
+            {/* Status text */}
+            {status === "calling" && (
+              <div className="call-status-text">Calling...</div>
+            )}
+            {status === "connecting" && (
+              <div className="call-status-text">Connecting...</div>
+            )}
+            {status === "reconnecting" && (
+              <div className="call-status-text">Reconnecting...</div>
+            )}
+            {status === "failed" && (
+              <div className="call-status-text call-status-failed">
+                Connection failed. Network may not support P2P calls.
+              </div>
+            )}
+            {status === "connected" && !hasRemoteVideo && (
+              <div className="call-waveform" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            )}
+          </>
+        )}
 
-        <div className="call-timer" id="call-timer">
-          {formatTimer(timer)}
-        </div>
+        {/* Local video PiP */}
+        {showLocalPip && (
+          <div className="call-local-pip">
+            <video
+              ref={localVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className="call-local-video"
+            />
+          </div>
+        )}
+
+        {status === "connected" && (
+          <div className="call-timer">{formatTimer(timer)}</div>
+        )}
       </div>
 
       {/* Bottom action bar */}
       <div className="call-screen-bar">
-        {/* Camera */}
-        <div className="call-bar-group">
+        {/* Camera (only for video calls) */}
+        {callWithVideo && (
           <button
             type="button"
-            className={`call-bar-btn call-bar-camera ${!isCameraOn ? "bg-danger/20 text-danger" : ""}`}
-            data-active={isCameraOn}
-            onClick={() => setIsCameraOn(!isCameraOn)}
+            className="call-bar-btn"
+            data-active={!isCameraOff}
+            onClick={onToggleCamera}
             aria-label="Toggle camera"
+            style={isCameraOff ? { background: "var(--color-danger)" } : {}}
           >
-            {isCameraOn ? (
+            {!isCameraOff ? (
               <Video className="w-6 h-6" />
             ) : (
               <VideoOff className="w-6 h-6" />
             )}
           </button>
-          <button
-            type="button"
-            className="call-bar-chevron"
-            aria-label="Camera options"
-          >
-            <ChevronUp className="w-3 h-3" />
-          </button>
-        </div>
+        )}
 
         {/* Mic */}
-        <div className="call-bar-group">
+        <button
+          type="button"
+          className="call-bar-btn"
+          data-active={!isMuted}
+          onClick={onToggleMute}
+          aria-label="Toggle microphone"
+          style={isMuted ? { background: "var(--color-danger)" } : {}}
+        >
+          {!isMuted ? (
+            <Mic className="w-6 h-6" />
+          ) : (
+            <MicOff className="w-6 h-6" />
+          )}
+        </button>
+
+        {/* Screen Share */}
+        {callWithVideo && (
           <button
             type="button"
-            className={`call-bar-btn call-bar-mic ${!isMicOn ? "bg-danger/20 text-danger" : ""}`}
-            data-active={isMicOn}
-            onClick={() => setIsMicOn(!isMicOn)}
-            aria-label="Toggle microphone"
+            className="call-bar-btn"
+            onClick={onToggleScreenShare}
+            aria-label="Share screen"
+            style={isScreenSharing ? { background: "var(--color-accent)" } : {}}
           >
-            {isMicOn ? (
-              <Mic className="w-6 h-6" />
+            {isScreenSharing ? (
+              <MonitorOff className="w-6 h-6" />
             ) : (
-              <MicOff className="w-6 h-6" />
+              <MonitorUp className="w-6 h-6" />
             )}
           </button>
+        )}
+
+        {/* Retry button (failed state) */}
+        {status === "failed" && (
           <button
             type="button"
-            className="call-bar-chevron"
-            aria-label="Mic options"
+            className="call-bar-btn"
+            onClick={onRetry}
+            aria-label="Retry call"
+            style={{ background: "var(--color-accent)" }}
           >
-            <ChevronUp className="w-3 h-3" />
+            <RotateCw className="w-6 h-6" />
           </button>
-        </div>
+        )}
 
+        {/* End call */}
         <button
           type="button"
-          className="call-bar-btn"
-          aria-label="Send reaction"
-        >
-          <Smile className="w-6 h-6" />
-        </button>
-
-        <button type="button" className="call-bar-btn" aria-label="Raise hand">
-          <Hand className="w-6 h-6" />
-        </button>
-
-        <button
-          type="button"
-          className="call-bar-btn"
-          aria-label="Share screen"
-        >
-          <MonitorUp className="w-6 h-6" />
-        </button>
-
-        <button
-          type="button"
-          className="call-bar-btn"
-          aria-label="Add participant"
-        >
-          <UserPlus className="w-6 h-6" />
-        </button>
-
-        <button type="button" className="call-bar-btn" aria-label="Captions">
-          <Type className="w-6 h-6" />
-        </button>
-
-        <button
-          type="button"
-          className="call-end-btn hidden md:flex"
-          onClick={onEndCall}
-          aria-label="End call"
-        >
-          <PhoneOff className="w-6 h-6" />
-        </button>
-      </div>
-
-      {/* Mobile-only: prominent centered end-call button */}
-      <div className="call-mobile-end md:hidden">
-        <button
-          type="button"
-          className="call-end-btn call-end-mobile-btn"
+          className="call-end-btn"
           onClick={onEndCall}
           aria-label="End call"
         >

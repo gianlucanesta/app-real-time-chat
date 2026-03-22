@@ -95,6 +95,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   // even when lastMessageId isn't populated from the server yet
   const sentMsgsRef = useRef<Map<string, string>>(new Map());
 
+  // Cache online user IDs so presence info survives the async gap between
+  // socket connect (presence:list) and loadConversations (API response).
+  const onlineUserIdsRef = useRef<Set<string>>(new Set());
+
   // ── Load conversation list from server ──────────────────────────────────
   const loadConversations = useCallback(async () => {
     try {
@@ -108,6 +112,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           lastMessageTime: c.lastMessageTime
             ? fmtTime(c.lastMessageTime)
             : undefined,
+          // Apply cached presence info (presence:list may have arrived before this API response)
+          isOnline: c.participants.some((p) => onlineUserIdsRef.current.has(p)),
         })),
       );
     } catch (err) {
@@ -185,9 +191,20 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, [activeConversation?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── (Re-)join conversation room whenever socket or active conversation changes
+  // Also re-join on reconnect (socket.connect() reuses the same object ref,
+  // so we listen for the "connect" event to catch reconnections).
   useEffect(() => {
     if (!socket || !activeConversation) return;
-    socket.emit("join:conversation", activeConversation.id);
+    const convId = activeConversation.id;
+    socket.emit("join:conversation", convId);
+
+    const handleReconnect = () => {
+      socket.emit("join:conversation", convId);
+    };
+    socket.on("connect", handleReconnect);
+    return () => {
+      socket.off("connect", handleReconnect);
+    };
   }, [socket, activeConversation?.id]);
 
   // ── Add or overwrite a single conversation (used after contact creation) ──
@@ -334,6 +351,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     };
 
     const handlePresenceOnline = (data: { userId: string }) => {
+      if (data.userId === user.id) return; // ignore self
+      onlineUserIdsRef.current.add(data.userId);
       setConversations((prev) =>
         prev.map((c) =>
           c.participants.includes(data.userId) ? { ...c, isOnline: true } : c,
@@ -342,6 +361,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     };
 
     const handlePresenceOffline = (data: { userId: string }) => {
+      if (data.userId === user.id) return;
+      onlineUserIdsRef.current.delete(data.userId);
       setConversations((prev) =>
         prev.map((c) =>
           c.participants.includes(data.userId) ? { ...c, isOnline: false } : c,
@@ -350,11 +371,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     };
 
     const handlePresenceList = (userIds: string[]) => {
+      const others = userIds.filter((id) => id !== user.id);
+      onlineUserIdsRef.current = new Set(others);
       setConversations((prev) =>
         prev.map((c) =>
-          c.participants.some((p) => userIds.includes(p))
+          c.participants.some((p) => others.includes(p))
             ? { ...c, isOnline: true }
-            : c,
+            : { ...c, isOnline: false },
         ),
       );
     };

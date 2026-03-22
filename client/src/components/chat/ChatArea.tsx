@@ -27,9 +27,12 @@ import { ContactProfilePanel } from "./ContactProfilePanel";
 import { EditContactPanel } from "./EditContactPanel";
 import { ChatMessage } from "./ChatMessage";
 import { CallScreen } from "./CallScreen";
+import { IncomingCallBanner } from "./IncomingCallBanner";
 import { ConfirmModal } from "./ConfirmModal";
 import { useChat, type Message } from "../../contexts/ChatContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "../../contexts/ToastContext";
+import { useWebRTC } from "../../hooks/useWebRTC";
 
 /** Return a human-friendly date label for a message group separator. */
 function dateSeparatorLabel(dateStr: string): string {
@@ -79,6 +82,7 @@ export function ChatArea({
 }: ChatAreaProps) {
   const navigate = useNavigate();
 
+  const { user } = useAuth();
   const {
     conversations,
     activeConversation,
@@ -186,7 +190,7 @@ export function ChatArea({
   }, [activeMessages, selectedMessages, toast]);
 
   // Call & Modal State
-  const [isCallScreenOpen, setIsCallScreenOpen] = useState(false);
+  const webrtc = useWebRTC(socket);
   const [activeModal, setActiveModal] = useState<
     "delete-messages" | "clear-chat" | "delete-chat" | null
   >(null);
@@ -497,7 +501,10 @@ export function ChatArea({
                     className="flex flex-row items-center justify-center gap-2.5 py-3 px-3 bg-accent hover:brightness-110 text-white rounded-2xl transition-all"
                     onClick={() => {
                       setIsCallMenuOpen(false);
-                      setIsCallScreenOpen(true);
+                      const target = activeConversation?.participants.find(
+                        (p) => p !== user?.id,
+                      );
+                      if (target) void webrtc.startCall(target, false);
                     }}
                   >
                     <Phone className="w-5 h-5 shrink-0" />
@@ -507,7 +514,10 @@ export function ChatArea({
                     className="flex flex-row items-center justify-center gap-2.5 py-3 px-3 bg-accent hover:brightness-110 text-white rounded-2xl transition-all"
                     onClick={() => {
                       setIsCallMenuOpen(false);
-                      setIsCallScreenOpen(true);
+                      const target = activeConversation?.participants.find(
+                        (p) => p !== user?.id,
+                      );
+                      if (target) void webrtc.startCall(target, true);
                     }}
                   >
                     <Video className="w-5 h-5 shrink-0" />
@@ -869,12 +879,32 @@ export function ChatArea({
         </div>
       </div>
 
+      {/* Incoming Call Banner */}
+      {webrtc.incomingCall && webrtc.status === "incoming" && (
+        <IncomingCallBanner
+          data={webrtc.incomingCall}
+          onAnswer={() => void webrtc.answerCall()}
+          onReject={webrtc.rejectCall}
+        />
+      )}
+
       {/* Call Screen Overlay */}
       <CallScreen
-        isOpen={isCallScreenOpen}
+        status={webrtc.status}
         contactName={contactName}
         contactInitials={contactInitials}
-        onEndCall={() => setIsCallScreenOpen(false)}
+        contactGradient={contactGradient}
+        localStream={webrtc.localStream}
+        remoteStream={webrtc.remoteStream}
+        isMuted={webrtc.isMuted}
+        isCameraOff={webrtc.isCameraOff}
+        isScreenSharing={webrtc.isScreenSharing}
+        callWithVideo={webrtc.callWithVideo}
+        onEndCall={webrtc.endCall}
+        onToggleMute={webrtc.toggleMute}
+        onToggleCamera={webrtc.toggleCamera}
+        onToggleScreenShare={() => void webrtc.toggleScreenShare()}
+        onRetry={webrtc.retryCall}
       />
 
       {/* Confirmation Modals */}
