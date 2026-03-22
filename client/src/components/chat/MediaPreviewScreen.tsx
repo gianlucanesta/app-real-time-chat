@@ -1,5 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { X, Send, Smile, Timer, Plus, Trash2, FileText } from "lucide-react";
+import * as pdfjsLib from "pdfjs-dist";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  "pdfjs-dist/build/pdf.worker.min.mjs",
+  import.meta.url,
+).toString();
 
 interface PreviewFile {
   file: File;
@@ -29,6 +35,9 @@ export function MediaPreviewScreen({
   const [localFiles, setLocalFiles] = useState<PreviewFile[]>(files);
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [pdfPageCount, setPdfPageCount] = useState<number | null>(null);
+  const [pdfError, setPdfError] = useState(false);
 
   // Sync when new files arrive from parent
   useEffect(() => {
@@ -41,6 +50,56 @@ export function MediaPreviewScreen({
   useEffect(() => {
     if (localFiles.length === 0) onClose();
   }, [localFiles.length, onClose]);
+
+  // Render first page of PDF onto canvas
+  const isPdf =
+    activeFile?.type === "document" &&
+    activeFile.file.name.toLowerCase().endsWith(".pdf");
+
+  useEffect(() => {
+    if (!isPdf || !activeFile) {
+      setPdfPageCount(null);
+      setPdfError(false);
+      return;
+    }
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const arrayBuffer = await activeFile.file.arrayBuffer();
+        if (cancelled) return;
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        if (cancelled) return;
+        setPdfPageCount(pdf.numPages);
+        const page = await pdf.getPage(1);
+        if (cancelled) return;
+
+        const canvas = pdfCanvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        // Scale so the rendered page fits nicely (max ~600px wide)
+        const baseViewport = page.getViewport({ scale: 1 });
+        const scale = Math.min(
+          600 / baseViewport.width,
+          800 / baseViewport.height,
+        );
+        const viewport = page.getViewport({ scale });
+
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        await page.render({ canvasContext: ctx, viewport }).promise;
+      } catch {
+        if (!cancelled) setPdfError(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isPdf, activeFile]);
 
   const handleDelete = (index: number) => {
     const updated = localFiles.filter((_, i) => i !== index);
@@ -142,13 +201,27 @@ export function MediaPreviewScreen({
           </div>
         )}
         {isDocument && (
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-28 h-36 rounded-xl bg-card border border-border/50 shadow-md flex flex-col items-center justify-center gap-2">
-              <FileText className="w-12 h-12 text-accent/70" />
-              <span className="text-xs font-bold text-accent bg-accent/10 px-2 py-0.5 rounded">
-                {docExt}
-              </span>
-            </div>
+          <div className="flex flex-col items-center gap-4 max-h-full overflow-hidden">
+            {isPdf && !pdfError ? (
+              <>
+                <canvas
+                  ref={pdfCanvasRef}
+                  className="max-w-full max-h-[60vh] object-contain rounded-lg shadow-lg border border-border/30"
+                />
+                {pdfPageCount !== null && pdfPageCount > 1 && (
+                  <p className="text-xs text-text-secondary">
+                    Page 1 of {pdfPageCount}
+                  </p>
+                )}
+              </>
+            ) : (
+              <div className="w-28 h-36 rounded-xl bg-card border border-border/50 shadow-md flex flex-col items-center justify-center gap-2">
+                <FileText className="w-12 h-12 text-accent/70" />
+                <span className="text-xs font-bold text-accent bg-accent/10 px-2 py-0.5 rounded">
+                  {docExt}
+                </span>
+              </div>
+            )}
             <p className="text-sm text-text-main font-medium truncate max-w-[280px]">
               {activeFile.file.name}
             </p>
