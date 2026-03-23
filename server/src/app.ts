@@ -1,5 +1,5 @@
 import express from "express";
-import cors from "cors";
+import cors, { type CorsOptions } from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { env } from "./config/env.js";
@@ -22,16 +22,27 @@ export function createApp(): express.Express {
   const app = express();
 
   // ── Global middleware ──────────────────────────────────────────────────────
-  app.use(helmet());
+
+  // CORS must come before helmet so preflight responses aren't blocked by
+  // Cross-Origin-Resource-Policy: same-origin (helmet default).
+  const corsOptions: CorsOptions = {
+    origin:
+      env.ALLOWED_ORIGINS.length === 1 && env.ALLOWED_ORIGINS[0] === "*"
+        ? true // reflect origin (needed for credentials)
+        : env.ALLOWED_ORIGINS,
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true, // required for cookies
+  };
+
+  // Explicit preflight handler — catches OPTIONS before any other middleware.
+  app.options("*", cors(corsOptions));
+  app.use(cors(corsOptions));
+
   app.use(
-    cors({
-      origin:
-        env.ALLOWED_ORIGINS.length === 1 && env.ALLOWED_ORIGINS[0] === "*"
-          ? true // reflect origin (needed for credentials)
-          : env.ALLOWED_ORIGINS,
-      methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization"],
-      credentials: true, // required for cookies
+    helmet({
+      // Allow cross-origin resource reads so our API responses are not blocked.
+      crossOriginResourcePolicy: { policy: "cross-origin" },
     }),
   );
   app.use(cookieParser());
