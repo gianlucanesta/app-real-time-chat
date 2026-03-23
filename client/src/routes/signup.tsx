@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   Mail,
@@ -13,10 +13,8 @@ import {
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { useAuth } from "../contexts/AuthContext";
 import { apiFetch } from "../lib/api";
 import { validatePasswordStrength } from "../lib/validation";
-import type { AuthResponse } from "../types";
 
 const COUNTRY_CODES = [
   { code: "+1", label: "+1 US" },
@@ -59,9 +57,6 @@ function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [socialExpanded, setSocialExpanded] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
-
-  const navigate = useNavigate();
-  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

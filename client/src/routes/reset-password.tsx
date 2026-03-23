@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   Lock,
@@ -29,8 +29,6 @@ function ResetPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<"form" | "success" | "error">("form");
   const [message, setMessage] = useState("");
-
-  const navigate = useNavigate();
 
   const token = new URLSearchParams(window.location.search).get("token");
 
