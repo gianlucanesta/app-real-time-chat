@@ -66,6 +66,15 @@ export async function initSchema(): Promise<void> {
     -- Idempotent migration: add first_name / last_name
     ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT NOT NULL DEFAULT '';
     ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name  TEXT NOT NULL DEFAULT '';
+
+    -- Idempotent migration: email verification
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified            BOOLEAN     DEFAULT false;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token        TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS verification_token_expires TIMESTAMPTZ;
+
+    -- Idempotent migration: password reset
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_password_token   TEXT;
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_password_expires TIMESTAMPTZ;
   `);
   console.log("[pg] schema ready");
 }

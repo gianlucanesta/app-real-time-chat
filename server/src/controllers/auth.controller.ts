@@ -11,7 +11,12 @@ import {
   hashRefreshToken,
 } from "../services/token.service.js";
 import { hashPassword, comparePassword } from "../services/password.service.js";
+import {
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+} from "../services/email.service.js";
 import { env } from "../config/env.js";
+import crypto from "node:crypto";
 
 /**
  * Helper: set the refresh token as an HttpOnly Secure cookie.
@@ -93,16 +98,26 @@ export async function register(
       phone,
     });
 
-    // Issue tokens
-    const accessToken = signAccessToken(user);
-    const refreshRaw = generateRefreshToken();
-    const refreshHash = hashRefreshToken(refreshRaw);
-    const expiresAt = new Date(Date.now() + env.REFRESH_EXPIRES_MS);
+    // Generate verification token (raw → hash for DB)
+    const verifyRaw = crypto.randomBytes(32).toString("hex");
+    const verifyHash = crypto
+      .createHash("sha256")
+      .update(verifyRaw)
+      .digest("hex");
+    const verifyExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
 
-    await UserModel.saveRefreshToken(user.id, refreshHash, expiresAt);
+    await UserModel.setVerificationToken(user.id, verifyHash, verifyExpires);
 
-    setRefreshCookie(res, refreshRaw);
-    res.status(201).json({ accessToken, user });
+    // Send verification email (fire & forget — don't block registration)
+    sendVerificationEmail(email, displayName, verifyRaw).catch((err) =>
+      console.error("[email] Failed to send verification email:", err),
+    );
+
+    res.status(201).json({
+      message:
+        "Account created! Please check your email to verify your address.",
+      requiresVerification: true,
+    });
   } catch (err) {
     next(err);
   }
@@ -131,6 +146,15 @@ export async function login(
 
     if (!user || !match) {
       res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
+
+    // Check email verification
+    if (!user.email_verified) {
+      res.status(403).json({
+        error: "Please verify your email before logging in.",
+        emailNotVerified: true,
+      });
       return;
     }
 
@@ -216,6 +240,172 @@ export async function logout(
 
     clearRefreshCookie(res);
     res.status(200).json({ message: "Logged out" });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ── Email verification ──────────────────────────────────────────────────────
+
+/** GET /api/auth/verify-email?token=... */
+export async function verifyEmail(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { token } = req.query as { token?: string };
+
+    if (!token || typeof token !== "string") {
+      res.status(422).json({ error: "Verification token is required" });
+      return;
+    }
+
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await UserModel.findByVerificationToken(tokenHash);
+    if (!user) {
+      res.status(400).json({ error: "Invalid or expired verification link" });
+      return;
+    }
+
+    await UserModel.markEmailVerified(user.id);
+    res
+      .status(200)
+      .json({ message: "Email verified successfully! You can now log in." });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** POST /api/auth/resend-verification */
+export async function resendVerification(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { email } = req.body as { email?: string };
+
+    if (!email || typeof email !== "string") {
+      res.status(422).json({ error: "Email is required" });
+      return;
+    }
+
+    const user = await UserModel.findByEmail(email);
+
+    // Always return success to prevent email enumeration
+    if (!user || user.email_verified) {
+      res
+        .status(200)
+        .json({
+          message:
+            "If this email is registered and not yet verified, a new verification link has been sent.",
+        });
+      return;
+    }
+
+    const verifyRaw = crypto.randomBytes(32).toString("hex");
+    const verifyHash = crypto
+      .createHash("sha256")
+      .update(verifyRaw)
+      .digest("hex");
+    const verifyExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await UserModel.setVerificationToken(user.id, verifyHash, verifyExpires);
+
+    sendVerificationEmail(email, user.display_name, verifyRaw).catch((err) =>
+      console.error("[email] Failed to resend verification email:", err),
+    );
+
+    res
+      .status(200)
+      .json({
+        message:
+          "If this email is registered and not yet verified, a new verification link has been sent.",
+      });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ── Forgot / reset password ─────────────────────────────────────────────────
+
+/** POST /api/auth/forgot-password */
+export async function forgotPassword(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { email } = req.body as { email?: string };
+
+    if (!email || typeof email !== "string") {
+      res.status(422).json({ error: "Email is required" });
+      return;
+    }
+
+    // Always return success to prevent email enumeration
+    const user = await UserModel.findByEmail(email);
+    if (user) {
+      const resetRaw = crypto.randomBytes(32).toString("hex");
+      const resetHash = crypto
+        .createHash("sha256")
+        .update(resetRaw)
+        .digest("hex");
+      const resetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      await UserModel.setResetPasswordToken(user.id, resetHash, resetExpires);
+
+      sendPasswordResetEmail(email, user.display_name, resetRaw).catch((err) =>
+        console.error("[email] Failed to send password reset email:", err),
+      );
+    }
+
+    res.status(200).json({
+      message:
+        "If an account with that email exists, a password reset link has been sent.",
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** POST /api/auth/reset-password */
+export async function resetPassword(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { token, password } = req.body as {
+      token?: string;
+      password?: string;
+    };
+
+    if (!token || typeof token !== "string") {
+      res.status(422).json({ error: "Reset token is required" });
+      return;
+    }
+    if (!password || typeof password !== "string" || password.length < 8) {
+      res.status(422).json({ error: "Password must be at least 8 characters" });
+      return;
+    }
+
+    const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await UserModel.findByResetToken(tokenHash);
+    if (!user) {
+      res.status(400).json({ error: "Invalid or expired reset link" });
+      return;
+    }
+
+    const newHash = await hashPassword(password);
+    await UserModel.updatePassword(user.id, newHash);
+
+    res
+      .status(200)
+      .json({ message: "Password reset successfully! You can now log in." });
   } catch (err) {
     next(err);
   }

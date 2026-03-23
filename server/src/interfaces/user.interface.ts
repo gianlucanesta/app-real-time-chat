@@ -13,6 +13,7 @@ export interface IUser {
   avatar_url: string | null;
   initials: string | null;
   avatar_gradient: string;
+  email_verified: boolean;
   created_at: string;
 }
 

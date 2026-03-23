@@ -22,4 +22,7 @@ export const env = {
   CLOUDINARY_CLOUD_NAME: requireEnv("CLOUDINARY_CLOUD_NAME"),
   CLOUDINARY_API_KEY: requireEnv("CLOUDINARY_API_KEY"),
   CLOUDINARY_API_SECRET: requireEnv("CLOUDINARY_API_SECRET"),
+  MAILJET_API_KEY: requireEnv("MAILJET_API_KEY"),
+  MAILJET_API_SECRET: requireEnv("MAILJET_API_SECRET"),
+  CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
 } as const;

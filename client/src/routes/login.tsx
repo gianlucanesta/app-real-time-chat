@@ -31,6 +31,7 @@ function LoginPage() {
   const [emailShake, setEmailShake] = useState(false);
   const [formShake, setFormShake] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
+  const [emailNotVerified, setEmailNotVerified] = useState(false);
   const emailErrorKey = useRef(0);
   const errorKey = useRef(0);
 
@@ -45,6 +46,7 @@ function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setEmailNotVerified(false);
     setIsLoading(true);
 
     try {
@@ -58,6 +60,10 @@ function LoginPage() {
         navigate({ to: "/" });
       }, 1800);
     } catch (err: any) {
+      // Check if the error response contains emailNotVerified flag
+      if (err.message?.includes("verify your email")) {
+        setEmailNotVerified(true);
+      }
       errorKey.current += 1;
       setError(err.message || "Failed to login");
       triggerShake(setFormShake);
@@ -170,12 +176,12 @@ function LoginPage() {
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center">
               <Label htmlFor="password">PASSWORD</Label>
-              <a
-                href="#"
+              <Link
+                to="/forgot-password"
                 className="text-[12px] font-medium text-accent hover:text-accent-hover p-2 -m-2 inline-block relative z-10"
               >
                 Forgot?
-              </a>
+              </Link>
             </div>
             <Input
               id="password"
@@ -246,7 +252,29 @@ function LoginPage() {
                   clipRule="evenodd"
                 />
               </svg>
-              <span>{error}</span>
+              <div className="flex flex-col gap-1">
+                <span>{error}</span>
+                {emailNotVerified && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await apiFetch("/auth/resend-verification", {
+                          method: "POST",
+                          body: JSON.stringify({ email }),
+                        });
+                        setError(
+                          "Verification email resent! Check your inbox.",
+                        );
+                        setEmailNotVerified(false);
+                      } catch {}
+                    }}
+                    className="text-accent hover:text-accent-hover text-[13px] font-medium text-left"
+                  >
+                    Resend verification email
+                  </button>
+                )}
+              </div>
             </div>
           )}
 

@@ -7,7 +7,7 @@ import type {
 } from "../interfaces/user.interface.js";
 
 const SAFE_COLUMNS =
-  "id, email, display_name, first_name, last_name, phone, role, avatar_url, initials, avatar_gradient, created_at";
+  "id, email, display_name, first_name, last_name, phone, role, avatar_url, initials, avatar_gradient, email_verified, created_at";
 
 /** Find a user by primary key (UUID). */
 export async function findById(id: string): Promise<IUser | null> {
@@ -158,4 +158,73 @@ export async function deleteRefreshToken(tokenHash: string): Promise<void> {
   await pool.query("DELETE FROM refresh_tokens WHERE token_hash = $1", [
     tokenHash,
   ]);
+}
+
+// ── Email verification ──────────────────────────────────────────────────────
+
+/** Store a verification token for a user. */
+export async function setVerificationToken(
+  userId: string,
+  tokenHash: string,
+  expiresAt: Date,
+): Promise<void> {
+  await pool.query(
+    `UPDATE users SET verification_token = $1, verification_token_expires = $2 WHERE id = $3`,
+    [tokenHash, expiresAt, userId],
+  );
+}
+
+/** Find user by a valid (non-expired) verification token hash. */
+export async function findByVerificationToken(
+  tokenHash: string,
+): Promise<IUser | null> {
+  const { rows } = await pool.query<IUser>(
+    `SELECT ${SAFE_COLUMNS} FROM users WHERE verification_token = $1 AND verification_token_expires > now()`,
+    [tokenHash],
+  );
+  return rows[0] ?? null;
+}
+
+/** Mark user email as verified and clear the token. */
+export async function markEmailVerified(userId: string): Promise<void> {
+  await pool.query(
+    `UPDATE users SET email_verified = true, verification_token = NULL, verification_token_expires = NULL WHERE id = $1`,
+    [userId],
+  );
+}
+
+// ── Password reset ──────────────────────────────────────────────────────────
+
+/** Store a password reset token for a user. */
+export async function setResetPasswordToken(
+  userId: string,
+  tokenHash: string,
+  expiresAt: Date,
+): Promise<void> {
+  await pool.query(
+    `UPDATE users SET reset_password_token = $1, reset_password_expires = $2 WHERE id = $3`,
+    [tokenHash, expiresAt, userId],
+  );
+}
+
+/** Find user by a valid (non-expired) reset token hash. Returns password_hash too. */
+export async function findByResetToken(
+  tokenHash: string,
+): Promise<IUserWithPassword | null> {
+  const { rows } = await pool.query<IUserWithPassword>(
+    `SELECT ${SAFE_COLUMNS}, password_hash FROM users WHERE reset_password_token = $1 AND reset_password_expires > now()`,
+    [tokenHash],
+  );
+  return rows[0] ?? null;
+}
+
+/** Update password and clear reset token. */
+export async function updatePassword(
+  userId: string,
+  newPasswordHash: string,
+): Promise<void> {
+  await pool.query(
+    `UPDATE users SET password_hash = $1, reset_password_token = NULL, reset_password_expires = NULL WHERE id = $2`,
+    [newPasswordHash, userId],
+  );
 }
