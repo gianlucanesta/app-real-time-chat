@@ -13,10 +13,8 @@ services:
         source: /*
         destination: /index.html
     envVars:
-      # Backend URL — set to your deployed backend URL after first deploy
-      # e.g. https://app-real-time-chat-backend.onrender.com/api
       - key: VITE_API_URL
-        sync: false
+        value: https://app-real-time-chat-backend.onrender.com/api
 
   # ──────────────────────────────────────────────
   # 2.  Node.js backend (Express + TypeScript)
@@ -66,9 +64,9 @@ services:
       - key: PORT
         value: "3001"
 
-      # CORS — update to match your deployed frontend URL after first deploy
+      # CORS — frontend URL on Render
       - key: ALLOWED_ORIGIN
-        value: "*"
+        value: https://app-real-time-chat-frontend.onrender.com
 
   # ──────────────────────────────────────────────
   # 3.  Render-managed Redis (Key-Value store)
