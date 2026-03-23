@@ -16,6 +16,7 @@ import {
   Video,
   Timer,
   RotateCcw,
+  Ban,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useClickOutside } from "../../hooks/useClickOutside";
@@ -374,9 +375,11 @@ export function Sidebar({
                   </span>
                 ) : (
                   <span className="flex items-center gap-1 min-w-0 overflow-hidden">
-                    {chat.lastMessageIsMine && chat.lastMessageStatus && (
-                      <SidebarStatus status={chat.lastMessageStatus} />
-                    )}
+                    {chat.lastMessageIsMine &&
+                      chat.lastMessageStatus &&
+                      !chat.lastMessageDeleted && (
+                        <SidebarStatus status={chat.lastMessageStatus} />
+                      )}
                     {chat.lastMessageViewOnce &&
                     chat.lastMessageIsMine &&
                     chat.lastMessageViewedAt ? (
@@ -419,6 +422,13 @@ export function Sidebar({
                             : chat.lastMediaType === "video"
                               ? "Video"
                               : "Photo"}
+                        </span>
+                      </>
+                    ) : chat.lastMessageDeleted ? (
+                      <>
+                        <Ban className="w-3.5 h-3.5 shrink-0 text-text-secondary" />
+                        <span className="text-[13px] whitespace-nowrap overflow-hidden text-ellipsis text-text-secondary italic">
+                          Message deleted
                         </span>
                       </>
                     ) : chat.lastMediaType === "audio" ? (

@@ -49,6 +49,7 @@ export interface Conversation {
   lastMediaDuration?: number | null;
   lastMessageViewOnce?: boolean;
   lastMessageViewedAt?: string | null;
+  lastMessageDeleted?: boolean;
   unreadCount: number;
   isOnline?: boolean;
   participants: string[];
@@ -341,6 +342,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
               lastMediaDuration: msg.mediaDuration || null,
               lastMessageViewOnce: msg.viewOnce || false,
               lastMessageViewedAt: msg.viewedAt || null,
+              lastMessageDeleted: false,
               unreadCount: isMe || isActive ? c.unreadCount : c.unreadCount + 1,
             };
           });
@@ -485,6 +487,27 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         }
         return prev;
       });
+      // Update sidebar: if deleted message was the lastMessage, show "Message deleted"
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (
+            c.id === data.conversationId &&
+            c.lastMessageId &&
+            data.messageIds.includes(c.lastMessageId)
+          ) {
+            return {
+              ...c,
+              lastMessage: "Message deleted",
+              lastMessageDeleted: true,
+              lastMediaType: null,
+              lastMediaDuration: null,
+              lastMessageViewOnce: false,
+              lastMessageViewedAt: null,
+            };
+          }
+          return c;
+        }),
+      );
     };
 
     const handleViewOnceOpened = (data: {
@@ -664,12 +687,34 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const deleteForEveryone = useCallback(
     (ids: string[]) => {
       if (!socket || !activeConversation) return;
+      const convId = activeConversation.id;
       // Optimistic local removal
       setActiveMessages((prev) => prev.filter((m) => !ids.includes(m.id)));
+      // Update sidebar: if deleted message was the lastMessage, show "Message deleted"
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (
+            c.id === convId &&
+            c.lastMessageId &&
+            ids.includes(c.lastMessageId)
+          ) {
+            return {
+              ...c,
+              lastMessage: "Message deleted",
+              lastMessageDeleted: true,
+              lastMediaType: null,
+              lastMediaDuration: null,
+              lastMessageViewOnce: false,
+              lastMessageViewedAt: null,
+            };
+          }
+          return c;
+        }),
+      );
       // Ask server via socket to delete and notify all participants
       socket.emit(
         "message:deleteForEveryone",
-        { messageIds: ids, conversationId: activeConversation.id },
+        { messageIds: ids, conversationId: convId },
         (res) => {
           if (!res.ok) {
             console.warn("[chat] deleteForEveryone failed");

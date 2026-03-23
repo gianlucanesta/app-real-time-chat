@@ -35,7 +35,7 @@ interface ChatMessageProps {
   isSelected?: boolean;
   onToggleSelect?: () => void;
   onCopy?: () => void;
-  onEnterSelectMode?: () => void;
+  onEnterSelectMode?: (reason?: "select" | "delete") => void;
   reactions?: Record<string, number>;
   onReaction?: (emoji: string) => void;
   onViewOnceOpen?: () => void;
@@ -445,7 +445,7 @@ export function ChatMessage({
                 <button
                   className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-danger hover:bg-danger/10 transition-colors font-medium"
                   onClick={() => {
-                    onEnterSelectMode?.();
+                    onEnterSelectMode?.("delete");
                     setIsContextMenuOpen(false);
                   }}
                 >
