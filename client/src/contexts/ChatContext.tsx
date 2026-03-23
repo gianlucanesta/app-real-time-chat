@@ -81,6 +81,8 @@ interface ChatContextType {
   markViewOnceOpened: (messageId: string) => void;
   clearMessages: () => void;
   deleteConversation: () => void;
+  pendingRemoteDeletions: string[];
+  confirmRemoteDeletion: (ids: string[]) => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -105,6 +107,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     Record<string, { displayName: string }>
   >({});
   const [mobileInChat, setMobileInChat] = useState(false);
+  const [pendingRemoteDeletions, setPendingRemoteDeletions] = useState<
+    string[]
+  >([]);
   const [hiddenMessageIds, setHiddenMessageIds] = useState<Set<string>>(() => {
     try {
       const stored = localStorage.getItem("hiddenMessageIds");
@@ -468,9 +473,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       messageIds: string[];
       conversationId: string;
     }) => {
-      setActiveMessages((prev) =>
-        prev.filter((m) => !data.messageIds.includes(m.id)),
-      );
+      // Check if these messages are still in our active list (not already
+      // removed by the sender's own optimistic delete)
+      setActiveMessages((prev) => {
+        const idsStillPresent = data.messageIds.filter((id) =>
+          prev.some((m) => m.id === id),
+        );
+        if (idsStillPresent.length > 0) {
+          // Defer removal: add to pending so ChatArea can animate first
+          setPendingRemoteDeletions((p) => [...p, ...idsStillPresent]);
+        }
+        return prev;
+      });
     };
 
     const handleViewOnceOpened = (data: {
@@ -665,6 +679,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     },
     [socket, activeConversation],
   );
+
+  // Called by ChatArea after the disintegration animation finishes
+  const confirmRemoteDeletion = useCallback((ids: string[]) => {
+    setActiveMessages((prev) => prev.filter((m) => !ids.includes(m.id)));
+    setPendingRemoteDeletions((prev) => prev.filter((id) => !ids.includes(id)));
+  }, []);
 
   const clearMessages = useCallback(() => {
     if (!activeConversation) return;
@@ -863,6 +883,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         markViewOnceOpened,
         clearMessages,
         deleteConversation,
+        pendingRemoteDeletions,
+        confirmRemoteDeletion,
       }}
     >
       {children}

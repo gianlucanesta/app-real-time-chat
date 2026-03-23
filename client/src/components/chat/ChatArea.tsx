@@ -40,6 +40,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "../../contexts/ToastContext";
 import { useWebRTC } from "../../hooks/useWebRTC";
 import { getAccessToken } from "../../lib/api";
+import { disintegrate } from "../../lib/disintegrate";
 
 /** Return a human-friendly date label for a message group separator. */
 function dateSeparatorLabel(dateStr: string): string {
@@ -104,6 +105,8 @@ export function ChatArea({
     markViewOnceOpened,
     clearMessages,
     deleteConversation,
+    pendingRemoteDeletions,
+    confirmRemoteDeletion,
   } = useChat();
   const toast = useToast();
 
@@ -212,6 +215,59 @@ export function ChatArea({
     setIsSelectMode(true);
     setSelectedMessages([msgId]);
   }, []);
+
+  // Animated delete: disintegrate messages, then remove them
+  const handleAnimatedDelete = useCallback(
+    async (ids: string[], deleteFn: () => void, message: string) => {
+      setActiveModal(null);
+      setIsSelectMode(false);
+      setSelectedMessages([]);
+
+      // Wait for re-render so messages show without selection styling
+      await new Promise((r) => requestAnimationFrame(r));
+      await new Promise((r) => requestAnimationFrame(r));
+
+      const elements = ids
+        .map(
+          (id) =>
+            document.querySelector(
+              `[data-id="${CSS.escape(id)}"]`,
+            ) as HTMLElement | null,
+        )
+        .filter((el): el is HTMLElement => el !== null);
+
+      if (elements.length > 0) {
+        await Promise.all(elements.map((el) => disintegrate(el)));
+      }
+
+      deleteFn();
+      toast.showToast(message, "success");
+    },
+    [toast],
+  );
+
+  // Watch for remote deletions (delete-for-everyone from another user)
+  // and play the disintegration animation before confirming removal
+  useEffect(() => {
+    if (pendingRemoteDeletions.length === 0) return;
+    const ids = [...pendingRemoteDeletions];
+    // Run animation then confirm
+    (async () => {
+      await new Promise((r) => requestAnimationFrame(r));
+      const elements = ids
+        .map(
+          (id) =>
+            document.querySelector(
+              `[data-id="${CSS.escape(id)}"]`,
+            ) as HTMLElement | null,
+        )
+        .filter((el): el is HTMLElement => el !== null);
+      if (elements.length > 0) {
+        await Promise.all(elements.map((el) => disintegrate(el)));
+      }
+      confirmRemoteDeletion(ids);
+    })();
+  }, [pendingRemoteDeletions, confirmRemoteDeletion]);
 
   const handleCopySelected = useCallback(() => {
     const texts = activeMessages
@@ -1161,27 +1217,29 @@ export function ChatArea({
           activeMessages.find((m) => m.id === id && m.isMe),
         )}
         onDeleteForMe={() => {
-          deleteForMe(selectedMessages);
-          setActiveModal(null);
-          setIsSelectMode(false);
-          setSelectedMessages([]);
-          toast.showToast("Messages hidden", "success");
+          const ids = [...selectedMessages];
+          void handleAnimatedDelete(
+            ids,
+            () => deleteForMe(ids),
+            "Messages hidden",
+          );
         }}
         onDeleteForEveryone={() => {
-          const ownIds = selectedMessages.filter((id) =>
+          const ids = [...selectedMessages];
+          const ownIds = ids.filter((id) =>
             activeMessages.find((m) => m.id === id && m.isMe),
           );
-          const otherIds = selectedMessages.filter(
+          const otherIds = ids.filter(
             (id) => !activeMessages.find((m) => m.id === id && m.isMe),
           );
-          // Delete own messages for everyone
-          if (ownIds.length > 0) deleteForEveryone(ownIds);
-          // Hide others' messages locally
-          if (otherIds.length > 0) deleteForMe(otherIds);
-          setActiveModal(null);
-          setIsSelectMode(false);
-          setSelectedMessages([]);
-          toast.showToast("Messages deleted", "success");
+          void handleAnimatedDelete(
+            ids,
+            () => {
+              if (ownIds.length > 0) deleteForEveryone(ownIds);
+              if (otherIds.length > 0) deleteForMe(otherIds);
+            },
+            "Messages deleted",
+          );
         }}
         onCancel={() => setActiveModal(null)}
       />

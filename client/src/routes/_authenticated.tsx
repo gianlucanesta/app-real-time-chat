@@ -1,4 +1,10 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  useNavigate,
+} from "@tanstack/react-router";
+import { useEffect } from "react";
 import { VerticalNav } from "../components/layout/VerticalNav";
 import { ChatProvider, useChat } from "../contexts/ChatContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -35,9 +41,19 @@ function LayoutContent() {
 }
 
 function AuthenticatedLayout() {
-  const { isLoading } = useAuth();
+  const { isLoading, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
-  if (isLoading) {
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate({
+        to: "/login",
+        search: { redirect: window.location.pathname },
+      });
+    }
+  }, [isLoading, isAuthenticated, navigate]);
+
+  if (isLoading || !isAuthenticated) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-bg">
         <span className="w-8 h-8 rounded-full border-4 border-accent border-t-transparent animate-spin" />

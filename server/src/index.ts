@@ -9,6 +9,7 @@ import { connectMongo } from "./config/mongo.js";
 import { redis, initKeyspaceExpiry } from "./config/redis.js";
 import { initSocket } from "./socket/index.js";
 import { Message } from "./models/message.model.js";
+import { startMediaCleanupJob } from "./services/media-cleanup.service.js";
 
 /**
  * Ping our own /api/health every 10 minutes to prevent Render free tier
@@ -68,6 +69,9 @@ async function start(): Promise<void> {
     // ── Database connections ───────────────────────────────────────────────
     await initSchema();
     await connectMongo();
+
+    // Start periodic Cloudinary media cleanup for expiring messages
+    startMediaCleanupJob();
 
     // Redis – optional: message TTL expiry won't work if Redis is unavailable
     try {
