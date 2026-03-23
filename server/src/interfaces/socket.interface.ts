@@ -31,6 +31,14 @@ export interface ServerToClientEvents {
     messageIds: string[];
     conversationId: string;
   }) => void;
+  "message:reaction": (data: {
+    messageId: string;
+    conversationId: string;
+    userId: string;
+    displayName: string;
+    emoji: string;
+    action: "add" | "remove";
+  }) => void;
   "message:viewOnce:opened": (data: {
     messageId: string;
     conversationId: string;
@@ -86,6 +94,10 @@ export interface ClientToServerEvents {
   "message:deleteForEveryone": (
     data: { messageIds: string[]; conversationId: string },
     ack: (res: { ok: boolean; deleted?: number }) => void,
+  ) => void;
+  "message:react": (
+    data: { messageId: string; conversationId: string; emoji: string },
+    ack: (res: { ok: boolean }) => void,
   ) => void;
 
   // ── WebRTC call signaling ──

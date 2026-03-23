@@ -46,6 +46,17 @@ const messageSchema = new mongoose.Schema({
     enum: ["sent", "delivered", "read"],
     default: "sent",
   },
+  // Reactions: array of { userId, emoji, displayName }
+  reactions: {
+    type: [
+      {
+        userId: { type: String, required: true },
+        emoji: { type: String, required: true },
+        displayName: { type: String, default: "" },
+      },
+    ],
+    default: [],
+  },
   // expires_at is set SERVER-SIDE on every write — never trust the client
   expires_at: {
     type: Date,

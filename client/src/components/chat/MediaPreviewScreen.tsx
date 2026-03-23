@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { X, Send, Smile, Timer, Plus, Trash2, FileText } from "lucide-react";
+import { EmojiPicker } from "./EmojiPicker";
 import * as pdfjsLib from "pdfjs-dist";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
@@ -31,6 +32,7 @@ export function MediaPreviewScreen({
   onAddMore,
 }: MediaPreviewScreenProps) {
   const [caption, setCaption] = useState("");
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [localFiles, setLocalFiles] = useState<PreviewFile[]>(files);
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
@@ -238,13 +240,27 @@ export function MediaPreviewScreen({
       <div className="shrink-0 px-4 pb-4 space-y-3">
         {/* Caption input */}
         <div className="flex items-center gap-2 bg-input/80 backdrop-blur-md rounded-full border border-border/50 px-4 py-2">
-          <button
-            type="button"
-            className="shrink-0 text-text-secondary hover:text-text-main transition-colors"
-            aria-label="Emoji"
-          >
-            <Smile className="w-5 h-5" />
-          </button>
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              className="text-text-secondary hover:text-text-main transition-colors"
+              aria-label="Emoji"
+              onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+            >
+              <Smile className="w-5 h-5" />
+            </button>
+            {isEmojiPickerOpen && (
+              <EmojiPicker
+                position="top"
+                align="left"
+                onSelect={(emoji) => {
+                  setCaption((prev) => prev + emoji);
+                  setIsEmojiPickerOpen(false);
+                }}
+                onClose={() => setIsEmojiPickerOpen(false)}
+              />
+            )}
+          </div>
           <input
             ref={inputRef}
             type="text"

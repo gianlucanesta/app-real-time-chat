@@ -14,9 +14,11 @@ import {
   CircleDot,
   X,
 } from "lucide-react";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { useClickOutside } from "../../hooks/useClickOutside";
 import { AudioPlayer } from "./AudioPlayer";
+import { EmojiPicker } from "./EmojiPicker";
+import type { Reaction } from "../../contexts/ChatContext";
 
 interface ChatMessageProps {
   id: string;
@@ -36,8 +38,9 @@ interface ChatMessageProps {
   onToggleSelect?: () => void;
   onCopy?: () => void;
   onEnterSelectMode?: (reason?: "select" | "delete") => void;
-  reactions?: Record<string, number>;
+  reactions?: Reaction[];
   onReaction?: (emoji: string) => void;
+  currentUserId?: string;
   onViewOnceOpen?: () => void;
   onOpenMedia?: () => void;
 }
@@ -66,6 +69,7 @@ export function ChatMessage({
   onReaction,
   onViewOnceOpen,
   onOpenMedia,
+  currentUserId,
 }: ChatMessageProps) {
   const [isReactionMenuOpen, setIsReactionMenuOpen] = useState(false);
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
@@ -74,6 +78,25 @@ export function ChatMessage({
   const [showViewOnceViewer, setShowViewOnceViewer] = useState(false);
   const chevronRef = useRef<HTMLButtonElement>(null);
   const viewOnceMarkedRef = useRef(false);
+  const [showReactionPanel, setShowReactionPanel] = useState(false);
+  const [reactionFilterEmoji, setReactionFilterEmoji] = useState<string | null>(
+    null,
+  );
+  const reactionDetailRef = useRef<HTMLDivElement>(null);
+  useClickOutside(reactionDetailRef, () => setShowReactionPanel(false));
+
+  // Group reactions by emoji: { "❤️": [{ userId, displayName }, ...], ... }
+  const groupedReactions = useMemo(() => {
+    if (!reactions || reactions.length === 0) return {};
+    const map: Record<string, { userId: string; displayName: string }[]> = {};
+    for (const r of reactions) {
+      (map[r.emoji] ??= []).push({
+        userId: r.userId,
+        displayName: r.displayName,
+      });
+    }
+    return map;
+  }, [reactions]);
 
   // Determine if view-once content should be hidden
   const isViewOnceHidden =
@@ -365,7 +388,7 @@ export function ChatMessage({
                   {/* Reaction Popup */}
                   {isReactionMenuOpen && (
                     <div
-                      className={`absolute top-full lg:bottom-full lg:top-auto mt-2 lg:mt-0 lg:mb-2 ${isSent ? "right-0" : "left-0"} p-2 bg-card border border-border/80 shadow-xl rounded-full flex items-center gap-1 animate-in zoom-in-95 z-50`}
+                      className={`absolute top-full lg:bottom-full lg:top-auto mt-2 lg:mt-0 lg:mb-2 ${isSent ? "right-0" : "left-0"} p-2 bg-card border border-border/80 shadow-xl rounded-full flex items-center gap-1 z-50 transition-all duration-200 ease-out animate-in fade-in zoom-in-95`}
                     >
                       {EMOJIS.map((emoji) => (
                         <button
@@ -379,12 +402,28 @@ export function ChatMessage({
                           {emoji}
                         </button>
                       ))}
-                      <button
-                        className="w-8 h-8 rounded-full hover:bg-input flex items-center justify-center text-text-secondary transition-colors"
-                        onClick={() => setIsReactionMenuOpen(false)}
-                      >
-                        <span className="text-[18px] leading-none">+</span>
-                      </button>
+                      <div className="relative">
+                        <button
+                          className="w-8 h-8 rounded-full hover:bg-input flex items-center justify-center text-text-secondary transition-colors"
+                          onClick={() =>
+                            setShowFullEmojiPicker(!showFullEmojiPicker)
+                          }
+                        >
+                          <span className="text-[18px] leading-none">+</span>
+                        </button>
+                        {showFullEmojiPicker && (
+                          <EmojiPicker
+                            position="bottom"
+                            align={isSent ? "right" : "left"}
+                            onSelect={(emoji) => {
+                              onReaction?.(emoji);
+                              setShowFullEmojiPicker(false);
+                              setIsReactionMenuOpen(false);
+                            }}
+                            onClose={() => setShowFullEmojiPicker(false)}
+                          />
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -455,25 +494,148 @@ export function ChatMessage({
             )}
           </div>
 
-          {/* Reaction strip */}
-          {reactions && Object.keys(reactions).length > 0 && (
+          {/* Reaction strip — overlaps bottom of bubble */}
+          {Object.keys(groupedReactions).length > 0 && (
             <div
-              className={`flex items-center gap-1 mt-1 ${isSent ? "justify-end mr-1" : "ml-1"}`}
+              className={`relative flex items-center gap-1 -mt-2.5 z-10 ${isSent ? "justify-end mr-1" : "ml-1"}`}
             >
-              {Object.entries(reactions).map(([emoji, count]) => (
+              {Object.entries(groupedReactions).map(([emoji, users]) => (
                 <button
                   key={emoji}
-                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-card border border-border/50 text-[12px] hover:bg-input/80 transition-colors"
-                  onClick={() => onReaction?.(emoji)}
+                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-card border border-border/50 text-[12px] hover:bg-input/80 transition-colors shadow-sm"
+                  onClick={() => {
+                    setReactionFilterEmoji(null);
+                    setShowReactionPanel(true);
+                  }}
                 >
                   {emoji}
-                  {count > 1 && (
+                  {users.length > 1 && (
                     <span className="text-text-secondary text-[10px]">
-                      {count}
+                      {users.length}
                     </span>
                   )}
                 </button>
               ))}
+
+              {/* WhatsApp-style reaction detail panel */}
+              {showReactionPanel && (
+                <div
+                  ref={reactionDetailRef}
+                  className={`absolute ${isSent ? "right-0" : "left-0"} bottom-full mb-2 w-[260px] bg-card border border-border/80 shadow-2xl rounded-xl z-50 animate-in fade-in zoom-in-95 duration-150 overflow-hidden`}
+                >
+                  {/* Header */}
+                  <div className="px-4 pt-3 pb-2 text-[13px] font-semibold text-text-main">
+                    {reactions!.length}{" "}
+                    {reactions!.length === 1 ? "reazione" : "reazioni"}
+                  </div>
+
+                  {/* Emoji filter tabs */}
+                  <div className="flex items-center gap-1 px-3 pb-2 border-b border-border/50">
+                    <div className="relative">
+                      <button
+                        className={`px-2 py-1 rounded-full text-[16px] transition-colors text-text-secondary hover:bg-input/60`}
+                        onClick={() =>
+                          setShowPanelEmojiPicker(!showPanelEmojiPicker)
+                        }
+                        title="Aggiungi reazione"
+                      >
+                        😊
+                      </button>
+                      {showPanelEmojiPicker && (
+                        <EmojiPicker
+                          position="bottom"
+                          align={isSent ? "right" : "left"}
+                          onSelect={(emoji) => {
+                            onReaction?.(emoji);
+                            setShowPanelEmojiPicker(false);
+                          }}
+                          onClose={() => setShowPanelEmojiPicker(false)}
+                        />
+                      )}
+                    </div>
+                    {Object.entries(groupedReactions).map(([emoji, users]) => (
+                      <button
+                        key={emoji}
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[13px] transition-colors ${
+                          reactionFilterEmoji === emoji
+                            ? "bg-primary/20 text-primary"
+                            : "text-text-secondary hover:bg-input/60"
+                        }`}
+                        onClick={() => setReactionFilterEmoji(emoji)}
+                      >
+                        {emoji}
+                        <span className="text-[11px]">{users.length}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* User list */}
+                  <div className="max-h-[200px] overflow-y-auto py-1">
+                    {(() => {
+                      const filtered = reactionFilterEmoji
+                        ? (groupedReactions[reactionFilterEmoji] || []).map(
+                            (u) => ({ ...u, emoji: reactionFilterEmoji }),
+                          )
+                        : reactions!.map((r) => ({
+                            userId: r.userId,
+                            displayName: r.displayName,
+                            emoji: r.emoji,
+                          }));
+                      return filtered.map((u) => (
+                        <div
+                          key={`${u.userId}-${u.emoji}`}
+                          className={`flex items-center gap-3 px-4 py-2 ${
+                            u.userId === currentUserId
+                              ? "cursor-pointer hover:bg-input/40"
+                              : ""
+                          } transition-colors`}
+                          onClick={() => {
+                            if (u.userId === currentUserId) {
+                              onReaction?.(u.emoji);
+                              // Close panel if no reactions left after removal
+                              const remaining = reactions!.length - 1;
+                              if (remaining <= 0) setShowReactionPanel(false);
+                            }
+                          }}
+                        >
+                          {/* Avatar */}
+                          <div
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold text-white flex-shrink-0"
+                            style={{
+                              background:
+                                "linear-gradient(135deg, var(--color-primary), var(--color-accent))",
+                            }}
+                          >
+                            {u.displayName
+                              .split(" ")
+                              .map((w) => w[0])
+                              .join("")
+                              .slice(0, 2)
+                              .toUpperCase()}
+                          </div>
+                          {/* Name + subtitle */}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[13px] font-medium text-text-main truncate">
+                              {u.userId === currentUserId
+                                ? "Tu"
+                                : u.displayName}
+                            </div>
+                            {u.userId === currentUserId && (
+                              <div className="text-[11px] text-text-secondary">
+                                Clicca per rimuovere
+                              </div>
+                            )}
+                          </div>
+                          {/* Emoji on right */}
+                          <span className="text-xl flex-shrink-0">
+                            {u.emoji}
+                          </span>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

@@ -35,6 +35,7 @@ import { AttachmentMenu } from "./AttachmentMenu";
 import { VoiceRecorder } from "./VoiceRecorder";
 import { MediaPreviewScreen } from "./MediaPreviewScreen";
 import { MediaViewer, type MediaItem } from "./MediaViewer";
+import { EmojiPicker } from "./EmojiPicker";
 import { useChat, type Message } from "../../contexts/ChatContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "../../contexts/ToastContext";
@@ -107,6 +108,8 @@ export function ChatArea({
     deleteConversation,
     pendingRemoteDeletions,
     confirmRemoteDeletion,
+    reactions,
+    reactToMessage,
   } = useChat();
   const toast = useToast();
 
@@ -147,6 +150,7 @@ export function ChatArea({
 
   // Attachment menu & voice recording
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [viewOnce, setViewOnce] = useState(false);
@@ -187,10 +191,7 @@ export function ChatArea({
     );
   };
 
-  // Reactions state: messageId -> emoji -> count
-  const [reactions, setReactions] = useState<
-    Record<string, Record<string, number>>
-  >({});
+  // Reactions are now managed by ChatContext
 
   const handleCopyMessage = useCallback(
     (text: string) => {
@@ -200,19 +201,6 @@ export function ChatArea({
     },
     [toast],
   );
-
-  const handleReaction = useCallback((msgId: string, emoji: string) => {
-    setReactions((prev) => {
-      const msgReactions = { ...(prev[msgId] || {}) };
-      if (msgReactions[emoji]) {
-        msgReactions[emoji] -= 1;
-        if (msgReactions[emoji] <= 0) delete msgReactions[emoji];
-      } else {
-        msgReactions[emoji] = 1;
-      }
-      return { ...prev, [msgId]: msgReactions };
-    });
-  }, []);
 
   const handleEnterSelectMode = useCallback(
     (msgId: string, reason: "select" | "delete" = "select") => {
@@ -895,7 +883,8 @@ export function ChatArea({
                   handleEnterSelectMode(msg.id, reason)
                 }
                 reactions={reactions[msg.id]}
-                onReaction={(emoji) => handleReaction(msg.id, emoji)}
+                onReaction={(emoji) => reactToMessage(msg.id, emoji)}
+                currentUserId={user?.id}
                 onViewOnceOpen={() => markViewOnceOpened(msg.id)}
                 onOpenMedia={() => {
                   const idx = allMedia.findIndex((m) => m.messageId === msg.id);
@@ -1112,12 +1101,28 @@ export function ChatArea({
             </div>
 
             {/* Emoji: always on desktop; on mobile only when input is empty */}
-            <button
-              className={`w-11 h-11 rounded-full flex items-center justify-center text-text-secondary shrink-0 hover:bg-card hover:text-text-main transition-colors mr-1 ${inputValue ? "hidden md:flex" : "flex"}`}
-              aria-label="Emoji"
+            <div
+              className={`relative mr-1 ${inputValue ? "hidden md:flex" : "flex"}`}
             >
-              <Smile className="w-[22px] h-[22px]" />
-            </button>
+              <button
+                className="w-11 h-11 rounded-full flex items-center justify-center text-text-secondary shrink-0 hover:bg-card hover:text-text-main transition-colors"
+                aria-label="Emoji"
+                onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+              >
+                <Smile className="w-[22px] h-[22px]" />
+              </button>
+              {isEmojiPickerOpen && (
+                <EmojiPicker
+                  position="top"
+                  align="left"
+                  onSelect={(emoji) => {
+                    setInputValue((prev) => prev + emoji);
+                    setIsEmojiPickerOpen(false);
+                  }}
+                  onClose={() => setIsEmojiPickerOpen(false)}
+                />
+              )}
+            </div>
 
             {isUploading ? (
               <div className="flex-1 flex items-center justify-center px-2">

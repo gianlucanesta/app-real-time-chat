@@ -276,6 +276,80 @@ export function registerMessageHandlers(
     },
   );
 
+  // ── message:react ──
+  socket.on(
+    "message:react",
+    async (
+      data: { messageId: string; conversationId: string; emoji: string },
+      ack: (res: { ok: boolean }) => void,
+    ) => {
+      const { messageId, conversationId, emoji } = data;
+      if (!messageId || !conversationId || !emoji) {
+        if (typeof ack === "function") ack({ ok: false });
+        return;
+      }
+
+      try {
+        // Check if user already reacted with this emoji
+        const existing = await Message.findOne({
+          _id: messageId,
+          "reactions.userId": userId,
+          "reactions.emoji": emoji,
+        });
+
+        let action: "add" | "remove";
+
+        if (existing) {
+          // Remove the reaction (toggle off)
+          await Message.updateOne(
+            { _id: messageId },
+            { $pull: { reactions: { userId, emoji } } },
+          );
+          action = "remove";
+        } else {
+          // Add the reaction
+          await Message.updateOne(
+            { _id: messageId },
+            {
+              $push: {
+                reactions: { userId, emoji, displayName },
+              },
+            },
+          );
+          action = "add";
+        }
+
+        // Broadcast to all participants in the conversation
+        const reactionPayload = {
+          messageId,
+          conversationId,
+          userId,
+          displayName,
+          emoji,
+          action,
+        };
+
+        io.to("conv:" + conversationId).emit(
+          "message:reaction",
+          reactionPayload,
+        );
+        // Also send to users not in the room but part of the conversation
+        const parts = conversationId.split("___");
+        if (parts.length === 2) {
+          const otherId = parts.find((id: string) => id !== userId);
+          if (otherId) {
+            io.to("user:" + otherId).emit("message:reaction", reactionPayload);
+          }
+        }
+
+        if (typeof ack === "function") ack({ ok: true });
+      } catch (err) {
+        console.error("[socket] message:react error:", (err as Error).message);
+        if (typeof ack === "function") ack({ ok: false });
+      }
+    },
+  );
+
   // ── message:viewOnce:open ──
   socket.on(
     "message:viewOnce:open",

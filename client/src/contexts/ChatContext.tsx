@@ -32,6 +32,12 @@ export interface Message {
   isMe: boolean;
 }
 
+export interface Reaction {
+  userId: string;
+  displayName: string;
+  emoji: string;
+}
+
 export interface Conversation {
   id: string;
   type: "direct" | "group";
@@ -84,6 +90,8 @@ interface ChatContextType {
   deleteConversation: () => void;
   pendingRemoteDeletions: string[];
   confirmRemoteDeletion: (ids: string[]) => void;
+  reactions: Record<string, Reaction[]>;
+  reactToMessage: (messageId: string, emoji: string) => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -111,6 +119,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [pendingRemoteDeletions, setPendingRemoteDeletions] = useState<
     string[]
   >([]);
+  const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
   const [hiddenMessageIds, setHiddenMessageIds] = useState<Set<string>>(() => {
     try {
       const stored = localStorage.getItem("hiddenMessageIds");
@@ -123,6 +132,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   // Keep a stable ref to activeConversation so socket handlers don't stale-close
   const activeConvRef = useRef<Conversation | null>(null);
   activeConvRef.current = activeConversation;
+
+  const activeMessagesRef = useRef<Message[]>([]);
+  activeMessagesRef.current = activeMessages;
 
   // Track sent messageId → convId so status updates can find the right conversation
   // even when lastMessageId isn't populated from the server yet
@@ -186,6 +198,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         viewedAt?: string | null;
         status: string;
         createdAt: string;
+        reactions?: Array<{
+          userId: string;
+          emoji: string;
+          displayName: string;
+        }>;
       }>;
     }>(`/messages/${activeConversation.id}`)
       .then(({ messages }) => {
@@ -209,6 +226,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             isMe: m.sender === user?.id,
           })),
         );
+
+        // Populate reactions state from loaded messages
+        const loadedReactions: Record<string, Reaction[]> = {};
+        for (const m of messages) {
+          if (m.reactions && m.reactions.length > 0) {
+            loadedReactions[m._id] = m.reactions;
+          }
+        }
+        setReactions((prev) => ({ ...prev, ...loadedReactions }));
 
         // Mark unread messages as read
         const unreadIds = messages
@@ -561,6 +587,72 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     socket.on("message:expired", handleMessageExpired);
     socket.on("message:deleted", handleMessageDeleted);
     socket.on("message:viewOnce:opened", handleViewOnceOpened);
+
+    const handleReaction = (data: {
+      messageId: string;
+      conversationId: string;
+      userId: string;
+      displayName: string;
+      emoji: string;
+      action: "add" | "remove";
+    }) => {
+      setReactions((prev) => {
+        const msgReactions = [...(prev[data.messageId] || [])];
+        if (data.action === "add") {
+          // Don't duplicate
+          if (
+            !msgReactions.some(
+              (r) => r.userId === data.userId && r.emoji === data.emoji,
+            )
+          ) {
+            msgReactions.push({
+              userId: data.userId,
+              displayName: data.displayName,
+              emoji: data.emoji,
+            });
+          }
+        } else {
+          const idx = msgReactions.findIndex(
+            (r) => r.userId === data.userId && r.emoji === data.emoji,
+          );
+          if (idx >= 0) msgReactions.splice(idx, 1);
+        }
+        return { ...prev, [data.messageId]: msgReactions };
+      });
+      // Update sidebar preview for last message reactions
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (
+            c.id !== data.conversationId ||
+            c.lastMessageId !== data.messageId
+          )
+            return c;
+          if (data.action === "add" && data.userId === user?.id) {
+            // Current user reacted
+            const msgText =
+              activeConvRef.current?.id === data.conversationId
+                ? (() => {
+                    const msg = activeMessagesRef.current.find(
+                      (m) => m.id === data.messageId,
+                    );
+                    if (!msg) return c.lastMessage;
+                    if (msg.mediaType === "audio") return "a voice message";
+                    if (msg.mediaType === "image") return "a photo";
+                    if (msg.mediaType === "video") return "a video";
+                    return `"${msg.text.slice(0, 50)}${msg.text.length > 50 ? "..." : ""}"`;
+                  })()
+                : c.lastMessage;
+            return {
+              ...c,
+              lastMessage: `You reacted ${data.emoji} to: ${msgText}`,
+            };
+          }
+          return c;
+        }),
+      );
+    };
+    socket.on("message:reaction", handleReaction);
+
     socket.on("presence:online", handlePresenceOnline);
     socket.on("presence:offline", handlePresenceOffline);
     socket.on("presence:list", handlePresenceList);
@@ -573,6 +665,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       socket.off("message:expired", handleMessageExpired);
       socket.off("message:deleted", handleMessageDeleted);
       socket.off("message:viewOnce:opened", handleViewOnceOpened);
+      socket.off("message:reaction", handleReaction);
       socket.off("presence:online", handlePresenceOnline);
       socket.off("presence:offline", handlePresenceOffline);
       socket.off("presence:list", handlePresenceList);
@@ -774,6 +867,42 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     );
   }, [activeConversation]);
 
+  // ── React to message ─────────────────────────────────────────────────────
+  const reactToMessage = useCallback(
+    (messageId: string, emoji: string) => {
+      if (!socket || !user) return;
+      const convId = activeConversation?.id;
+      if (!convId) return;
+
+      // Optimistic update
+      setReactions((prev) => {
+        const msgReactions = [...(prev[messageId] || [])];
+        const idx = msgReactions.findIndex(
+          (r) => r.userId === user.id && r.emoji === emoji,
+        );
+        if (idx >= 0) {
+          msgReactions.splice(idx, 1);
+        } else {
+          msgReactions.push({
+            userId: user.id,
+            displayName: user.displayName,
+            emoji,
+          });
+        }
+        return { ...prev, [messageId]: msgReactions };
+      });
+
+      socket.emit(
+        "message:react",
+        { messageId, conversationId: convId, emoji },
+        (ack) => {
+          if (!ack?.ok) console.warn("[chat] reaction failed");
+        },
+      );
+    },
+    [socket, user, activeConversation],
+  );
+
   // ── Send media message ───────────────────────────────────────────────────
   const sendMediaMessage = useCallback(
     (media: {
@@ -930,6 +1059,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         deleteConversation,
         pendingRemoteDeletions,
         confirmRemoteDeletion,
+        reactions,
+        reactToMessage,
       }}
     >
       {children}
