@@ -290,24 +290,29 @@ export function registerMessageHandlers(
       }
 
       try {
-        // Check if user already reacted with this emoji
-        const existing = await Message.findOne({
-          _id: messageId,
-          "reactions.userId": userId,
-          "reactions.emoji": emoji,
-        });
+        // One reaction per user per message: find any existing reaction
+        const msg = await Message.findOne({ _id: messageId });
+        const existingReaction = (msg as any)?.reactions?.find(
+          (r: any) => r.userId === userId,
+        );
 
         let action: "add" | "remove";
 
-        if (existing) {
-          // Remove the reaction (toggle off)
+        if (existingReaction && existingReaction.emoji === emoji) {
+          // Same emoji → toggle off
           await Message.updateOne(
             { _id: messageId },
-            { $pull: { reactions: { userId, emoji } } },
+            { $pull: { reactions: { userId } } },
           );
           action = "remove";
         } else {
-          // Add the reaction
+          // Different emoji or no existing → replace/add
+          if (existingReaction) {
+            await Message.updateOne(
+              { _id: messageId },
+              { $pull: { reactions: { userId } } },
+            );
+          }
           await Message.updateOne(
             { _id: messageId },
             {

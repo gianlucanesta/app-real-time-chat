@@ -6,6 +6,7 @@ interface EditContactPanelProps {
   contactName: string;
   contactInitials: string;
   contactGradient: string;
+  contactAvatarUrl?: string | null;
 }
 
 export function EditContactPanel({
@@ -13,11 +14,12 @@ export function EditContactPanel({
   onClose,
   contactName,
   contactInitials,
-  contactGradient
+  contactGradient,
+  contactAvatarUrl,
 }: EditContactPanelProps) {
   return (
-    <div 
-      className={`edit-contact-panel ${isOpen ? 'open' : ''}`}
+    <div
+      className={`edit-contact-panel ${isOpen ? "open" : ""}`}
       aria-hidden={!isOpen}
     >
       {/* Header */}
@@ -44,12 +46,26 @@ export function EditContactPanel({
       <div className="edit-contact-body">
         {/* Avatar */}
         <div className="ecp-avatar-section">
-          <div 
-            className="ecp-avatar"
-            style={{ background: contactGradient, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            {contactInitials}
-          </div>
+          {contactAvatarUrl ? (
+            <img
+              src={contactAvatarUrl}
+              alt={contactName}
+              className="ecp-avatar rounded-full object-cover"
+            />
+          ) : (
+            <div
+              className="ecp-avatar"
+              style={{
+                background: contactGradient,
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {contactInitials}
+            </div>
+          )}
         </div>
 
         {/* Fields */}
@@ -57,14 +73,24 @@ export function EditContactPanel({
           {/* Name fields */}
           <div className="ecp-field-row">
             <div className="ecp-field-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-[18px] h-[18px]"
+              >
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
               </svg>
             </div>
             <div className="ecp-field-inputs">
               <div className="ecp-field">
-                <label className="ecp-field-label" htmlFor="ecp-first-name">Name</label>
+                <label className="ecp-field-label" htmlFor="ecp-first-name">
+                  Name
+                </label>
                 <input
                   type="text"
                   id="ecp-first-name"
@@ -74,7 +100,9 @@ export function EditContactPanel({
                 />
               </div>
               <div className="ecp-field">
-                <label className="ecp-field-label" htmlFor="ecp-last-name">Last name</label>
+                <label className="ecp-field-label" htmlFor="ecp-last-name">
+                  Last name
+                </label>
                 <input
                   type="text"
                   id="ecp-last-name"
@@ -93,8 +121,14 @@ export function EditContactPanel({
             </div>
             <div className="ecp-phone-fields">
               <div className="ecp-field">
-                <label className="ecp-field-label" htmlFor="ecp-country">Country code</label>
-                <select id="ecp-country" className="ecp-select" defaultValue="+39">
+                <label className="ecp-field-label" htmlFor="ecp-country">
+                  Country code
+                </label>
+                <select
+                  id="ecp-country"
+                  className="ecp-select"
+                  defaultValue="+39"
+                >
                   <option value="+1">US +1</option>
                   <option value="+39">IT +39</option>
                   <option value="+44">UK +44</option>
@@ -104,7 +138,9 @@ export function EditContactPanel({
                 </select>
               </div>
               <div className="ecp-field">
-                <label className="ecp-field-label" htmlFor="ecp-phone">Phone number</label>
+                <label className="ecp-field-label" htmlFor="ecp-phone">
+                  Phone number
+                </label>
                 <div className="ecp-phone-input-row">
                   <input
                     type="tel"
@@ -123,7 +159,15 @@ export function EditContactPanel({
           {/* Sync toggle */}
           <div className="ecp-sync-row">
             <div className="ecp-field-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-[18px] h-[18px]">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-[18px] h-[18px]"
+              >
                 <polyline points="23 4 23 10 17 10" />
                 <polyline points="1 20 1 14 7 14" />
                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
@@ -131,7 +175,9 @@ export function EditContactPanel({
             </div>
             <div className="ecp-sync-text">
               <span className="ecp-sync-label">Sync contact with phone</span>
-              <span className="ecp-sync-sub">This contact will be added to your phone contacts</span>
+              <span className="ecp-sync-sub">
+                This contact will be added to your phone contacts
+              </span>
             </div>
             <label className="ecp-toggle" aria-label="Sync contact">
               <input type="checkbox" id="ecp-sync-toggle" defaultChecked />

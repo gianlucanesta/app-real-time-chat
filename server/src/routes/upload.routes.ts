@@ -17,3 +17,5 @@ uploadRouter.post(
   uploadMiddleware.single("file"),
   ctrl.upload,
 );
+
+uploadRouter.delete("/", authMiddleware, ctrl.deleteUpload);

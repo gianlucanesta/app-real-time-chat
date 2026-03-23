@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import type { UpdateUserBody } from "../interfaces/api.interface.js";
 import * as UserModel from "../models/user.model.js";
+import { Message } from "../models/message.model.js";
 
 /** GET /api/users/me */
 export async function me(
@@ -85,6 +86,36 @@ export async function update(
       res.status(404).json({ error: "User not found" });
       return;
     }
+
+    // Broadcast profile changes to all conversation partners via socket
+    const io = req.app.get("io");
+    if (io) {
+      const safeId = userId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const convIds: string[] = await Message.distinct("conversationId", {
+        conversationId: { $regex: safeId },
+        expires_at: { $gt: new Date() },
+      });
+      const partnerIds = new Set<string>();
+      for (const cid of convIds) {
+        for (const p of cid.split("___")) {
+          if (p !== userId) partnerIds.add(p);
+        }
+      }
+      if (partnerIds.size > 0) {
+        const payload = {
+          userId,
+          displayName: user.display_name,
+          initials: user.initials,
+          avatarGradient:
+            user.avatar_gradient || "linear-gradient(135deg,#2563EB,#7C3AED)",
+          avatarUrl: user.avatar_url || null,
+        };
+        for (const pid of partnerIds) {
+          io.to("user:" + pid).emit("user:profile-updated", payload);
+        }
+      }
+    }
+
     res.status(200).json({ user });
   } catch (err) {
     next(err);

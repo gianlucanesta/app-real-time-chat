@@ -1,5 +1,6 @@
 import {
   Smile,
+  SmilePlus,
   Reply,
   Copy,
   Forward,
@@ -14,7 +15,8 @@ import {
   CircleDot,
   X,
 } from "lucide-react";
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useClickOutside } from "../../hooks/useClickOutside";
 import { AudioPlayer } from "./AudioPlayer";
 import { EmojiPicker } from "./EmojiPicker";
@@ -27,6 +29,7 @@ interface ChatMessageProps {
   isSent: boolean;
   contactInitials?: string;
   contactGradient?: string;
+  contactAvatarUrl?: string | null;
   mediaUrl?: string | null;
   mediaType?: "image" | "video" | "audio" | null;
   mediaDuration?: number | null;
@@ -54,6 +57,7 @@ export function ChatMessage({
   isSent,
   contactInitials,
   contactGradient,
+  contactAvatarUrl,
   mediaUrl,
   mediaType,
   mediaDuration,
@@ -73,7 +77,10 @@ export function ChatMessage({
 }: ChatMessageProps) {
   const [isReactionMenuOpen, setIsReactionMenuOpen] = useState(false);
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
-  const [menuDirection, setMenuDirection] = useState<"down" | "up">("down");
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
+  const contextMenuPortalRef = useRef<HTMLDivElement>(null);
+  const [showFullEmojiPicker, setShowFullEmojiPicker] = useState(false);
+  const [showPanelEmojiPicker, setShowPanelEmojiPicker] = useState(false);
   const [viewOnceConsumed, setViewOnceConsumed] = useState(false);
   const [showViewOnceViewer, setShowViewOnceViewer] = useState(false);
   const chevronRef = useRef<HTMLButtonElement>(null);
@@ -82,8 +89,10 @@ export function ChatMessage({
   const [reactionFilterEmoji, setReactionFilterEmoji] = useState<string | null>(
     null,
   );
-  const reactionDetailRef = useRef<HTMLDivElement>(null);
-  useClickOutside(reactionDetailRef, () => setShowReactionPanel(false));
+  const reactionDetailRef = useClickOutside<HTMLDivElement>(() => {
+    setShowReactionPanel(false);
+    setShowPanelEmojiPicker(false);
+  });
 
   // Group reactions by emoji: { "❤️": [{ userId, displayName }, ...], ... }
   const groupedReactions = useMemo(() => {
@@ -157,12 +166,70 @@ export function ChatMessage({
           ? "Photo"
           : "Message";
 
-  const reactionMenuRef = useClickOutside<HTMLDivElement>(() =>
-    setIsReactionMenuOpen(false),
+  const reactionMenuRef = useClickOutside<HTMLDivElement>(() => {
+    setIsReactionMenuOpen(false);
+  });
+  const contextMenuRef = useClickOutside<HTMLDivElement>(
+    () => setIsContextMenuOpen(false),
+    contextMenuPortalRef,
   );
-  const contextMenuRef = useClickOutside<HTMLDivElement>(() =>
-    setIsContextMenuOpen(false),
+
+  // Compute fixed position for context menu so it's never clipped
+  const MENU_WIDTH = 192; // w-48 = 12rem = 192px
+  const MENU_HEIGHT_EST = isSent ? 370 : 400; // approximate menu height
+  const MENU_MARGIN = 8;
+
+  const computeMenuPosition = useCallback(
+    (trigger: HTMLElement) => {
+      const rect = trigger.getBoundingClientRect();
+      // Use the parent bubble for horizontal alignment
+      const bubble = trigger.closest(
+        '[class*="group/bubble"]',
+      ) as HTMLElement | null;
+      const bubbleRect = bubble?.getBoundingClientRect() ?? rect;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      // Vertical: anchor at chevron top so it overlaps the bubble (WhatsApp-style)
+      let top: number;
+      const spaceBelow = vh - rect.top;
+      const spaceAbove = rect.bottom;
+      if (spaceBelow >= MENU_HEIGHT_EST + MENU_MARGIN) {
+        top = rect.top;
+      } else if (spaceAbove >= MENU_HEIGHT_EST + MENU_MARGIN) {
+        top = rect.bottom - MENU_HEIGHT_EST;
+      } else {
+        top = Math.max(
+          MENU_MARGIN,
+          Math.min(vh - MENU_HEIGHT_EST - MENU_MARGIN, rect.top),
+        );
+      }
+
+      // Horizontal: align to bubble edge
+      let left: number;
+      if (isSent) {
+        left = bubbleRect.right - MENU_WIDTH;
+      } else {
+        left = bubbleRect.left;
+      }
+      // Clamp horizontally
+      left = Math.max(
+        MENU_MARGIN,
+        Math.min(vw - MENU_WIDTH - MENU_MARGIN, left),
+      );
+
+      setMenuStyle({ top, left });
+    },
+    [isSent],
   );
+
+  // Close context menu on scroll (the menu is fixed and would float away)
+  useEffect(() => {
+    if (!isContextMenuOpen) return;
+    const handleScroll = () => setIsContextMenuOpen(false);
+    window.addEventListener("scroll", handleScroll, true);
+    return () => window.removeEventListener("scroll", handleScroll, true);
+  }, [isContextMenuOpen]);
 
   return (
     <div
@@ -293,6 +360,7 @@ export function ChatMessage({
                         isSent={isSent}
                         contactInitials={contactInitials}
                         contactGradient={contactGradient}
+                        contactAvatarUrl={contactAvatarUrl}
                         onFinish={
                           viewOnce && !isSent
                             ? handleViewOnceAudioFinish
@@ -334,9 +402,7 @@ export function ChatMessage({
                     onClick={(e) => {
                       e.stopPropagation();
                       if (!isContextMenuOpen && chevronRef.current) {
-                        const rect = chevronRef.current.getBoundingClientRect();
-                        const spaceBelow = window.innerHeight - rect.bottom;
-                        setMenuDirection(spaceBelow > 320 ? "down" : "up");
+                        computeMenuPosition(chevronRef.current);
                       }
                       setIsContextMenuOpen(!isContextMenuOpen);
                       setIsReactionMenuOpen(false);
@@ -357,9 +423,7 @@ export function ChatMessage({
                     onClick={(e) => {
                       e.stopPropagation();
                       if (!isContextMenuOpen && chevronRef.current) {
-                        const rect = chevronRef.current.getBoundingClientRect();
-                        const spaceBelow = window.innerHeight - rect.bottom;
-                        setMenuDirection(spaceBelow > 320 ? "down" : "up");
+                        computeMenuPosition(chevronRef.current);
                       }
                       setIsContextMenuOpen(!isContextMenuOpen);
                       setIsReactionMenuOpen(false);
@@ -402,96 +466,85 @@ export function ChatMessage({
                           {emoji}
                         </button>
                       ))}
-                      <div className="relative">
-                        <button
-                          className="w-8 h-8 rounded-full hover:bg-input flex items-center justify-center text-text-secondary transition-colors"
-                          onClick={() =>
-                            setShowFullEmojiPicker(!showFullEmojiPicker)
-                          }
-                        >
-                          <span className="text-[18px] leading-none">+</span>
-                        </button>
-                        {showFullEmojiPicker && (
-                          <EmojiPicker
-                            position="bottom"
-                            align={isSent ? "right" : "left"}
-                            onSelect={(emoji) => {
-                              onReaction?.(emoji);
-                              setShowFullEmojiPicker(false);
-                              setIsReactionMenuOpen(false);
-                            }}
-                            onClose={() => setShowFullEmojiPicker(false)}
-                          />
-                        )}
-                      </div>
+                      <button
+                        className="w-8 h-8 rounded-full hover:bg-input flex items-center justify-center text-text-secondary transition-colors"
+                        onClick={() => {
+                          setIsReactionMenuOpen(false);
+                          setShowFullEmojiPicker(true);
+                        }}
+                      >
+                        <span className="text-[18px] leading-none">+</span>
+                      </button>
                     </div>
                   )}
                 </div>
               </div>
             )}
 
-            {/* Context Menu — positioned relative to bubble wrapper */}
-            {!isSelectMode && isContextMenuOpen && (
-              <div
-                className={`absolute ${
-                  menuDirection === "down"
-                    ? "top-full mt-1"
-                    : "bottom-full mb-1"
-                } w-48 bg-card border border-border/80 rounded-xl shadow-xl py-2 z-50 animate-in fade-in zoom-in-95 ${
-                  isSent ? "right-0" : "left-0"
-                }`}
-              >
-                <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
-                  <Info className="w-4 h-4 text-text-secondary" /> Message info
-                </button>
-                <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
-                  <Reply className="w-4 h-4 text-text-secondary" /> Reply
-                </button>
-                <button
-                  className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
-                  onClick={() => {
-                    onCopy?.();
-                    setIsContextMenuOpen(false);
-                  }}
+            {/* Context Menu — rendered via portal with fixed positioning */}
+            {!isSelectMode &&
+              isContextMenuOpen &&
+              createPortal(
+                <div
+                  ref={contextMenuPortalRef}
+                  className="fixed w-48 bg-card border border-border/80 rounded-xl shadow-xl py-2 z-[9999] animate-in fade-in zoom-in-95"
+                  style={menuStyle}
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <Copy className="w-4 h-4 text-text-secondary" /> Copy
-                </button>
-                <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
-                  <Forward className="w-4 h-4 text-text-secondary" /> Forward
-                </button>
-                <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
-                  <Pin className="w-4 h-4 text-text-secondary" /> Pin
-                </button>
-                <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
-                  <Star className="w-4 h-4 text-text-secondary" /> Star
-                </button>
-                <button
-                  className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
-                  onClick={() => {
-                    onEnterSelectMode?.();
-                    setIsContextMenuOpen(false);
-                  }}
-                >
-                  <CheckSquare className="w-4 h-4 text-text-secondary" /> Select
-                </button>
-                {!isSent && (
                   <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
-                    <AlertTriangle className="w-4 h-4 text-text-secondary" />{" "}
-                    Report
+                    <Info className="w-4 h-4 text-text-secondary" /> Message
+                    info
                   </button>
-                )}
-                <div className="w-full h-px bg-border/50 my-1"></div>
-                <button
-                  className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-danger hover:bg-danger/10 transition-colors font-medium"
-                  onClick={() => {
-                    onEnterSelectMode?.("delete");
-                    setIsContextMenuOpen(false);
-                  }}
-                >
-                  <Trash2 className="w-4 h-4" /> Delete
-                </button>
-              </div>
-            )}
+                  <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
+                    <Reply className="w-4 h-4 text-text-secondary" /> Reply
+                  </button>
+                  <button
+                    className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
+                    onClick={() => {
+                      onCopy?.();
+                      setIsContextMenuOpen(false);
+                    }}
+                  >
+                    <Copy className="w-4 h-4 text-text-secondary" /> Copy
+                  </button>
+                  <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
+                    <Forward className="w-4 h-4 text-text-secondary" /> Forward
+                  </button>
+                  <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
+                    <Pin className="w-4 h-4 text-text-secondary" /> Pin
+                  </button>
+                  <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
+                    <Star className="w-4 h-4 text-text-secondary" /> Star
+                  </button>
+                  <button
+                    className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
+                    onClick={() => {
+                      onEnterSelectMode?.();
+                      setIsContextMenuOpen(false);
+                    }}
+                  >
+                    <CheckSquare className="w-4 h-4 text-text-secondary" />{" "}
+                    Select
+                  </button>
+                  {!isSent && (
+                    <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
+                      <AlertTriangle className="w-4 h-4 text-text-secondary" />{" "}
+                      Report
+                    </button>
+                  )}
+                  <div className="w-full h-px bg-border/50 my-1"></div>
+                  <button
+                    className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-danger hover:bg-danger/10 transition-colors font-medium"
+                    onClick={() => {
+                      onEnterSelectMode?.("delete");
+                      setIsContextMenuOpen(false);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" /> Delete
+                  </button>
+                </div>,
+                document.body,
+              )}
           </div>
 
           {/* Reaction strip — overlaps bottom of bubble */}
@@ -526,33 +579,22 @@ export function ChatMessage({
                   {/* Header */}
                   <div className="px-4 pt-3 pb-2 text-[13px] font-semibold text-text-main">
                     {reactions!.length}{" "}
-                    {reactions!.length === 1 ? "reazione" : "reazioni"}
+                    {reactions!.length === 1 ? "reaction" : "reactions"}
                   </div>
 
                   {/* Emoji filter tabs */}
                   <div className="flex items-center gap-1 px-3 pb-2 border-b border-border/50">
-                    <div className="relative">
-                      <button
-                        className={`px-2 py-1 rounded-full text-[16px] transition-colors text-text-secondary hover:bg-input/60`}
-                        onClick={() =>
-                          setShowPanelEmojiPicker(!showPanelEmojiPicker)
-                        }
-                        title="Aggiungi reazione"
-                      >
-                        😊
-                      </button>
-                      {showPanelEmojiPicker && (
-                        <EmojiPicker
-                          position="bottom"
-                          align={isSent ? "right" : "left"}
-                          onSelect={(emoji) => {
-                            onReaction?.(emoji);
-                            setShowPanelEmojiPicker(false);
-                          }}
-                          onClose={() => setShowPanelEmojiPicker(false)}
-                        />
-                      )}
-                    </div>
+                    <button
+                      className={`px-2 py-1 rounded-full transition-colors text-text-secondary hover:text-text-main hover:bg-input/60`}
+                      onClick={() => {
+                        setShowReactionPanel(false);
+                        setShowPanelEmojiPicker(false);
+                        setShowFullEmojiPicker(true);
+                      }}
+                      title="Add reaction"
+                    >
+                      <SmilePlus className="w-[18px] h-[18px]" />
+                    </button>
                     {Object.entries(groupedReactions).map(([emoji, users]) => (
                       <button
                         key={emoji}
@@ -617,12 +659,12 @@ export function ChatMessage({
                           <div className="flex-1 min-w-0">
                             <div className="text-[13px] font-medium text-text-main truncate">
                               {u.userId === currentUserId
-                                ? "Tu"
+                                ? "You"
                                 : u.displayName}
                             </div>
                             {u.userId === currentUserId && (
                               <div className="text-[11px] text-text-secondary">
-                                Clicca per rimuovere
+                                Tap to remove
                               </div>
                             )}
                           </div>
@@ -636,6 +678,23 @@ export function ChatMessage({
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Standalone full emoji picker — rendered at message level */}
+          {showFullEmojiPicker && (
+            <div
+              className={`relative z-[70] ${isSent ? "flex justify-end mr-1" : "ml-1"}`}
+            >
+              <EmojiPicker
+                position="top"
+                align={isSent ? "right" : "left"}
+                onSelect={(emoji) => {
+                  onReaction?.(emoji);
+                  setShowFullEmojiPicker(false);
+                }}
+                onClose={() => setShowFullEmojiPicker(false)}
+              />
             </div>
           )}
 

@@ -7,6 +7,31 @@ import {
 } from "@tanstack/react-router";
 import "./index.css";
 
+/* ── Prevent all zoom (keyboard + touch) ────────────── */
+document.addEventListener("keydown", (e) => {
+  if (
+    (e.ctrlKey || e.metaKey) &&
+    (e.key === "+" || e.key === "-" || e.key === "=" || e.key === "0")
+  ) {
+    e.preventDefault();
+  }
+});
+document.addEventListener(
+  "wheel",
+  (e) => {
+    if (e.ctrlKey) e.preventDefault();
+  },
+  { passive: false },
+);
+document.addEventListener("gesturestart", (e) => e.preventDefault());
+document.addEventListener("gesturechange", (e) => e.preventDefault());
+document.addEventListener("gestureend", (e) => e.preventDefault());
+
+/* ── Restore persisted text size ─────────────────────── */
+const savedTextSize = localStorage.getItem("ephemeral-text-size");
+if (savedTextSize)
+  document.documentElement.style.fontSize = `${savedTextSize}%`;
+
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
 

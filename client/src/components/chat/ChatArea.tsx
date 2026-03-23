@@ -302,6 +302,8 @@ export function ChatArea({
     : "";
   const myGradient =
     user?.avatarGradient || "linear-gradient(135deg,#2563EB,#7C3AED)";
+  const myAvatarUrl = user?.avatarUrl || null;
+  const contactAvatarUrl = activeConversation?.avatar || null;
 
   // Scroll-to-bottom logic
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -587,6 +589,7 @@ export function ChatArea({
         contactName={contactName}
         contactInitials={contactInitials}
         contactGradient={contactGradient}
+        contactAvatarUrl={contactAvatarUrl}
       />
       <EditContactPanel
         isOpen={isEditContactOpen}
@@ -594,10 +597,11 @@ export function ChatArea({
         contactName={contactName}
         contactInitials={contactInitials}
         contactGradient={contactGradient}
+        contactAvatarUrl={contactAvatarUrl}
       />
 
       {/* Chat Header */}
-      <div className="chat-header z-10">
+      <div className="chat-header z-[75]">
         <div
           className="flex items-center gap-3 md:gap-4 cursor-pointer hover:bg-input/50 p-1.5 md:p-2 -ml-1.5 md:-ml-2 rounded-xl transition-colors"
           onClick={handleOpenContactInfo}
@@ -617,12 +621,20 @@ export function ChatArea({
             </button>
           )}
           <div className="relative inline-block">
-            <div
-              className="w-10 h-10 md:w-[42px] md:h-[42px] rounded-full flex items-center justify-center font-bold text-[13px] md:text-[14px] text-white shrink-0"
-              style={{ background: contactGradient }}
-            >
-              {contactInitials}
-            </div>
+            {contactAvatarUrl ? (
+              <img
+                src={contactAvatarUrl}
+                alt={contactName}
+                className="w-10 h-10 md:w-[42px] md:h-[42px] rounded-full object-cover shrink-0"
+              />
+            ) : (
+              <div
+                className="w-10 h-10 md:w-[42px] md:h-[42px] rounded-full flex items-center justify-center font-bold text-[13px] md:text-[14px] text-white shrink-0"
+                style={{ background: contactGradient }}
+              >
+                {contactInitials}
+              </div>
+            )}
             {isContactOnline && (
               <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-success border-2 border-bg box-content"></span>
             )}
@@ -702,15 +714,23 @@ export function ChatArea({
               <ChevronDown className="call-chevron" />
             </button>
             {isCallMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-64 bg-card border border-border/80 rounded-xl shadow-xl py-3 z-50 animate-in fade-in slide-in-from-top-2">
+              <div className="absolute right-0 top-full mt-2 w-64 bg-card border border-border/80 rounded-xl shadow-xl py-3 z-[80] animate-in fade-in slide-in-from-top-2">
                 {/* Contact header */}
                 <div className="px-4 py-2 flex items-center gap-3 mb-3">
-                  <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-[11px] text-white shrink-0"
-                    style={{ background: contactGradient }}
-                  >
-                    {contactInitials}
-                  </div>
+                  {contactAvatarUrl ? (
+                    <img
+                      src={contactAvatarUrl}
+                      alt={contactName}
+                      className="w-9 h-9 rounded-full object-cover shrink-0"
+                    />
+                  ) : (
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-[11px] text-white shrink-0"
+                      style={{ background: contactGradient }}
+                    >
+                      {contactInitials}
+                    </div>
+                  )}
                   <span className="text-[14px] font-semibold text-text-main truncate">
                     {contactName}
                   </span>
@@ -774,7 +794,7 @@ export function ChatArea({
               <MoreVertical className="w-5 h-5" />
             </button>
             {isMoreMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-64 bg-card border border-border/80 rounded-xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2">
+              <div className="absolute right-0 top-full mt-2 w-64 bg-card border border-border/80 rounded-xl shadow-xl py-2 z-[80] animate-in fade-in slide-in-from-top-2">
                 <button
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors"
                   onClick={() => {
@@ -875,6 +895,7 @@ export function ChatArea({
                 viewedAt={msg.viewedAt}
                 contactInitials={msg.isMe ? myInitials : contactInitials}
                 contactGradient={msg.isMe ? myGradient : contactGradient}
+                contactAvatarUrl={msg.isMe ? myAvatarUrl : contactAvatarUrl}
                 isSelectMode={isSelectMode}
                 isSelected={selectedMessages.includes(msg.id)}
                 onToggleSelect={() => toggleMessageSelection(msg.id)}
@@ -1065,7 +1086,7 @@ export function ChatArea({
       </div>
 
       {/* Chat Input Area */}
-      <div className="absolute bottom-0 left-0 right-0 px-3 pb-2 md:px-4 md:pb-2 pt-12 bg-gradient-to-t from-bg via-bg to-transparent">
+      <div className="absolute bottom-0 left-0 right-0 z-20 px-3 pb-2 md:px-4 md:pb-2 pt-12 bg-gradient-to-t from-bg via-bg to-transparent">
         {isRecording ? (
           <VoiceRecorder
             onSend={handleVoiceSend}
@@ -1221,6 +1242,7 @@ export function ChatArea({
         contactName={contactName}
         contactInitials={contactInitials}
         contactGradient={contactGradient}
+        contactAvatarUrl={contactAvatarUrl}
         localStream={webrtc.localStream}
         remoteStream={webrtc.remoteStream}
         isMuted={webrtc.isMuted}

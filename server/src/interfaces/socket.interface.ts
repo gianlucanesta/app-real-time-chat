@@ -68,6 +68,13 @@ export interface ServerToClientEvents {
   "call:ended": (data: { from: string }) => void;
   "call:rejected": (data: { from: string }) => void;
   "call:busy": (data: { from: string }) => void;
+  "user:profile-updated": (data: {
+    userId: string;
+    displayName: string;
+    initials: string;
+    avatarGradient: string;
+    avatarUrl: string | null;
+  }) => void;
 }
 
 export interface ClientToServerEvents {

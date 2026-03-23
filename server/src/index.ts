@@ -66,6 +66,9 @@ async function start(): Promise<void> {
 
     initSocket(io as any);
 
+    // Expose io on app so REST controllers can emit socket events
+    app.set("io", io);
+
     // ── Database connections ───────────────────────────────────────────────
     await initSchema();
     await connectMongo();

@@ -95,16 +95,24 @@ export function VerticalNav() {
         {/* Bottom icons */}
         <div className="flex flex-col gap-1 w-full items-center">
           <Link to="/settings" title="Profile">
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold cursor-pointer border-2 border-transparent hover:border-accent transition-colors"
-              style={{
-                background:
-                  user?.avatarGradient ||
-                  "linear-gradient(135deg, #6366f1, #a855f7)",
-              }}
-            >
-              {profileInitials}
-            </div>
+            {user?.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt="Profile"
+                className="w-10 h-10 rounded-full object-cover cursor-pointer border-2 border-transparent hover:border-accent transition-colors"
+              />
+            ) : (
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold cursor-pointer border-2 border-transparent hover:border-accent transition-colors"
+                style={{
+                  background:
+                    user?.avatarGradient ||
+                    "linear-gradient(135deg, #6366f1, #a855f7)",
+                }}
+              >
+                {profileInitials}
+              </div>
+            )}
           </Link>
         </div>
       </nav>
@@ -156,16 +164,24 @@ export function VerticalNav() {
             <div
               className={`rounded-full p-[2px] ${isActive("/settings") ? "border-2 border-accent" : ""}`}
             >
-              <div
-                className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[9px] font-semibold"
-                style={{
-                  background:
-                    user?.avatarGradient ||
-                    "linear-gradient(135deg, #6366f1, #a855f7)",
-                }}
-              >
-                {profileInitials}
-              </div>
+              {user?.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt="Profile"
+                  className="w-6 h-6 rounded-full object-cover"
+                />
+              ) : (
+                <div
+                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[9px] font-semibold"
+                  style={{
+                    background:
+                      user?.avatarGradient ||
+                      "linear-gradient(135deg, #6366f1, #a855f7)",
+                  }}
+                >
+                  {profileInitials}
+                </div>
+              )}
             </div>
             <span className="text-[10px] font-medium">You</span>
           </Link>

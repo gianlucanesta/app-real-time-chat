@@ -56,6 +56,13 @@ export interface Conversation {
   lastMessageViewOnce?: boolean;
   lastMessageViewedAt?: string | null;
   lastMessageDeleted?: boolean;
+  lastReaction?: string;
+  reactionHistory?: Array<{
+    userId: string;
+    displayName: string;
+    emoji: string;
+    text: string;
+  }>;
   unreadCount: number;
   isOnline?: boolean;
   participants: string[];
@@ -135,6 +142,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const activeMessagesRef = useRef<Message[]>([]);
   activeMessagesRef.current = activeMessages;
+
+  const reactionsRef = useRef<Record<string, Reaction[]>>({});
+  reactionsRef.current = reactions;
 
   // Track sent messageId → convId so status updates can find the right conversation
   // even when lastMessageId isn't populated from the server yet
@@ -369,6 +379,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
               lastMessageViewOnce: msg.viewOnce || false,
               lastMessageViewedAt: msg.viewedAt || null,
               lastMessageDeleted: false,
+              lastReaction: undefined,
+              reactionHistory: [],
               unreadCount: isMe || isActive ? c.unreadCount : c.unreadCount + 1,
             };
           });
@@ -599,18 +611,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setReactions((prev) => {
         const msgReactions = [...(prev[data.messageId] || [])];
         if (data.action === "add") {
-          // Don't duplicate
-          if (
-            !msgReactions.some(
-              (r) => r.userId === data.userId && r.emoji === data.emoji,
-            )
-          ) {
-            msgReactions.push({
-              userId: data.userId,
-              displayName: data.displayName,
-              emoji: data.emoji,
-            });
-          }
+          // One reaction per user: remove any existing first
+          const existingIdx = msgReactions.findIndex(
+            (r) => r.userId === data.userId,
+          );
+          if (existingIdx >= 0) msgReactions.splice(existingIdx, 1);
+          msgReactions.push({
+            userId: data.userId,
+            displayName: data.displayName,
+            emoji: data.emoji,
+          });
         } else {
           const idx = msgReactions.findIndex(
             (r) => r.userId === data.userId && r.emoji === data.emoji,
@@ -619,33 +629,53 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         }
         return { ...prev, [data.messageId]: msgReactions };
       });
-      // Update sidebar preview for last message reactions
+      // Update sidebar preview for last message reactions (with history stack)
       setConversations((prev) =>
         prev.map((c) => {
-          if (
-            c.id !== data.conversationId ||
-            c.lastMessageId !== data.messageId
-          )
-            return c;
-          if (data.action === "add" && data.userId === user?.id) {
-            // Current user reacted
+          if (c.id !== data.conversationId) return c;
+          const history = [...(c.reactionHistory || [])];
+          if (data.action === "add") {
             const msgText =
               activeConvRef.current?.id === data.conversationId
                 ? (() => {
                     const msg = activeMessagesRef.current.find(
                       (m) => m.id === data.messageId,
                     );
-                    if (!msg) return c.lastMessage;
-                    if (msg.mediaType === "audio") return "a voice message";
-                    if (msg.mediaType === "image") return "a photo";
-                    if (msg.mediaType === "video") return "a video";
+                    if (!msg) return c.lastMessage || "";
+                    if (msg.mediaType === "audio") return "🎤 Voice message";
+                    if (msg.mediaType === "image") return "📷 Photo";
+                    if (msg.mediaType === "video") return "🎥 Video";
                     return `"${msg.text.slice(0, 50)}${msg.text.length > 50 ? "..." : ""}"`;
                   })()
-                : c.lastMessage;
+                : c.lastMessage || "";
+            const prefix =
+              data.userId === user?.id
+                ? "You reacted with"
+                : `${data.displayName} reacted with`;
+            const reactionText = `${prefix} ${data.emoji} to: ${msgText}`;
+            // Remove any previous entry by same user, then push new
+            const filtered = history.filter((e) => e.userId !== data.userId);
+            filtered.push({
+              userId: data.userId,
+              displayName: data.displayName,
+              emoji: data.emoji,
+              text: reactionText,
+            });
             return {
               ...c,
-              lastMessage: `You reacted ${data.emoji} to: ${msgText}`,
+              reactionHistory: filtered,
+              lastReaction: reactionText,
             };
+          }
+          if (data.action === "remove") {
+            const filtered = history.filter(
+              (e) => !(e.userId === data.userId && e.emoji === data.emoji),
+            );
+            const last =
+              filtered.length > 0
+                ? filtered[filtered.length - 1].text
+                : undefined;
+            return { ...c, reactionHistory: filtered, lastReaction: last };
           }
           return c;
         }),
@@ -657,6 +687,41 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     socket.on("presence:offline", handlePresenceOffline);
     socket.on("presence:list", handlePresenceList);
     socket.on("typing", handleTyping);
+
+    const handleProfileUpdated = (data: {
+      userId: string;
+      displayName: string;
+      initials: string;
+      avatarGradient: string;
+      avatarUrl: string | null;
+    }) => {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.participants.includes(data.userId)
+            ? {
+                ...c,
+                name: data.displayName,
+                initials: data.initials,
+                gradient: data.avatarGradient,
+                avatar: data.avatarUrl || undefined,
+              }
+            : c,
+        ),
+      );
+      // Also update activeConversation if it involves this user
+      setActiveConversation((prev) =>
+        prev && prev.participants.includes(data.userId)
+          ? {
+              ...prev,
+              name: data.displayName,
+              initials: data.initials,
+              gradient: data.avatarGradient,
+              avatar: data.avatarUrl || undefined,
+            }
+          : prev,
+      );
+    };
+    socket.on("user:profile-updated", handleProfileUpdated);
 
     return () => {
       socket.off("message:new", handleNewMessage);
@@ -670,6 +735,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       socket.off("presence:offline", handlePresenceOffline);
       socket.off("presence:list", handlePresenceList);
       socket.off("typing", handleTyping);
+      socket.off("user:profile-updated", handleProfileUpdated);
     };
   }, [socket, user]);
 
@@ -874,23 +940,71 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       const convId = activeConversation?.id;
       if (!convId) return;
 
-      // Optimistic update
+      // Peek at current reactions to determine add vs remove
+      const currentReactions = reactionsRef.current[messageId] || [];
+      const existing = currentReactions.find((r) => r.userId === user.id);
+      const isRemove = !!existing && existing.emoji === emoji;
+
+      // Optimistic update: one reaction per user — replace or toggle off
       setReactions((prev) => {
         const msgReactions = [...(prev[messageId] || [])];
-        const idx = msgReactions.findIndex(
-          (r) => r.userId === user.id && r.emoji === emoji,
-        );
-        if (idx >= 0) {
-          msgReactions.splice(idx, 1);
-        } else {
-          msgReactions.push({
+        const existingIdx = msgReactions.findIndex((r) => r.userId === user.id);
+        if (existingIdx >= 0) {
+          const ex = msgReactions[existingIdx];
+          msgReactions.splice(existingIdx, 1);
+          if (ex.emoji === emoji) {
+            return { ...prev, [messageId]: msgReactions };
+          }
+        }
+        msgReactions.push({
+          userId: user.id,
+          displayName: user.displayName,
+          emoji,
+        });
+        return { ...prev, [messageId]: msgReactions };
+      });
+
+      // Optimistic sidebar update — mirrors handleReaction but instant
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== convId) return c;
+          const history = [...(c.reactionHistory || [])];
+          if (isRemove) {
+            const filtered = history.filter(
+              (e) => !(e.userId === user.id && e.emoji === emoji),
+            );
+            const last =
+              filtered.length > 0
+                ? filtered[filtered.length - 1].text
+                : undefined;
+            return { ...c, reactionHistory: filtered, lastReaction: last };
+          }
+          // Add / replace
+          const msg = activeMessagesRef.current.find((m) => m.id === messageId);
+          const msgText = !msg
+            ? c.lastMessage || ""
+            : msg.mediaType === "audio"
+              ? "🎤 Voice message"
+              : msg.mediaType === "image"
+                ? "📷 Photo"
+                : msg.mediaType === "video"
+                  ? "🎥 Video"
+                  : `"${msg.text.slice(0, 50)}${msg.text.length > 50 ? "..." : ""}"`;
+          const reactionText = `You reacted with ${emoji} to: ${msgText}`;
+          const filtered = history.filter((e) => e.userId !== user.id);
+          filtered.push({
             userId: user.id,
             displayName: user.displayName,
             emoji,
+            text: reactionText,
           });
-        }
-        return { ...prev, [messageId]: msgReactions };
-      });
+          return {
+            ...c,
+            reactionHistory: filtered,
+            lastReaction: reactionText,
+          };
+        }),
+      );
 
       socket.emit(
         "message:react",

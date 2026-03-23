@@ -16,6 +16,7 @@ interface CallScreenProps {
   contactName: string;
   contactInitials: string;
   contactGradient: string;
+  contactAvatarUrl?: string | null;
   localStream: MediaStream | null;
   remoteStream: MediaStream | null;
   isMuted: boolean;
@@ -34,6 +35,7 @@ export function CallScreen({
   contactName,
   contactInitials,
   contactGradient,
+  contactAvatarUrl,
   localStream,
   remoteStream,
   isMuted,
@@ -113,12 +115,20 @@ export function CallScreen({
           />
         ) : (
           <>
-            <div
-              className="call-avatar"
-              style={{ background: contactGradient }}
-            >
-              {contactInitials}
-            </div>
+            {contactAvatarUrl ? (
+              <img
+                src={contactAvatarUrl}
+                alt={contactName}
+                className="call-avatar rounded-full object-cover"
+              />
+            ) : (
+              <div
+                className="call-avatar"
+                style={{ background: contactGradient }}
+              >
+                {contactInitials}
+              </div>
+            )}
             <div className="call-name">{contactName}</div>
 
             {/* Status text */}

@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { cloudinary } from "../config/cloudinary.js";
+import { deleteCloudinaryAsset } from "../services/cloudinary.service.js";
 
 const ALLOWED_TYPES: Record<string, string[]> = {
   image: ["image/jpeg", "image/png", "image/gif", "image/webp"],
@@ -71,6 +72,26 @@ export async function upload(
       mediaType,
       duration: result.duration || null,
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** DELETE /api/upload — delete a Cloudinary asset by URL */
+export async function deleteUpload(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { url } = req.body as { url?: string };
+    if (!url || typeof url !== "string") {
+      res.status(400).json({ error: "url is required" });
+      return;
+    }
+
+    await deleteCloudinaryAsset(url, "image");
+    res.status(200).json({ deleted: true });
   } catch (err) {
     next(err);
   }

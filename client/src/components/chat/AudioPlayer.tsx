@@ -8,6 +8,7 @@ interface AudioPlayerProps {
   isSent: boolean;
   contactInitials?: string;
   contactGradient?: string;
+  contactAvatarUrl?: string | null;
   onPlay?: () => void;
   onFinish?: () => void;
 }
@@ -20,6 +21,7 @@ export function AudioPlayer({
   isSent,
   contactInitials,
   contactGradient,
+  contactAvatarUrl,
   onPlay,
   onFinish,
 }: AudioPlayerProps) {
@@ -135,6 +137,12 @@ export function AudioPlayer({
           >
             {playbackRate}x
           </button>
+        ) : contactAvatarUrl ? (
+          <img
+            src={contactAvatarUrl}
+            alt=""
+            className="w-12 h-12 rounded-full object-cover shrink-0"
+          />
         ) : contactInitials ? (
           <div
             className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-white"

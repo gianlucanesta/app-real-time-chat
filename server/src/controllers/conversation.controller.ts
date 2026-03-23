@@ -79,6 +79,7 @@ export async function list(
             partner?.avatar_gradient ??
             "linear-gradient(135deg,#2563EB,#7C3AED)",
           initials: partner?.initials ?? "??",
+          avatar: partner?.avatar_url ?? null,
           lastMessage: msgDoc
             ? lastMessageIsMine
               ? `You: ${msgDoc.text}`

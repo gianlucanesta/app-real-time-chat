@@ -339,19 +339,27 @@ export function Sidebar({
           <div
             key={chat.id}
             onClick={() => setActiveConversation(chat)}
-            className={`flex items-center gap-3 px-4 py-3.5 md:py-3 cursor-pointer transition-colors relative ${
+            className={`group flex items-center gap-3 px-4 py-3.5 md:py-3 cursor-pointer transition-colors relative ${
               activeConversation?.id === chat.id
                 ? "bg-accent/5 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-accent before:rounded-r-full"
                 : "hover:bg-input/50"
             }`}
           >
             <div className="relative inline-block shrink-0">
-              <div
-                className="w-[48px] h-[48px] min-w-[48px] md:w-[42px] md:h-[42px] md:min-w-[42px] rounded-full flex items-center justify-center font-bold text-[14px] md:text-[13px] text-white"
-                style={{ background: chat.gradient }}
-              >
-                {chat.initials}
-              </div>
+              {chat.avatar ? (
+                <img
+                  src={chat.avatar}
+                  alt={chat.name}
+                  className="w-[48px] h-[48px] min-w-[48px] md:w-[42px] md:h-[42px] md:min-w-[42px] rounded-full object-cover"
+                />
+              ) : (
+                <div
+                  className="w-[48px] h-[48px] min-w-[48px] md:w-[42px] md:h-[42px] md:min-w-[42px] rounded-full flex items-center justify-center font-bold text-[14px] md:text-[13px] text-white"
+                  style={{ background: chat.gradient }}
+                >
+                  {chat.initials}
+                </div>
+              )}
               {chat.isOnline && (
                 <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-success border-2 border-bg md:border-card box-content"></span>
               )}
@@ -362,16 +370,23 @@ export function Sidebar({
                 <span className="font-semibold text-[14px] text-text-main whitespace-nowrap overflow-hidden text-ellipsis">
                   {chat.name}
                 </span>
-                <span
-                  className={`text-[11px] whitespace-nowrap shrink-0 ${chat.unreadCount > 0 ? "text-accent font-medium" : "text-text-secondary"}`}
-                >
-                  {chat.lastMessageTime}
-                </span>
+                <div className="flex items-center gap-1 shrink-0">
+                  <span
+                    className={`text-[11px] whitespace-nowrap ${chat.unreadCount > 0 ? "text-accent font-medium" : "text-text-secondary"}`}
+                  >
+                    {chat.lastMessageTime}
+                  </span>
+                  <ChevronDown className="w-3.5 h-3.5 text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
               </div>
               <div className="flex items-center justify-between gap-2">
                 {chat.isTyping ? (
                   <span className="text-[13px] text-accent italic whitespace-nowrap overflow-hidden text-ellipsis min-w-0">
                     typing...
+                  </span>
+                ) : chat.lastReaction ? (
+                  <span className="text-[13px] whitespace-nowrap overflow-hidden text-ellipsis text-text-secondary min-w-0">
+                    {chat.lastReaction}
                   </span>
                 ) : (
                   <span className="flex items-center gap-1 min-w-0 overflow-hidden">

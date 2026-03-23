@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   Grid,
   User,
@@ -11,21 +11,47 @@ import {
   Mail,
   Phone,
   Briefcase,
-  ShieldCheck,
   HelpCircle,
   Search,
   Keyboard,
   ChevronRight,
   ChevronLeft,
   MessageSquare,
+  Globe,
+  Type,
+  Eye,
+  ImageUp,
+  Trash2,
+  Check,
+  Loader2,
+  Video,
+  X,
 } from "lucide-react";
+import { useClickOutside } from "../hooks/useClickOutside";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
-import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { apiFetch, normalizeUser } from "../lib/api";
+import { Select } from "../components/ui/select";
+import { apiFetch, normalizeUser, getAccessToken } from "../lib/api";
 import type { User as UserType } from "../types";
+
+const LANGUAGE_OPTIONS = [
+  { value: "en", label: "English" },
+  { value: "it", label: "Italiano \u2014 coming soon", disabled: true },
+  { value: "es", label: "Espa\u00f1ol \u2014 coming soon", disabled: true },
+  { value: "fr", label: "Fran\u00e7ais \u2014 coming soon", disabled: true },
+  { value: "de", label: "Deutsch \u2014 coming soon", disabled: true },
+];
+
+const TEXT_SIZE_OPTIONS = [
+  { value: "75", label: "75%" },
+  { value: "90", label: "90%" },
+  { value: "100", label: "100% (default)" },
+  { value: "110", label: "110%" },
+  { value: "125", label: "125%" },
+  { value: "150", label: "150%" },
+];
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsRoot,
@@ -36,14 +62,15 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 // Settings nav items
 const NAV_ITEMS = [
-  { id: "general", icon: Grid, label: "General" },
-  { id: "account", icon: User, label: "Account" },
-  { id: "privacy", icon: Shield, label: "Privacy" },
-  { id: "chat", icon: MessageSquare, label: "Chat" },
-  { id: "notifications", icon: Bell, label: "Notifications", badge: true },
-  { id: "security", icon: Lock, label: "Security" },
-  { id: "keyboard", icon: Keyboard, label: "Keyboard Shortcuts" },
-  { id: "help", icon: HelpCircle, label: "Help & Support" },
+  { id: "general", icon: Grid, label: "General", description: "Startup and shutdown" },
+  { id: "profile", icon: User, label: "Profile", description: "Name, profile picture, username" },
+  { id: "account", icon: Lock, label: "Account", description: "Security notifications, account info" },
+  { id: "privacy", icon: Shield, label: "Privacy", description: "Blocked contacts, disappearing messages" },
+  { id: "chat", icon: MessageSquare, label: "Chat", description: "Theme, wallpapers, chat settings" },
+  { id: "video", icon: Video, label: "Video & Voice", description: "Camera, microphone and speakers" },
+  { id: "notifications", icon: Bell, label: "Notifications", description: "Messages, groups, sounds", badge: true },
+  { id: "keyboard", icon: Keyboard, label: "Keyboard Shortcuts", description: "Quick actions" },
+  { id: "help", icon: HelpCircle, label: "Help & Feedback", description: "Help center, contact us, privacy policy" },
 ];
 
 function SettingsPage() {
@@ -62,6 +89,17 @@ function SettingsPage() {
   );
   const [navSearch, setNavSearch] = useState("");
 
+  // Text size state with localStorage persistence
+  const [textSize, setTextSize] = useState(() => {
+    const saved = localStorage.getItem("ephemeral-text-size");
+    return saved ? Number(saved) : 100;
+  });
+
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${textSize}%`;
+    localStorage.setItem("ephemeral-text-size", String(textSize));
+  }, [textSize]);
+
   // Profile form state
   const [firstName] = useState(user?.firstName || "");
   const [lastName] = useState(user?.lastName || "");
@@ -69,9 +107,27 @@ function SettingsPage() {
   const [phone, setPhone] = useState(user?.phone || "");
   const [role, setRole] = useState(user?.role || "");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState({ text: "", type: "" });
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const initialValuesRef = useRef({
+    displayName: user?.displayName || "",
+    phone: user?.phone || "",
+    role: user?.role || "",
+  });
+  const avatarMenuRef = useClickOutside<HTMLDivElement>(
+    useCallback(() => setAvatarMenuOpen(false), []),
+  );
+
+  const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api";
 
   const initials =
     user?.displayName
@@ -88,55 +144,175 @@ function SettingsPage() {
     navigate({ to: "/login" });
   };
 
-  const handleSave = async () => {
+  const handleAvatarUpload = async (file: File) => {
     if (!user) return;
-    setIsSaving(true);
-    setSaveMessage({ text: "", type: "" });
+    const formData = new FormData();
+    formData.append("file", file);
     try {
+      const token = getAccessToken();
+      const res = await fetch(`${API_BASE}/upload`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const { url } = await res.json();
       const data = await apiFetch<{ user: UserType }>(`/users/${user.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ displayName, phone, role }),
+        body: JSON.stringify({ avatarUrl: url }),
       });
       updateUser(normalizeUser(data.user as any));
-      setSaveMessage({
-        text: "Profile updated successfully.",
-        type: "success",
+      setAvatarPreview(null);
+    } catch (err) {
+      console.error("Avatar upload failed:", err);
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    if (!user) return;
+    try {
+      const currentUrl = user.avatarUrl;
+      if (currentUrl) {
+        const token = getAccessToken();
+        await fetch(`${API_BASE}/upload`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ url: currentUrl }),
+        }).catch(() => {});
+      }
+      const data = await apiFetch<{ user: UserType }>(`/users/${user.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ avatarUrl: "" }),
       });
-    } catch (err: any) {
-      setSaveMessage({
-        text: err.message || "Failed to update profile",
-        type: "error",
-      });
-    } finally {
-      setIsSaving(false);
-      setTimeout(() => setSaveMessage({ text: "", type: "" }), 3500);
+      updateUser(normalizeUser(data.user as any));
+      setAvatarPreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch (err) {
+      console.error("Avatar remove failed:", err);
     }
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setAvatarPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
+    handleAvatarUpload(file);
   };
+
+  const handleCameraOpen = async () => {
+    setCameraOpen(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch {
+      setCameraOpen(false);
+    }
+  };
+
+  const handleCameraCapture = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d")?.drawImage(video, 0, 0);
+    canvas.toBlob((blob) => {
+      if (blob) handleAvatarUpload(new File([blob], "camera-photo.jpg", { type: "image/jpeg" }));
+    }, "image/jpeg", 0.9);
+    handleCameraClose();
+  };
+
+  const handleCameraClose = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setCameraOpen(false);
+  };
+
+  // Auto-save profile fields with debounce
+  useEffect(() => {
+    const {
+      displayName: initDN,
+      phone: initPh,
+      role: initR,
+    } = initialValuesRef.current;
+    if (displayName === initDN && phone === initPh && role === initR) return;
+
+    clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(async () => {
+      if (!user) return;
+      setAutoSaveStatus("saving");
+      try {
+        const data = await apiFetch<{ user: UserType }>(`/users/${user.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ displayName, phone, role }),
+        });
+        updateUser(normalizeUser(data.user as any));
+        initialValuesRef.current = { displayName, phone, role };
+        setAutoSaveStatus("saved");
+        setTimeout(() => setAutoSaveStatus("idle"), 2500);
+      } catch {
+        setAutoSaveStatus("error");
+        setTimeout(() => setAutoSaveStatus("idle"), 3500);
+      }
+    }, 800);
+    return () => clearTimeout(saveTimeoutRef.current);
+  }, [displayName, phone, role]);
 
   // ── Shared: General section content ──────────────────────────────────────
   function GeneralSection() {
     return (
+      <div className="flex flex-col gap-5 px-4 py-5">
+        {/* Language */}
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
+            Language
+          </Label>
+          <Select
+            options={LANGUAGE_OPTIONS}
+            value="en"
+            onChange={() => {}}
+            icon={<Globe className="w-[17px] h-[17px]" />}
+          />
+        </div>
+
+        {/* Text Size */}
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
+            Text Size
+          </Label>
+          <Select
+            options={TEXT_SIZE_OPTIONS}
+            value={String(textSize)}
+            onChange={(v) => setTextSize(Number(v))}
+            icon={<Type className="w-[17px] h-[17px]" />}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // ── Shared: Account section content ──────────────────────────────────────
+  function AccountSection() {
+    const currentAvatar = avatarPreview || user?.avatarUrl;
+    return (
       <div className="flex flex-col">
         {/* Avatar */}
-        <div className="flex flex-col items-center pt-6 pb-5">
-          <div className="relative">
-            {avatarPreview ? (
+        <div className="flex flex-col items-center pt-8 pb-6">
+          <div className="relative" ref={avatarMenuRef}>
+            {currentAvatar ? (
               <img
-                src={avatarPreview}
+                src={currentAvatar}
                 alt="Avatar"
-                className="w-20 h-20 rounded-full object-cover"
+                className="w-28 h-28 rounded-full object-cover border-2 border-border"
               />
             ) : (
               <div
-                className="w-20 h-20 rounded-full flex items-center justify-center font-bold text-[26px] text-white"
+                className="w-28 h-28 rounded-full flex items-center justify-center font-bold text-[32px] text-white border-2 border-border"
                 style={{ background: avatarGradient }}
               >
                 {initials}
@@ -146,36 +322,78 @@ function SettingsPage() {
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              onChange={handleAvatarChange}
+              onChange={(e) => {
+                handleAvatarChange(e);
+                setAvatarMenuOpen(false);
+              }}
+              className="hidden"
+            />
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="user"
+              onChange={(e) => {
+                handleAvatarChange(e);
+                setAvatarMenuOpen(false);
+              }}
               className="hidden"
             />
             <button
-              onClick={() => fileInputRef.current?.click()}
-              className="absolute bottom-0 right-0 w-7 h-7 bg-accent rounded-full flex items-center justify-center border-2 border-card"
-              aria-label="Change avatar"
+              onClick={() => setAvatarMenuOpen((v) => !v)}
+              className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-accent text-white text-[12px] font-medium shadow-md hover:bg-accent/90 transition-colors z-10"
             >
-              <Camera className="w-3.5 h-3.5 text-white" />
+              <Camera className="w-3.5 h-3.5" />
+              Edit
             </button>
-          </div>
-          <div className="flex gap-3 mt-4">
-            <Button
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              className="h-9 px-5 rounded-lg text-[13px]"
-            >
-              Change Photo
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setAvatarPreview(null);
-                if (fileInputRef.current) fileInputRef.current.value = "";
-              }}
-              className="h-9 px-5 rounded-lg text-[13px]"
-            >
-              Remove
-            </Button>
+
+            {/* Dropdown menu */}
+            {avatarMenuOpen && (
+              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-5 w-52 bg-card rounded-xl border border-border shadow-lg z-50 overflow-hidden">
+                <button
+                  onClick={() => {
+                    if (currentAvatar) setViewerOpen(true);
+                    setAvatarMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-[13px] hover:bg-input/60 transition-colors ${currentAvatar ? "text-text-main" : "text-text-secondary/50 cursor-not-allowed"}`}
+                  disabled={!currentAvatar}
+                >
+                  <Eye className="w-4 h-4 text-text-secondary" />
+                  Visualize Image
+                </button>
+                <button
+                  onClick={() => {
+                    handleCameraOpen();
+                    setAvatarMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-text-main hover:bg-input/60 transition-colors"
+                >
+                  <Video className="w-4 h-4 text-text-secondary" />
+                  Take a Photo
+                </button>
+                <button
+                  onClick={() => {
+                    fileInputRef.current?.click();
+                    setAvatarMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-text-main hover:bg-input/60 transition-colors"
+                >
+                  <ImageUp className="w-4 h-4 text-text-secondary" />
+                  Upload Image
+                </button>
+                <button
+                  onClick={() => {
+                    if (currentAvatar) handleAvatarRemove();
+                    setAvatarMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-[13px] hover:bg-input/60 transition-colors ${currentAvatar ? "text-text-main" : "text-text-secondary/50 cursor-not-allowed"}`}
+                  disabled={!currentAvatar}
+                >
+                  <Trash2 className="w-4 h-4 text-text-secondary" />
+                  Delete Image
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -263,33 +481,76 @@ function SettingsPage() {
             />
           </div>
 
-          {/* Save */}
-          <div className="flex flex-col gap-3 pt-2">
-            <Button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="h-10 px-6 rounded-lg font-medium flex-1 md:flex-none"
-            >
-              {isSaving ? "Saving..." : "Save Changes"}
-            </Button>
-            {saveMessage.text && (
-              <div
-                className={`settings-save-toast flex items-center gap-2.5 px-4 py-3 rounded-xl text-[13px] font-medium border ${
-                  saveMessage.type === "error"
-                    ? "bg-danger/10 border-danger/20 text-danger"
-                    : "bg-success/10 border-success/20 text-success"
-                }`}
-              >
-                {saveMessage.type === "error" ? (
-                  <HelpCircle className="w-4 h-4 shrink-0" />
-                ) : (
-                  <ShieldCheck className="w-4 h-4 shrink-0" />
-                )}
-                <span>{saveMessage.text}</span>
+          {/* Auto-save status */}
+          <div className="h-8 flex items-center justify-center">
+            {autoSaveStatus === "saving" && (
+              <div className="flex items-center gap-2 text-[13px] text-text-secondary animate-pulse">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Saving...</span>
+              </div>
+            )}
+            {autoSaveStatus === "saved" && (
+              <div className="flex items-center gap-2 text-[13px] text-success animate-in fade-in duration-300">
+                <Check className="w-4 h-4" />
+                <span>Changes saved</span>
+              </div>
+            )}
+            {autoSaveStatus === "error" && (
+              <div className="flex items-center gap-2 text-[13px] text-danger animate-in fade-in duration-300">
+                <HelpCircle className="w-4 h-4" />
+                <span>Failed to save changes</span>
               </div>
             )}
           </div>
         </div>
+
+        {/* Fullscreen image viewer */}
+        {viewerOpen && currentAvatar && (
+          <div
+            className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+            onClick={() => setViewerOpen(false)}
+          >
+            <button
+              className="absolute top-5 right-5 text-white/70 hover:text-white transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                setViewerOpen(false);
+              }}
+            >
+              <X className="w-7 h-7" />
+            </button>
+            <img
+              src={currentAvatar}
+              alt="Avatar preview"
+              className="max-w-[85vw] max-h-[85vh] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
+
+        {/* Camera capture overlay */}
+        {cameraOpen && (
+          <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center gap-6">
+            <button
+              className="absolute top-5 right-5 text-white/70 hover:text-white transition-colors"
+              onClick={handleCameraClose}
+            >
+              <X className="w-7 h-7" />
+            </button>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-[85vw] max-w-md aspect-square object-cover rounded-2xl"
+            />
+            <button
+              onClick={handleCameraCapture}
+              className="w-16 h-16 rounded-full bg-white border-4 border-white/30 hover:bg-white/90 transition-colors"
+              aria-label="Capture photo"
+            />
+          </div>
+        )}
       </div>
     );
   }
@@ -307,6 +568,7 @@ function SettingsPage() {
 
   function renderSectionContent(id: string) {
     if (id === "general") return <GeneralSection />;
+    if (id === "profile") return <AccountSection />;
     const item = NAV_ITEMS.find((n) => n.id === id);
     return <StubSection label={item?.label || id} />;
   }
@@ -323,12 +585,20 @@ function SettingsPage() {
       <div className="md:hidden flex flex-col h-full bg-bg text-text-main overflow-y-auto">
         {/* Avatar hero */}
         <div className="flex flex-col items-center pt-10 pb-6 px-4">
-          <div
-            className="w-20 h-20 rounded-full flex items-center justify-center font-bold text-[26px] text-white shadow-lg"
-            style={{ background: avatarGradient }}
-          >
-            {initials}
-          </div>
+          {user?.avatarUrl ? (
+            <img
+              src={user.avatarUrl}
+              alt="Profile"
+              className="w-20 h-20 rounded-full object-cover shadow-lg"
+            />
+          ) : (
+            <div
+              className="w-20 h-20 rounded-full flex items-center justify-center font-bold text-[26px] text-white shadow-lg"
+              style={{ background: avatarGradient }}
+            >
+              {initials}
+            </div>
+          )}
         </div>
 
         {/* Search */}
@@ -357,9 +627,14 @@ function SettingsPage() {
                   className={`w-full flex items-center gap-3.5 px-4 py-4 text-left transition-colors hover:bg-input/60 active:bg-input ${i < filteredNav.length - 1 ? "border-b border-border" : ""}`}
                 >
                   <Icon className="w-[18px] h-[18px] text-text-secondary shrink-0" />
-                  <span className="flex-1 text-[14px] font-medium text-text-main">
-                    {item.label}
-                  </span>
+                  <div className="flex-1 min-w-0">
+                    <span className="block text-[14px] font-medium text-text-main">
+                      {item.label}
+                    </span>
+                    <span className="block text-[12px] text-text-secondary truncate">
+                      {item.description}
+                    </span>
+                  </div>
                   {item.badge && (
                     <span className="w-1.5 h-1.5 rounded-full bg-danger mr-1" />
                   )}
@@ -419,6 +694,17 @@ function SettingsPageDesktop() {
   );
   const [navSearch, setNavSearch] = useState("");
 
+  // Text size state with localStorage persistence
+  const [textSize, setTextSize] = useState(() => {
+    const saved = localStorage.getItem("ephemeral-text-size");
+    return saved ? Number(saved) : 100;
+  });
+
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${textSize}%`;
+    localStorage.setItem("ephemeral-text-size", String(textSize));
+  }, [textSize]);
+
   const nameParts = (user?.displayName || "").split(" ");
   const [firstName] = useState(nameParts[0] || "");
   const [lastName] = useState(nameParts.slice(1).join(" ") || "");
@@ -426,9 +712,27 @@ function SettingsPageDesktop() {
   const [phone, setPhone] = useState(user?.phone || "");
   const [role, setRole] = useState(user?.role || "");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState({ text: "", type: "" });
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const initialValuesRef = useRef({
+    displayName: user?.displayName || "",
+    phone: user?.phone || "",
+    role: user?.role || "",
+  });
+  const avatarMenuRef = useClickOutside<HTMLDivElement>(
+    useCallback(() => setAvatarMenuOpen(false), []),
+  );
+
+  const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api";
 
   const initials =
     user?.displayName
@@ -445,38 +749,124 @@ function SettingsPageDesktop() {
     navigate({ to: "/login" });
   };
 
-  const handleSave = async () => {
+  const handleAvatarUpload = async (file: File) => {
     if (!user) return;
-    setIsSaving(true);
-    setSaveMessage({ text: "", type: "" });
+    const formData = new FormData();
+    formData.append("file", file);
     try {
+      const token = getAccessToken();
+      const res = await fetch(`${API_BASE}/upload`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const { url } = await res.json();
       const data = await apiFetch<{ user: UserType }>(`/users/${user.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ displayName, phone, role }),
+        body: JSON.stringify({ avatarUrl: url }),
       });
       updateUser(normalizeUser(data.user as any));
-      setSaveMessage({
-        text: "Profile updated successfully.",
-        type: "success",
+      setAvatarPreview(null);
+    } catch (err) {
+      console.error("Avatar upload failed:", err);
+    }
+  };
+
+  const handleAvatarRemove = async () => {
+    if (!user) return;
+    try {
+      const currentUrl = user.avatarUrl;
+      if (currentUrl) {
+        const token = getAccessToken();
+        await fetch(`${API_BASE}/upload`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ url: currentUrl }),
+        }).catch(() => {});
+      }
+      const data = await apiFetch<{ user: UserType }>(`/users/${user.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ avatarUrl: "" }),
       });
-    } catch (err: any) {
-      setSaveMessage({
-        text: err.message || "Failed to update profile",
-        type: "error",
-      });
-    } finally {
-      setIsSaving(false);
-      setTimeout(() => setSaveMessage({ text: "", type: "" }), 3500);
+      updateUser(normalizeUser(data.user as any));
+      setAvatarPreview(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch (err) {
+      console.error("Avatar remove failed:", err);
     }
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setAvatarPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
+    handleAvatarUpload(file);
   };
+
+  const handleCameraOpen = async () => {
+    setCameraOpen(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch {
+      setCameraOpen(false);
+    }
+  };
+
+  const handleCameraCapture = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d")?.drawImage(video, 0, 0);
+    canvas.toBlob((blob) => {
+      if (blob) handleAvatarUpload(new File([blob], "camera-photo.jpg", { type: "image/jpeg" }));
+    }, "image/jpeg", 0.9);
+    handleCameraClose();
+  };
+
+  const handleCameraClose = () => {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    setCameraOpen(false);
+  };
+
+  // Auto-save profile fields with debounce
+  useEffect(() => {
+    const {
+      displayName: initDN,
+      phone: initPh,
+      role: initR,
+    } = initialValuesRef.current;
+    if (displayName === initDN && phone === initPh && role === initR) return;
+
+    clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(async () => {
+      if (!user) return;
+      setAutoSaveStatus("saving");
+      try {
+        const data = await apiFetch<{ user: UserType }>(`/users/${user.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ displayName, phone, role }),
+        });
+        updateUser(normalizeUser(data.user as any));
+        initialValuesRef.current = { displayName, phone, role };
+        setAutoSaveStatus("saved");
+        setTimeout(() => setAutoSaveStatus("idle"), 2500);
+      } catch {
+        setAutoSaveStatus("error");
+        setTimeout(() => setAutoSaveStatus("idle"), 3500);
+      }
+    }, 800);
+    return () => clearTimeout(saveTimeoutRef.current);
+  }, [displayName, phone, role]);
 
   const filteredNav = NAV_ITEMS.filter((item) =>
     item.label.toLowerCase().includes(navSearch.toLowerCase()),
@@ -514,7 +904,14 @@ function SettingsPageDesktop() {
                 }`}
               >
                 <Icon className="w-4 h-4 shrink-0" />
-                <span className="flex-1 text-left">{item.label}</span>
+                <div className="flex-1 text-left min-w-0">
+                  <span className="block">{item.label}</span>
+                  <span className={`block text-[11px] font-normal truncate ${
+                    active ? "text-accent/70" : "text-text-secondary/70"
+                  }`}>
+                    {item.description}
+                  </span>
+                </div>
                 {item.badge && (
                   <span className="w-1.5 h-1.5 rounded-full bg-danger" />
                 )}
@@ -542,21 +939,57 @@ function SettingsPageDesktop() {
           {desktopSection === "general" ? (
             <>
               <h1 className="text-[22px] font-bold text-text-main mb-6">
-                General Settings
+                General
+              </h1>
+
+              <div className="grid grid-cols-2 gap-5">
+                {/* Language */}
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
+                    Language
+                  </Label>
+                  <Select
+                    options={LANGUAGE_OPTIONS}
+                    value="en"
+                    onChange={() => {}}
+                    icon={<Globe className="w-[17px] h-[17px]" />}
+                  />
+                </div>
+
+                {/* Text Size */}
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
+                    Text Size
+                  </Label>
+                  <Select
+                    options={TEXT_SIZE_OPTIONS}
+                    value={String(textSize)}
+                    onChange={(v) => setTextSize(Number(v))}
+                    icon={<Type className="w-[17px] h-[17px]" />}
+                  />
+                </div>
+              </div>
+            </>
+          ) : desktopSection === "profile" ? (
+            (() => {
+              const currentAvatar = avatarPreview || user?.avatarUrl;
+              return <>
+              <h1 className="text-[22px] font-bold text-text-main mb-6">
+                Profile
               </h1>
 
               {/* Profile card */}
-              <div className="bg-card rounded-2xl border border-border p-6 flex items-center gap-6 mb-8">
-                <div className="relative shrink-0">
-                  {avatarPreview ? (
+              <div className="bg-card rounded-2xl border border-border p-8 flex flex-col items-center mb-8 relative">
+                <div className="relative" ref={avatarMenuRef}>
+                  {avatarPreview || user?.avatarUrl ? (
                     <img
-                      src={avatarPreview}
+                      src={avatarPreview || user?.avatarUrl || undefined}
                       alt="Avatar"
-                      className="w-20 h-20 rounded-full object-cover"
+                      className="w-28 h-28 rounded-full object-cover border-2 border-border"
                     />
                   ) : (
                     <div
-                      className="w-20 h-20 rounded-full flex items-center justify-center font-bold text-[26px] text-white"
+                      className="w-28 h-28 rounded-full flex items-center justify-center font-bold text-[32px] text-white border-2 border-border"
                       style={{ background: avatarGradient }}
                     >
                       {initials}
@@ -566,42 +999,77 @@ function SettingsPageDesktop() {
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
-                    onChange={handleAvatarChange}
+                    onChange={(e) => {
+                      handleAvatarChange(e);
+                      setAvatarMenuOpen(false);
+                    }}
+                    className="hidden"
+                  />
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="user"
+                    onChange={(e) => {
+                      handleAvatarChange(e);
+                      setAvatarMenuOpen(false);
+                    }}
                     className="hidden"
                   />
                   <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="absolute bottom-0 right-0 w-7 h-7 bg-accent rounded-full flex items-center justify-center border-2 border-card"
-                    aria-label="Change avatar"
+                    onClick={() => setAvatarMenuOpen((v) => !v)}
+                    className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-accent text-white text-[12px] font-medium shadow-md hover:bg-accent/90 transition-colors z-10"
                   >
-                    <Camera className="w-3.5 h-3.5 text-white" />
+                    <Camera className="w-3.5 h-3.5" />
+                    Edit
                   </button>
-                </div>
-                <div className="flex flex-col gap-3">
-                  <div className="text-[18px] font-bold text-text-main">
-                    {displayName || user?.displayName || "User"}
-                  </div>
-                  <div className="flex gap-3">
-                    <Button
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="h-9 px-4 rounded-lg"
-                    >
-                      Change Photo
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setAvatarPreview(null);
-                        if (fileInputRef.current)
-                          fileInputRef.current.value = "";
-                      }}
-                      className="h-9 px-4 rounded-lg"
-                    >
-                      Remove
-                    </Button>
-                  </div>
+
+                  {avatarMenuOpen && (
+                    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-5 w-52 bg-card rounded-xl border border-border shadow-lg z-50 overflow-hidden">
+                      <button
+                        disabled={!currentAvatar}
+                        onClick={() => {
+                          setViewerOpen(true);
+                          setAvatarMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-[13px] transition-colors ${currentAvatar ? "text-text-main hover:bg-input/60" : "text-text-secondary/40 cursor-not-allowed"}`}
+                      >
+                        <Eye className="w-4 h-4 text-text-secondary" />
+                        Visualize Image
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleCameraOpen();
+                          setAvatarMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-text-main hover:bg-input/60 transition-colors"
+                      >
+                        <Video className="w-4 h-4 text-text-secondary" />
+                        Take a Photo
+                      </button>
+                      <button
+                        onClick={() => {
+                          fileInputRef.current?.click();
+                          setAvatarMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-text-main hover:bg-input/60 transition-colors"
+                      >
+                        <ImageUp className="w-4 h-4 text-text-secondary" />
+                        Upload Image
+                      </button>
+                      <button
+                        disabled={!currentAvatar}
+                        onClick={() => {
+                          handleAvatarRemove();
+                          setAvatarMenuOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-[13px] transition-colors ${currentAvatar ? "text-text-main hover:bg-input/60" : "text-text-secondary/40 cursor-not-allowed"}`}
+                      >
+                        <Trash2 className="w-4 h-4 text-text-secondary" />
+                        Delete Image
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -692,32 +1160,76 @@ function SettingsPageDesktop() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 mt-8">
-                <Button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="h-10 px-6 rounded-lg"
-                >
-                  {isSaving ? "Saving..." : "Save Changes"}
-                </Button>
-                {saveMessage.text && (
-                  <div
-                    className={`settings-save-toast flex items-center gap-2.5 px-4 py-3 rounded-xl text-[13px] font-medium border ${
-                      saveMessage.type === "error"
-                        ? "bg-danger/10 border-danger/20 text-danger"
-                        : "bg-success/10 border-success/20 text-success"
-                    }`}
-                  >
-                    {saveMessage.type === "error" ? (
-                      <HelpCircle className="w-4 h-4 shrink-0" />
-                    ) : (
-                      <ShieldCheck className="w-4 h-4 shrink-0" />
-                    )}
-                    <span>{saveMessage.text}</span>
+              {/* Auto-save status */}
+              <div className="h-10 mt-6 flex items-center justify-center">
+                {autoSaveStatus === "saving" && (
+                  <div className="flex items-center gap-2 text-[13px] text-text-secondary animate-pulse">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Saving...</span>
+                  </div>
+                )}
+                {autoSaveStatus === "saved" && (
+                  <div className="flex items-center gap-2 text-[13px] text-success animate-in fade-in duration-300">
+                    <Check className="w-4 h-4" />
+                    <span>Changes saved</span>
+                  </div>
+                )}
+                {autoSaveStatus === "error" && (
+                  <div className="flex items-center gap-2 text-[13px] text-danger animate-in fade-in duration-300">
+                    <HelpCircle className="w-4 h-4" />
+                    <span>Failed to save changes</span>
                   </div>
                 )}
               </div>
-            </>
+
+              {/* Fullscreen image viewer */}
+              {viewerOpen && (avatarPreview || user?.avatarUrl) && (
+                <div
+                  className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+                  onClick={() => setViewerOpen(false)}
+                >
+                  <button
+                    className="absolute top-5 right-5 text-white/70 hover:text-white transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setViewerOpen(false);
+                    }}
+                  >
+                    <X className="w-7 h-7" />
+                  </button>
+                  <img
+                    src={avatarPreview || user?.avatarUrl || undefined}
+                    alt="Avatar preview"
+                    className="max-w-[85vw] max-h-[85vh] object-contain rounded-lg"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              )}
+
+              {/* Camera capture overlay */}
+              {cameraOpen && (
+                <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center">
+                  <button
+                    className="absolute top-5 right-5 text-white/70 hover:text-white transition-colors"
+                    onClick={handleCameraClose}
+                  >
+                    <X className="w-7 h-7" />
+                  </button>
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="max-w-[85vw] max-h-[70vh] rounded-lg"
+                  />
+                  <button
+                    onClick={handleCameraCapture}
+                    className="mt-6 w-16 h-16 rounded-full border-4 border-white bg-white/20 hover:bg-white/40 transition-colors"
+                  />
+                </div>
+              )}
+            </>;
+            })()
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-text-secondary gap-3">
               <Lock className="w-10 h-10 opacity-30" />
