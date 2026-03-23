@@ -1,0 +1,96 @@
+/* ══════════════════════════════════════════════════════════
+   Chat layout — empty state, visibility rules, utilities
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Contact checkbox tick ───────────────────────────────── */
+.contact-check-tick:checked::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  width: 5px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* ── Empty state (no conversation selected) ──────────────── */
+.chat-empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-bg);
+  min-height: 0;
+}
+
+.chat-empty-actions {
+  display: flex;
+  flex-direction: row;
+  gap: var(--spacing-4);
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.chat-empty-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-5);
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  color: var(--color-text-main);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  width: 120px;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.chat-empty-action:hover {
+  background-color: var(--color-input);
+  border-color: var(--color-accent);
+}
+
+.chat-empty-action-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-secondary);
+  transition: color var(--transition-fast);
+}
+
+.chat-empty-action-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.chat-empty-action:hover .chat-empty-action-icon {
+  color: var(--color-text-main);
+}
+
+/* ── Visibility rules ────────────────────────────────────── */
+.chat-page.has-chat .chat-empty-state {
+  display: none;
+}
+
+.chat-page:not(.has-chat) .chat-header,
+.chat-page:not(.has-chat) #chat-messages,
+.chat-page:not(.has-chat) .chat-input-area {
+  display: none;
+}
+
+/* ── Desktop: search focus ring in new-chat panel ────────── */
+@media (min-width: 768px) {
+  .new-chat-panel .sidebar-search .search-input:focus-within {
+    border-color: var(--color-accent);
+  }
+}

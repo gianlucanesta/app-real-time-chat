@@ -1502,22 +1502,50 @@ function _openMenu(menu, triggerEl) {
   const group = menu.parentElement;
   if (!group) return;
 
-  const groupRect = group.getBoundingClientRect();
   const triggerRect = triggerEl.getBoundingClientRect();
   const isEmojiPopup = menu.classList.contains("msg-emoji-popup");
   const isExpanded = menu.classList.contains("msg-emoji-expanded");
   const estimatedH = isEmojiPopup ? 64 : isExpanded ? 220 : 370;
+  const isSent = group.classList.contains("message-group-sent");
 
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const margin = 8;
+
+  // Use fixed positioning to escape overflow containers
+  menu.style.position = "fixed";
   menu.style.top = "";
   menu.style.bottom = "";
+  menu.style.left = "";
+  menu.style.right = "";
 
-  if (triggerRect.top > estimatedH) {
-    // Enough space above: anchor bottom of menu to top of trigger
-    menu.style.bottom = groupRect.bottom - triggerRect.top + 6 + "px";
+  // Find the parent bubble for horizontal alignment
+  const bubble = triggerEl.closest(".message-row") || triggerEl.parentElement;
+  const bubbleRect = bubble ? bubble.getBoundingClientRect() : triggerRect;
+
+  // Vertical: anchor at chevron top so menu overlaps bubble (WhatsApp-style)
+  let top;
+  const spaceBelow = vh - triggerRect.top;
+  const spaceAbove = triggerRect.bottom;
+  if (spaceBelow >= estimatedH + margin) {
+    top = triggerRect.top;
+  } else if (spaceAbove >= estimatedH + margin) {
+    top = triggerRect.bottom - estimatedH;
   } else {
-    // Not enough: anchor top of menu to bottom of trigger
-    menu.style.top = triggerRect.bottom - groupRect.top + 6 + "px";
+    top = Math.max(margin, Math.min(vh - estimatedH - margin, triggerRect.top));
   }
+  menu.style.top = top + "px";
+
+  // Horizontal: align to bubble edge, clamp to viewport
+  const menuW = menu.offsetWidth || 220;
+  let left;
+  if (isSent) {
+    left = bubbleRect.right - menuW;
+  } else {
+    left = bubbleRect.left;
+  }
+  left = Math.max(margin, Math.min(vw - menuW - margin, left));
+  menu.style.left = left + "px";
 
   menu.classList.add("open");
   menu.setAttribute("aria-hidden", "false");
@@ -1654,6 +1682,9 @@ function _initMessageActions() {
 
   // Close all open menus when clicking anywhere outside
   document.addEventListener("click", () => _closeAllMsgMenus());
+
+  // Close menus on scroll (fixed-position menus would float away)
+  area.addEventListener("scroll", () => _closeAllMsgMenus(), { passive: true });
 }
 
 function _closeAllMsgMenus() {
@@ -1664,8 +1695,11 @@ function _closeAllMsgMenus() {
     .forEach((m) => {
       m.classList.remove("open");
       m.setAttribute("aria-hidden", "true");
+      m.style.position = "";
       m.style.top = "";
       m.style.bottom = "";
+      m.style.left = "";
+      m.style.right = "";
     });
 }
 
