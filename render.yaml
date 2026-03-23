@@ -30,11 +30,11 @@ services:
     startCommand: node dist/index.js
     healthCheckPath: /api/health
     envVars:
-      # PostgreSQL — auto-bound from the database below
+      # PostgreSQL (Neon) — set manually in the Render dashboard
+      # Copy the connection string from console.neon.tech → your project → Connection Details
+      # Use the "pooled" connection string (port 5432, ?sslmode=require already included)
       - key: DATABASE_URL
-        fromDatabase:
-          name: app-real-time-chat-db
-          property: connectionString
+        sync: false
 
       # Redis — auto-bound from the key-value store below
       - key: REDIS_URL
@@ -71,26 +71,7 @@ services:
         value: "*"
 
   # ──────────────────────────────────────────────
-  # 3.  Adminer — PostgreSQL visual interface
-  #     ⚠ publicly accessible: use only for dev/demo
-  # ──────────────────────────────────────────────
-  - type: web
-    name: app-real-time-chat-adminer
-    runtime: image
-    plan: free
-    image:
-      url: docker.io/library/adminer:latest
-    envVars:
-      # Pre-fills the server field in the Adminer login form
-      - key: ADMINER_DEFAULT_SERVER
-        fromDatabase:
-          name: app-real-time-chat-db
-          property: host
-      - key: ADMINER_DEFAULT_DB_DRIVER
-        value: pgsql
-
-  # ──────────────────────────────────────────────
-  # 4.  Render-managed Redis (Key-Value store)
+  # 3.  Render-managed Redis (Key-Value store)
   # ──────────────────────────────────────────────
   - type: redis
     name: app-real-time-chat-redis
@@ -98,11 +79,4 @@ services:
     maxmemoryPolicy: noeviction
     ipAllowList: []
 
-# ──────────────────────────────────────────────
-# 4.  Render-managed PostgreSQL
-# ──────────────────────────────────────────────
-databases:
-  - name: app-real-time-chat-db
-    databaseName: chat
-    user: chat
-    plan: free
+# No Render-managed PostgreSQL — using Neon (external serverless Postgres)
