@@ -16,6 +16,9 @@ import { Label } from "../components/ui/label";
 import { apiFetch } from "../lib/api";
 import { validatePasswordStrength } from "../lib/validation";
 
+const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api";
+const GOOGLE_AUTH_URL = `${API_BASE}/auth/google`;
+
 const COUNTRY_CODES = [
   { code: "+1", label: "+1 US" },
   { code: "+44", label: "+44 UK" },
@@ -384,6 +387,9 @@ function SignupPage() {
             <Button
               variant="social"
               className="w-full text-[14px] font-medium h-[40px]"
+              onClick={() => {
+                window.location.href = GOOGLE_AUTH_URL;
+              }}
             >
               <svg viewBox="0 0 24 24" className="w-[20px] h-[20px]">
                 <path

@@ -61,7 +61,9 @@ async function start(): Promise<void> {
         methods: ["GET", "POST"],
         credentials: true,
       },
-      transports: ["websocket"],
+      // Allow polling so Render's reverse proxy can complete the upgrade to
+      // WebSocket. Polling-only is rejected by websocket-only servers (400).
+      transports: ["polling", "websocket"],
     });
 
     initSocket(io as any);
@@ -73,8 +75,10 @@ async function start(): Promise<void> {
     await initSchema();
     await connectMongo();
 
-    // Start periodic Cloudinary media cleanup for expiring messages
-    startMediaCleanupJob();
+    // Start periodic Cloudinary media cleanup + expired-message sweep.
+    // The sweep is the fallback for Redis keyspace expiry (unavailable on
+    // managed Redis) – it emits `message:expired` socket events directly.
+    startMediaCleanupJob(io as any);
 
     // Redis – optional: message TTL expiry won't work if Redis is unavailable
     try {

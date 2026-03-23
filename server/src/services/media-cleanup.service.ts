@@ -1,41 +1,63 @@
+import type { Server } from "socket.io";
 import { Message } from "../models/message.model.js";
 import { deleteCloudinaryAssetsForMessages } from "./cloudinary.service.js";
 
 const INTERVAL_MS = 5 * 60 * 1000; // every 5 minutes
-const LOOKAHEAD_MS = 6 * 60 * 1000; // check messages expiring within 6 minutes
+const LOOKAHEAD_MS = 6 * 60 * 1000; // pre-clean Cloudinary before expiry
 
 /**
- * Periodic sweep that deletes Cloudinary assets for messages about to expire.
- * Acts as a safety net: the primary path is Redis keyspace expiry (redis.ts),
- * but if Redis is unavailable or the key wasn't set, this catches stragglers
- * before MongoDB TTL removes the document (and we lose the mediaUrl reference).
+ * Periodic sweep with two passes:
+ *
+ * 1. Pre-expiry Cloudinary sweep: delete Cloudinary assets for messages
+ *    expiring within LOOKAHEAD_MS and null out mediaUrl so we don't lose
+ *    the reference once the document is gone.
+ *
+ * 2. Expired message sweep: explicitly delete documents whose expires_at is
+ *    in the past and emit `message:expired` socket events to connected
+ *    clients. This is the fallback for the Redis keyspace path, which is
+ *    unavailable on managed Redis (CONFIG SET not permitted).
  */
-export function startMediaCleanupJob(): void {
+export function startMediaCleanupJob(io: Server): void {
   const run = async () => {
     try {
+      const now = new Date();
       const cutoff = new Date(Date.now() + LOOKAHEAD_MS);
-      const messages = await Message.find(
-        {
-          mediaUrl: { $ne: null },
-          expires_at: { $lte: cutoff },
-        },
+
+      // ── 1. Pre-expiry Cloudinary sweep ──────────────────────────────────
+      const preExpiry = await Message.find(
+        { mediaUrl: { $ne: null }, expires_at: { $lte: cutoff } },
         { mediaUrl: 1, mediaType: 1, _id: 1 },
       ).lean();
 
-      if (messages.length === 0) return;
+      if (preExpiry.length > 0) {
+        await deleteCloudinaryAssetsForMessages(preExpiry);
+        const preIds = preExpiry.map((m) => m._id);
+        await Message.updateMany(
+          { _id: { $in: preIds } },
+          { $set: { mediaUrl: null, mediaType: null } },
+        );
+        console.log(
+          `[media-cleanup] cleaned ${preExpiry.length} Cloudinary asset(s)`,
+        );
+      }
 
-      await deleteCloudinaryAssetsForMessages(messages);
+      // ── 2. Expired message sweep ─────────────────────────────────────────
+      const expired = await Message.find(
+        { expires_at: { $lte: now } },
+        { conversationId: 1, _id: 1 },
+      ).lean();
 
-      // Remove the mediaUrl so we don't process them again on the next sweep
-      const ids = messages.map((m) => m._id);
-      await Message.updateMany(
-        { _id: { $in: ids } },
-        { $set: { mediaUrl: null, mediaType: null } },
-      );
-
-      console.log(
-        `[media-cleanup] cleaned ${messages.length} Cloudinary asset(s)`,
-      );
+      if (expired.length > 0) {
+        const ids = expired.map((m) => m._id);
+        await Message.deleteMany({ _id: { $in: ids } });
+        for (const msg of expired) {
+          io.to("conv:" + (msg as Record<string, unknown>).conversationId).emit(
+            "message:expired",
+            { id: String(msg._id) },
+          );
+        }
+        console.log(`[media-cleanup] expired ${expired.length} message(s)`);
+      }
     } catch (err) {
       console.warn("[media-cleanup] sweep error:", (err as Error).message);
     }

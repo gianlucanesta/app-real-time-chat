@@ -25,4 +25,10 @@ export const env = {
   MAILJET_API_KEY: requireEnv("MAILJET_API_KEY"),
   MAILJET_API_SECRET: requireEnv("MAILJET_API_SECRET"),
   CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
+  // Google OAuth2
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID || "",
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || "",
+  GOOGLE_CALLBACK_URL:
+    process.env.GOOGLE_CALLBACK_URL ||
+    "http://localhost:3001/api/auth/google/callback",
 } as const;

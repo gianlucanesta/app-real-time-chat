@@ -13,3 +13,7 @@ authRouter.get("/verify-email", ctrl.verifyEmail);
 authRouter.post("/resend-verification", authLimiter, ctrl.resendVerification);
 authRouter.post("/forgot-password", authLimiter, ctrl.forgotPassword);
 authRouter.post("/reset-password", authLimiter, ctrl.resetPassword);
+
+// Google OAuth2
+authRouter.get("/google", ctrl.googleAuth);
+authRouter.get("/google/callback", ctrl.googleCallback);

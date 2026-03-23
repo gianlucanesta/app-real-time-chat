@@ -68,6 +68,18 @@ services:
       - key: ALLOWED_ORIGIN
         value: https://app-real-time-chat-frontend.onrender.com
 
+      # Google OAuth2 — set client_id and client_secret manually in the Render dashboard
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL
+        value: https://app-real-time-chat-backend.onrender.com/api/auth/google/callback
+
+      # Frontend URL (used for post-OAuth redirects)
+      - key: CLIENT_URL
+        value: https://app-real-time-chat-frontend.onrender.com
+
   # ──────────────────────────────────────────────
   # 3.  Render-managed Redis (Key-Value store)
   # ──────────────────────────────────────────────

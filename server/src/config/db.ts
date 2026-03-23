@@ -75,6 +75,11 @@ export async function initSchema(): Promise<void> {
     -- Idempotent migration: password reset
     ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_password_token   TEXT;
     ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_password_expires TIMESTAMPTZ;
+
+    -- Idempotent migration: Google OAuth
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT UNIQUE;
+    -- Allow social-only accounts to have no password hash
+    ALTER TABLE users ALTER COLUMN password_hash SET DEFAULT '';
   `);
   console.log("[pg] schema ready");
 }

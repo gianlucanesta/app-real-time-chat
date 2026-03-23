@@ -296,12 +296,10 @@ export async function resendVerification(
 
     // Always return success to prevent email enumeration
     if (!user || user.email_verified) {
-      res
-        .status(200)
-        .json({
-          message:
-            "If this email is registered and not yet verified, a new verification link has been sent.",
-        });
+      res.status(200).json({
+        message:
+          "If this email is registered and not yet verified, a new verification link has been sent.",
+      });
       return;
     }
 
@@ -318,12 +316,10 @@ export async function resendVerification(
       console.error("[email] Failed to resend verification email:", err),
     );
 
-    res
-      .status(200)
-      .json({
-        message:
-          "If this email is registered and not yet verified, a new verification link has been sent.",
-      });
+    res.status(200).json({
+      message:
+        "If this email is registered and not yet verified, a new verification link has been sent.",
+    });
   } catch (err) {
     next(err);
   }
@@ -408,5 +404,130 @@ export async function resetPassword(
       .json({ message: "Password reset successfully! You can now log in." });
   } catch (err) {
     next(err);
+  }
+}
+
+// ── Google OAuth2 ───────────────────────────────────────────────────────────
+
+/**
+ * GET /api/auth/google
+ * Redirect the browser to Google's OAuth2 consent screen.
+ */
+export function googleAuth(_req: Request, res: Response): void {
+  if (!env.GOOGLE_CLIENT_ID) {
+    res.status(503).json({ error: "Google OAuth not configured" });
+    return;
+  }
+
+  const params = new URLSearchParams({
+    client_id: env.GOOGLE_CLIENT_ID,
+    redirect_uri: env.GOOGLE_CALLBACK_URL,
+    response_type: "code",
+    scope: "openid email profile",
+    access_type: "offline",
+    prompt: "select_account",
+  });
+
+  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`);
+}
+
+/**
+ * GET /api/auth/google/callback
+ * Exchange the authorization code, upsert user, issue tokens.
+ */
+export async function googleCallback(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const { code, error: oauthError } = req.query as {
+    code?: string;
+    error?: string;
+  };
+
+  const failRedirect = `${env.CLIENT_URL}/login?error=google_failed`;
+
+  if (oauthError || !code) {
+    res.redirect(failRedirect);
+    return;
+  }
+
+  try {
+    // 1. Exchange code for tokens
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: env.GOOGLE_CLIENT_ID,
+        client_secret: env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: env.GOOGLE_CALLBACK_URL,
+        grant_type: "authorization_code",
+      }),
+    });
+
+    if (!tokenRes.ok) {
+      console.error("[google] token exchange failed:", await tokenRes.text());
+      res.redirect(failRedirect);
+      return;
+    }
+
+    const tokenData = (await tokenRes.json()) as {
+      access_token: string;
+      id_token?: string;
+    };
+
+    // 2. Fetch user info from Google
+    const userInfoRes = await fetch(
+      "https://www.googleapis.com/oauth2/v3/userinfo",
+      {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` },
+      },
+    );
+
+    if (!userInfoRes.ok) {
+      console.error("[google] userinfo failed:", await userInfoRes.text());
+      res.redirect(failRedirect);
+      return;
+    }
+
+    const profile = (await userInfoRes.json()) as {
+      sub: string;
+      email: string;
+      name?: string;
+      picture?: string;
+    };
+
+    if (!profile.sub || !profile.email) {
+      res.redirect(failRedirect);
+      return;
+    }
+
+    // 3. Upsert user in PostgreSQL
+    const user = await UserModel.upsertGoogleUser({
+      googleId: profile.sub,
+      email: profile.email,
+      displayName: profile.name || profile.email.split("@")[0],
+      avatarUrl: profile.picture,
+    });
+
+    // 4. Issue access + refresh tokens
+    const accessToken = signAccessToken(user);
+    const refreshRaw = generateRefreshToken();
+    const refreshHash = hashRefreshToken(refreshRaw);
+    await UserModel.saveRefreshToken(
+      user.id,
+      refreshHash,
+      new Date(Date.now() + env.REFRESH_EXPIRES_MS),
+    );
+
+    setRefreshCookie(res, refreshRaw);
+
+    // 5. Redirect frontend to the OAuth callback route with accessToken
+    res.redirect(
+      `${env.CLIENT_URL}/oauth-callback?accessToken=${encodeURIComponent(accessToken)}`,
+    );
+  } catch (err) {
+    console.error("[google] callback error:", (err as Error).message);
+    res.redirect(failRedirect);
   }
 }

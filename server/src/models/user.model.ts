@@ -218,6 +218,61 @@ export async function findByResetToken(
   return rows[0] ?? null;
 }
 
+// ── Google OAuth ────────────────────────────────────────────────────────────
+
+/** Find a user by their Google subject ID. */
+export async function findByGoogleId(googleId: string): Promise<IUser | null> {
+  const { rows } = await pool.query<IUser>(
+    `SELECT ${SAFE_COLUMNS} FROM users WHERE google_id = $1`,
+    [googleId],
+  );
+  return rows[0] ?? null;
+}
+
+/**
+ * Find-or-create a Google OAuth user.
+ * - If the google_id already exists → return existing user.
+ * - If the email exists but google_id is NULL → link and return.
+ * - Otherwise → create new user (email pre-verified, no password).
+ */
+export async function upsertGoogleUser({
+  googleId,
+  email,
+  displayName,
+  avatarUrl,
+}: {
+  googleId: string;
+  email: string;
+  displayName: string;
+  avatarUrl?: string;
+}): Promise<IUser> {
+  const initials = displayName
+    .trim()
+    .split(/\s+/)
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  const { rows } = await pool.query<IUser>(
+    `INSERT INTO users (email, password_hash, display_name, initials, avatar_url, google_id, email_verified)
+     VALUES ($1, '', $2, $3, $4, $5, true)
+     ON CONFLICT (email) DO UPDATE
+       SET google_id      = EXCLUDED.google_id,
+           email_verified = true,
+           avatar_url     = COALESCE(users.avatar_url, EXCLUDED.avatar_url)
+     RETURNING ${SAFE_COLUMNS}`,
+    [
+      email.toLowerCase().trim(),
+      displayName.trim(),
+      initials,
+      avatarUrl ?? null,
+      googleId,
+    ],
+  );
+  return rows[0];
+}
+
 /** Update password and clear reset token. */
 export async function updatePassword(
   userId: string,
