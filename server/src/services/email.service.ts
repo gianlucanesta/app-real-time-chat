@@ -6,7 +6,8 @@ const mailjet = new Mailjet.Client({
   apiSecret: env.MAILJET_API_SECRET,
 });
 
-const FROM_EMAIL = process.env.MAILJET_FROM_EMAIL || "noreply@ephemeralchat.app";
+const FROM_EMAIL =
+  process.env.MAILJET_FROM_EMAIL || "noreply@ephemeralchat.app";
 const FROM_NAME = process.env.MAILJET_FROM_NAME || "Ephemeral Chat";
 
 interface SendEmailOptions {
