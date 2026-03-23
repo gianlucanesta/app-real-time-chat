@@ -80,7 +80,7 @@ export function ChatMessage({
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
   const contextMenuPortalRef = useRef<HTMLDivElement>(null);
   const [showFullEmojiPicker, setShowFullEmojiPicker] = useState(false);
-  const [showPanelEmojiPicker, setShowPanelEmojiPicker] = useState(false);
+  const [_showPanelEmojiPicker, setShowPanelEmojiPicker] = useState(false);
   const [viewOnceConsumed, setViewOnceConsumed] = useState(false);
   const [showViewOnceViewer, setShowViewOnceViewer] = useState(false);
   const chevronRef = useRef<HTMLButtonElement>(null);

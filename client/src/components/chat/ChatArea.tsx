@@ -98,9 +98,7 @@ export function ChatArea({
     activeMessages,
     sendMessage,
     sendMediaMessage,
-    typingUsers,
     socket,
-    deleteMessages,
     deleteForMe,
     deleteForEveryone,
     markViewOnceOpened,
@@ -307,7 +305,7 @@ export function ChatArea({
 
   // Scroll-to-bottom logic
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const prevConvIdRef = useRef<string | undefined>();
+  const prevConvIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (!messagesEndRef.current || !activeMessages.length) return;
@@ -385,7 +383,11 @@ export function ChatArea({
 
   // Upload file to Cloudinary via server
   const handleFileUpload = useCallback(
-    async (file: File, type: "image" | "video" | "audio", caption?: string) => {
+    async (
+      file: File,
+      _type: "image" | "video" | "audio",
+      caption?: string,
+    ) => {
       if (!activeConversation) return;
       setIsUploading(true);
       try {
@@ -420,7 +422,10 @@ export function ChatArea({
         });
         if (viewOnce) setViewOnce(false);
       } catch (err) {
-        toast.error((err as Error).message || "Failed to upload file");
+        toast.showToast(
+          (err as Error).message || "Failed to upload file",
+          "error",
+        );
       } finally {
         setIsUploading(false);
       }
@@ -430,7 +435,7 @@ export function ChatArea({
 
   // Handle voice recording send
   const handleVoiceSend = useCallback(
-    async (blob: Blob, duration: number) => {
+    async (blob: Blob, _duration: number) => {
       setIsRecording(false);
       // Preserve the actual mime type from the recorder
       const ext = blob.type.includes("ogg") ? "ogg" : "webm";

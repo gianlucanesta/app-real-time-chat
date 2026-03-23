@@ -1,10 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import {
-  RouterProvider,
-  createRouter,
-  createRouteMask,
-} from "@tanstack/react-router";
+import { RouterProvider, createRouter } from "@tanstack/react-router";
 import "./index.css";
 
 /* ── Prevent all zoom (keyboard + touch) ────────────── */

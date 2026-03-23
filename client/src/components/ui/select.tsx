@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { ChevronDown } from "lucide-react";
 import { useClickOutside } from "../../hooks/useClickOutside";
 import { cn } from "../../lib/utils";
@@ -17,9 +17,17 @@ interface SelectProps {
   className?: string;
 }
 
-export function Select({ options, value, onChange, icon, className }: SelectProps) {
+export function Select({
+  options,
+  value,
+  onChange,
+  icon,
+  className,
+}: SelectProps) {
   const [open, setOpen] = useState(false);
-  const ref = useClickOutside<HTMLDivElement>(useCallback(() => setOpen(false), []));
+  const ref = useClickOutside<HTMLDivElement>(
+    useCallback(() => setOpen(false), []),
+  );
 
   const selected = options.find((o) => o.value === value);
 
@@ -64,7 +72,8 @@ export function Select({ options, value, onChange, icon, className }: SelectProp
                   opt.value === value
                     ? "bg-[var(--color-accent)] text-white"
                     : "text-[var(--color-text-main)] hover:bg-[var(--color-input)]",
-                  opt.disabled && "opacity-40 cursor-not-allowed hover:bg-transparent",
+                  opt.disabled &&
+                    "opacity-40 cursor-not-allowed hover:bg-transparent",
                 )}
               >
                 {opt.label}

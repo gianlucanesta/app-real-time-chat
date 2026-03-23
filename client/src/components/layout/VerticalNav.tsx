@@ -94,7 +94,7 @@ export function VerticalNav() {
 
         {/* Bottom icons */}
         <div className="flex flex-col gap-1 w-full items-center">
-          <Link to="/settings" title="Profile">
+          <Link to="/settings" search={{ section: undefined }} title="Profile">
             {user?.avatarUrl ? (
               <img
                 src={user.avatarUrl}
@@ -155,6 +155,7 @@ export function VerticalNav() {
           {/* Profile Tab on Mobile */}
           <Link
             to="/settings"
+            search={{ section: undefined }}
             className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${
               isActive("/settings")
                 ? "text-accent"

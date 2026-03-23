@@ -10,7 +10,6 @@ import {
   ChevronDown,
   Lock,
   Plus,
-  ListPlus,
   Mic,
   Camera,
   Video,

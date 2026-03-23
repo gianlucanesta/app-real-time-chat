@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useCallback, useEffect } from "react";
 import {
   Grid,
@@ -62,30 +62,72 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 // Settings nav items
 const NAV_ITEMS = [
-  { id: "general", icon: Grid, label: "General", description: "Startup and shutdown" },
-  { id: "profile", icon: User, label: "Profile", description: "Name, profile picture, username" },
-  { id: "account", icon: Lock, label: "Account", description: "Security notifications, account info" },
-  { id: "privacy", icon: Shield, label: "Privacy", description: "Blocked contacts, disappearing messages" },
-  { id: "chat", icon: MessageSquare, label: "Chat", description: "Theme, wallpapers, chat settings" },
-  { id: "video", icon: Video, label: "Video & Voice", description: "Camera, microphone and speakers" },
-  { id: "notifications", icon: Bell, label: "Notifications", description: "Messages, groups, sounds", badge: true },
-  { id: "keyboard", icon: Keyboard, label: "Keyboard Shortcuts", description: "Quick actions" },
-  { id: "help", icon: HelpCircle, label: "Help & Feedback", description: "Help center, contact us, privacy policy" },
+  {
+    id: "general",
+    icon: Grid,
+    label: "General",
+    description: "Startup and shutdown",
+  },
+  {
+    id: "profile",
+    icon: User,
+    label: "Profile",
+    description: "Name, profile picture, username",
+  },
+  {
+    id: "account",
+    icon: Lock,
+    label: "Account",
+    description: "Security notifications, account info",
+  },
+  {
+    id: "privacy",
+    icon: Shield,
+    label: "Privacy",
+    description: "Blocked contacts, disappearing messages",
+  },
+  {
+    id: "chat",
+    icon: MessageSquare,
+    label: "Chat",
+    description: "Theme, wallpapers, chat settings",
+  },
+  {
+    id: "video",
+    icon: Video,
+    label: "Video & Voice",
+    description: "Camera, microphone and speakers",
+  },
+  {
+    id: "notifications",
+    icon: Bell,
+    label: "Notifications",
+    description: "Messages, groups, sounds",
+    badge: true,
+  },
+  {
+    id: "keyboard",
+    icon: Keyboard,
+    label: "Keyboard Shortcuts",
+    description: "Quick actions",
+  },
+  {
+    id: "help",
+    icon: HelpCircle,
+    label: "Help & Feedback",
+    description: "Help center, contact us, privacy policy",
+  },
 ];
 
 function SettingsPage() {
   const { section: initialSection } = Route.useSearch();
   const { user, updateUser, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  useTheme();
   const navigate = useNavigate();
 
   // Mobile: null = hub, string = active section
   const [mobileSection, setMobileSection] = useState<string | null>(
     initialSection ?? null,
-  );
-  // Desktop: always shows sidebar; tracks which section is selected
-  const [desktopSection, setDesktopSection] = useState<string>(
-    initialSection ?? "general",
   );
   const [navSearch, setNavSearch] = useState("");
 
@@ -117,7 +159,9 @@ function SettingsPage() {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const initialValuesRef = useRef({
     displayName: user?.displayName || "",
     phone: user?.phone || "",
@@ -204,7 +248,10 @@ function SettingsPage() {
   const handleCameraOpen = async () => {
     setCameraOpen(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+        audio: false,
+      });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -221,9 +268,16 @@ function SettingsPage() {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext("2d")?.drawImage(video, 0, 0);
-    canvas.toBlob((blob) => {
-      if (blob) handleAvatarUpload(new File([blob], "camera-photo.jpg", { type: "image/jpeg" }));
-    }, "image/jpeg", 0.9);
+    canvas.toBlob(
+      (blob) => {
+        if (blob)
+          handleAvatarUpload(
+            new File([blob], "camera-photo.jpg", { type: "image/jpeg" }),
+          );
+      },
+      "image/jpeg",
+      0.9,
+    );
     handleCameraClose();
   };
 
@@ -686,7 +740,7 @@ function SettingsPage() {
 function SettingsPageDesktop() {
   const { section: initialSection } = Route.useSearch();
   const { user, updateUser, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  useTheme();
   const navigate = useNavigate();
 
   const [desktopSection, setDesktopSection] = useState<string>(
@@ -722,7 +776,9 @@ function SettingsPageDesktop() {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const initialValuesRef = useRef({
     displayName: user?.displayName || "",
     phone: user?.phone || "",
@@ -809,7 +865,10 @@ function SettingsPageDesktop() {
   const handleCameraOpen = async () => {
     setCameraOpen(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" },
+        audio: false,
+      });
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -826,9 +885,16 @@ function SettingsPageDesktop() {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext("2d")?.drawImage(video, 0, 0);
-    canvas.toBlob((blob) => {
-      if (blob) handleAvatarUpload(new File([blob], "camera-photo.jpg", { type: "image/jpeg" }));
-    }, "image/jpeg", 0.9);
+    canvas.toBlob(
+      (blob) => {
+        if (blob)
+          handleAvatarUpload(
+            new File([blob], "camera-photo.jpg", { type: "image/jpeg" }),
+          );
+      },
+      "image/jpeg",
+      0.9,
+    );
     handleCameraClose();
   };
 
@@ -906,9 +972,11 @@ function SettingsPageDesktop() {
                 <Icon className="w-4 h-4 shrink-0" />
                 <div className="flex-1 text-left min-w-0">
                   <span className="block">{item.label}</span>
-                  <span className={`block text-[11px] font-normal truncate ${
-                    active ? "text-accent/70" : "text-text-secondary/70"
-                  }`}>
+                  <span
+                    className={`block text-[11px] font-normal truncate ${
+                      active ? "text-accent/70" : "text-text-secondary/70"
+                    }`}
+                  >
                     {item.description}
                   </span>
                 </div>
@@ -973,262 +1041,264 @@ function SettingsPageDesktop() {
           ) : desktopSection === "profile" ? (
             (() => {
               const currentAvatar = avatarPreview || user?.avatarUrl;
-              return <>
-              <h1 className="text-[22px] font-bold text-text-main mb-6">
-                Profile
-              </h1>
+              return (
+                <>
+                  <h1 className="text-[22px] font-bold text-text-main mb-6">
+                    Profile
+                  </h1>
 
-              {/* Profile card */}
-              <div className="bg-card rounded-2xl border border-border p-8 flex flex-col items-center mb-8 relative">
-                <div className="relative" ref={avatarMenuRef}>
-                  {avatarPreview || user?.avatarUrl ? (
-                    <img
-                      src={avatarPreview || user?.avatarUrl || undefined}
-                      alt="Avatar"
-                      className="w-28 h-28 rounded-full object-cover border-2 border-border"
-                    />
-                  ) : (
+                  {/* Profile card */}
+                  <div className="bg-card rounded-2xl border border-border p-8 flex flex-col items-center mb-8 relative">
+                    <div className="relative" ref={avatarMenuRef}>
+                      {avatarPreview || user?.avatarUrl ? (
+                        <img
+                          src={avatarPreview || user?.avatarUrl || undefined}
+                          alt="Avatar"
+                          className="w-28 h-28 rounded-full object-cover border-2 border-border"
+                        />
+                      ) : (
+                        <div
+                          className="w-28 h-28 rounded-full flex items-center justify-center font-bold text-[32px] text-white border-2 border-border"
+                          style={{ background: avatarGradient }}
+                        >
+                          {initials}
+                        </div>
+                      )}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          handleAvatarChange(e);
+                          setAvatarMenuOpen(false);
+                        }}
+                        className="hidden"
+                      />
+                      <input
+                        ref={cameraInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="user"
+                        onChange={(e) => {
+                          handleAvatarChange(e);
+                          setAvatarMenuOpen(false);
+                        }}
+                        className="hidden"
+                      />
+                      <button
+                        onClick={() => setAvatarMenuOpen((v) => !v)}
+                        className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-accent text-white text-[12px] font-medium shadow-md hover:bg-accent/90 transition-colors z-10"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        Edit
+                      </button>
+
+                      {avatarMenuOpen && (
+                        <div className="absolute left-1/2 -translate-x-1/2 top-full mt-5 w-52 bg-card rounded-xl border border-border shadow-lg z-50 overflow-hidden">
+                          <button
+                            disabled={!currentAvatar}
+                            onClick={() => {
+                              setViewerOpen(true);
+                              setAvatarMenuOpen(false);
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-3 text-[13px] transition-colors ${currentAvatar ? "text-text-main hover:bg-input/60" : "text-text-secondary/40 cursor-not-allowed"}`}
+                          >
+                            <Eye className="w-4 h-4 text-text-secondary" />
+                            Visualize Image
+                          </button>
+                          <button
+                            onClick={() => {
+                              handleCameraOpen();
+                              setAvatarMenuOpen(false);
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-text-main hover:bg-input/60 transition-colors"
+                          >
+                            <Video className="w-4 h-4 text-text-secondary" />
+                            Take a Photo
+                          </button>
+                          <button
+                            onClick={() => {
+                              fileInputRef.current?.click();
+                              setAvatarMenuOpen(false);
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-text-main hover:bg-input/60 transition-colors"
+                          >
+                            <ImageUp className="w-4 h-4 text-text-secondary" />
+                            Upload Image
+                          </button>
+                          <button
+                            disabled={!currentAvatar}
+                            onClick={() => {
+                              handleAvatarRemove();
+                              setAvatarMenuOpen(false);
+                            }}
+                            className={`w-full flex items-center gap-3 px-4 py-3 text-[13px] transition-colors ${currentAvatar ? "text-text-main hover:bg-input/60" : "text-text-secondary/40 cursor-not-allowed"}`}
+                          >
+                            <Trash2 className="w-4 h-4 text-text-secondary" />
+                            Delete Image
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Form */}
+                  <div className="grid grid-cols-2 gap-5">
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
+                        First Name
+                      </Label>
+                      <Input
+                        value={firstName}
+                        readOnly
+                        disabled
+                        icon={
+                          <User className="w-[17px] h-[17px] text-text-secondary" />
+                        }
+                        className="h-11 bg-input/40 border-border/40 opacity-70 cursor-not-allowed text-[14px]"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
+                        Last Name
+                      </Label>
+                      <Input
+                        value={lastName}
+                        readOnly
+                        disabled
+                        icon={
+                          <User className="w-[17px] h-[17px] text-text-secondary" />
+                        }
+                        className="h-11 bg-input/40 border-border/40 opacity-70 cursor-not-allowed text-[14px]"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
+                        Display Name
+                      </Label>
+                      <Input
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        icon={
+                          <User className="w-[17px] h-[17px] text-text-secondary" />
+                        }
+                        className="h-11 bg-input/60 border-border/50 text-[14px]"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
+                        Email
+                      </Label>
+                      <Input
+                        type="email"
+                        value={user?.email || ""}
+                        readOnly
+                        disabled
+                        icon={
+                          <Mail className="w-[17px] h-[17px] text-text-secondary" />
+                        }
+                        className="h-11 bg-input/40 border-border/40 opacity-70 cursor-not-allowed text-[14px]"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
+                        Phone
+                      </Label>
+                      <Input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        icon={
+                          <Phone className="w-[17px] h-[17px] text-text-secondary" />
+                        }
+                        className="h-11 bg-input/60 border-border/50 text-[14px]"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
+                        Role
+                      </Label>
+                      <Input
+                        value={role}
+                        onChange={(e) => setRole(e.target.value)}
+                        icon={
+                          <Briefcase className="w-[17px] h-[17px] text-text-secondary" />
+                        }
+                        className="h-11 bg-input/60 border-border/50 text-[14px]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Auto-save status */}
+                  <div className="h-10 mt-6 flex items-center justify-center">
+                    {autoSaveStatus === "saving" && (
+                      <div className="flex items-center gap-2 text-[13px] text-text-secondary animate-pulse">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Saving...</span>
+                      </div>
+                    )}
+                    {autoSaveStatus === "saved" && (
+                      <div className="flex items-center gap-2 text-[13px] text-success animate-in fade-in duration-300">
+                        <Check className="w-4 h-4" />
+                        <span>Changes saved</span>
+                      </div>
+                    )}
+                    {autoSaveStatus === "error" && (
+                      <div className="flex items-center gap-2 text-[13px] text-danger animate-in fade-in duration-300">
+                        <HelpCircle className="w-4 h-4" />
+                        <span>Failed to save changes</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Fullscreen image viewer */}
+                  {viewerOpen && (avatarPreview || user?.avatarUrl) && (
                     <div
-                      className="w-28 h-28 rounded-full flex items-center justify-center font-bold text-[32px] text-white border-2 border-border"
-                      style={{ background: avatarGradient }}
+                      className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+                      onClick={() => setViewerOpen(false)}
                     >
-                      {initials}
+                      <button
+                        className="absolute top-5 right-5 text-white/70 hover:text-white transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setViewerOpen(false);
+                        }}
+                      >
+                        <X className="w-7 h-7" />
+                      </button>
+                      <img
+                        src={avatarPreview || user?.avatarUrl || undefined}
+                        alt="Avatar preview"
+                        className="max-w-[85vw] max-h-[85vh] object-contain rounded-lg"
+                        onClick={(e) => e.stopPropagation()}
+                      />
                     </div>
                   )}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      handleAvatarChange(e);
-                      setAvatarMenuOpen(false);
-                    }}
-                    className="hidden"
-                  />
-                  <input
-                    ref={cameraInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="user"
-                    onChange={(e) => {
-                      handleAvatarChange(e);
-                      setAvatarMenuOpen(false);
-                    }}
-                    className="hidden"
-                  />
-                  <button
-                    onClick={() => setAvatarMenuOpen((v) => !v)}
-                    className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-accent text-white text-[12px] font-medium shadow-md hover:bg-accent/90 transition-colors z-10"
-                  >
-                    <Camera className="w-3.5 h-3.5" />
-                    Edit
-                  </button>
 
-                  {avatarMenuOpen && (
-                    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-5 w-52 bg-card rounded-xl border border-border shadow-lg z-50 overflow-hidden">
+                  {/* Camera capture overlay */}
+                  {cameraOpen && (
+                    <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center">
                       <button
-                        disabled={!currentAvatar}
-                        onClick={() => {
-                          setViewerOpen(true);
-                          setAvatarMenuOpen(false);
-                        }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 text-[13px] transition-colors ${currentAvatar ? "text-text-main hover:bg-input/60" : "text-text-secondary/40 cursor-not-allowed"}`}
+                        className="absolute top-5 right-5 text-white/70 hover:text-white transition-colors"
+                        onClick={handleCameraClose}
                       >
-                        <Eye className="w-4 h-4 text-text-secondary" />
-                        Visualize Image
+                        <X className="w-7 h-7" />
                       </button>
+                      <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="max-w-[85vw] max-h-[70vh] rounded-lg"
+                      />
                       <button
-                        onClick={() => {
-                          handleCameraOpen();
-                          setAvatarMenuOpen(false);
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-text-main hover:bg-input/60 transition-colors"
-                      >
-                        <Video className="w-4 h-4 text-text-secondary" />
-                        Take a Photo
-                      </button>
-                      <button
-                        onClick={() => {
-                          fileInputRef.current?.click();
-                          setAvatarMenuOpen(false);
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-[13px] text-text-main hover:bg-input/60 transition-colors"
-                      >
-                        <ImageUp className="w-4 h-4 text-text-secondary" />
-                        Upload Image
-                      </button>
-                      <button
-                        disabled={!currentAvatar}
-                        onClick={() => {
-                          handleAvatarRemove();
-                          setAvatarMenuOpen(false);
-                        }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 text-[13px] transition-colors ${currentAvatar ? "text-text-main hover:bg-input/60" : "text-text-secondary/40 cursor-not-allowed"}`}
-                      >
-                        <Trash2 className="w-4 h-4 text-text-secondary" />
-                        Delete Image
-                      </button>
+                        onClick={handleCameraCapture}
+                        className="mt-6 w-16 h-16 rounded-full border-4 border-white bg-white/20 hover:bg-white/40 transition-colors"
+                      />
                     </div>
                   )}
-                </div>
-              </div>
-
-              {/* Form */}
-              <div className="grid grid-cols-2 gap-5">
-                <div className="flex flex-col gap-1.5">
-                  <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
-                    First Name
-                  </Label>
-                  <Input
-                    value={firstName}
-                    readOnly
-                    disabled
-                    icon={
-                      <User className="w-[17px] h-[17px] text-text-secondary" />
-                    }
-                    className="h-11 bg-input/40 border-border/40 opacity-70 cursor-not-allowed text-[14px]"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
-                    Last Name
-                  </Label>
-                  <Input
-                    value={lastName}
-                    readOnly
-                    disabled
-                    icon={
-                      <User className="w-[17px] h-[17px] text-text-secondary" />
-                    }
-                    className="h-11 bg-input/40 border-border/40 opacity-70 cursor-not-allowed text-[14px]"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
-                    Display Name
-                  </Label>
-                  <Input
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    icon={
-                      <User className="w-[17px] h-[17px] text-text-secondary" />
-                    }
-                    className="h-11 bg-input/60 border-border/50 text-[14px]"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
-                    Email
-                  </Label>
-                  <Input
-                    type="email"
-                    value={user?.email || ""}
-                    readOnly
-                    disabled
-                    icon={
-                      <Mail className="w-[17px] h-[17px] text-text-secondary" />
-                    }
-                    className="h-11 bg-input/40 border-border/40 opacity-70 cursor-not-allowed text-[14px]"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
-                    Phone
-                  </Label>
-                  <Input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    icon={
-                      <Phone className="w-[17px] h-[17px] text-text-secondary" />
-                    }
-                    className="h-11 bg-input/60 border-border/50 text-[14px]"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
-                    Role
-                  </Label>
-                  <Input
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    icon={
-                      <Briefcase className="w-[17px] h-[17px] text-text-secondary" />
-                    }
-                    className="h-11 bg-input/60 border-border/50 text-[14px]"
-                  />
-                </div>
-              </div>
-
-              {/* Auto-save status */}
-              <div className="h-10 mt-6 flex items-center justify-center">
-                {autoSaveStatus === "saving" && (
-                  <div className="flex items-center gap-2 text-[13px] text-text-secondary animate-pulse">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Saving...</span>
-                  </div>
-                )}
-                {autoSaveStatus === "saved" && (
-                  <div className="flex items-center gap-2 text-[13px] text-success animate-in fade-in duration-300">
-                    <Check className="w-4 h-4" />
-                    <span>Changes saved</span>
-                  </div>
-                )}
-                {autoSaveStatus === "error" && (
-                  <div className="flex items-center gap-2 text-[13px] text-danger animate-in fade-in duration-300">
-                    <HelpCircle className="w-4 h-4" />
-                    <span>Failed to save changes</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Fullscreen image viewer */}
-              {viewerOpen && (avatarPreview || user?.avatarUrl) && (
-                <div
-                  className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
-                  onClick={() => setViewerOpen(false)}
-                >
-                  <button
-                    className="absolute top-5 right-5 text-white/70 hover:text-white transition-colors"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setViewerOpen(false);
-                    }}
-                  >
-                    <X className="w-7 h-7" />
-                  </button>
-                  <img
-                    src={avatarPreview || user?.avatarUrl || undefined}
-                    alt="Avatar preview"
-                    className="max-w-[85vw] max-h-[85vh] object-contain rounded-lg"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-              )}
-
-              {/* Camera capture overlay */}
-              {cameraOpen && (
-                <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center">
-                  <button
-                    className="absolute top-5 right-5 text-white/70 hover:text-white transition-colors"
-                    onClick={handleCameraClose}
-                  >
-                    <X className="w-7 h-7" />
-                  </button>
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="max-w-[85vw] max-h-[70vh] rounded-lg"
-                  />
-                  <button
-                    onClick={handleCameraCapture}
-                    className="mt-6 w-16 h-16 rounded-full border-4 border-white bg-white/20 hover:bg-white/40 transition-colors"
-                  />
-                </div>
-              )}
-            </>;
+                </>
+              );
             })()
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-text-secondary gap-3">

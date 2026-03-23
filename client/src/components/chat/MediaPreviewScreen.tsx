@@ -92,7 +92,7 @@ export function MediaPreviewScreen({
         canvas.width = viewport.width;
         canvas.height = viewport.height;
 
-        await page.render({ canvasContext: ctx, viewport }).promise;
+        await page.render({ canvas, canvasContext: ctx, viewport }).promise;
       } catch {
         if (!cancelled) setPdfError(true);
       }

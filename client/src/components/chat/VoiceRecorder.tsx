@@ -22,7 +22,9 @@ export function VoiceRecorder({
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<ReturnType<typeof setInterval>>();
+  const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(
+    undefined,
+  );
   const streamRef = useRef<MediaStream | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -63,7 +65,7 @@ export function VoiceRecorder({
   const teardown = useCallback(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
-      timerRef.current = undefined;
+      timerRef.current = undefined as unknown as ReturnType<typeof setInterval>;
     }
     if (animFrameRef.current) {
       cancelAnimationFrame(animFrameRef.current);
