@@ -778,10 +778,24 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         ),
       );
 
+      // Timeout fallback: if the ack never fires (socket disconnect, proxy
+      // drop, etc.) remove the stuck "sending" message after 15 seconds.
+      const ackTimeoutId = setTimeout(() => {
+        setActiveMessages((prev) => prev.filter((m) => m.id !== tempId));
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === activeConversation.id && c.lastMessageId === tempId
+              ? { ...c, lastMessageId: undefined, lastMessageStatus: undefined }
+              : c,
+          ),
+        );
+      }, 15_000);
+
       socket.emit(
         "message:send",
         { conversationId: activeConversation.id, text },
         (res) => {
+          clearTimeout(ackTimeoutId);
           if (res.ok && res.messageId) {
             // Register the real message id → convId for future status tracking
             sentMsgsRef.current.set(res.messageId!, activeConversation.id);

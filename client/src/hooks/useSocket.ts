@@ -155,10 +155,14 @@ export function useSocket() {
     }
 
     // Initialize socket connection
+    // Use polling first so Render's reverse proxy (Cloudflare) can reliably
+    // upgrade to WebSocket. "websocket"-only silently fails through some proxies.
     const socket: TypedSocket = io(SOCKET_URL, {
       auth: { token },
-      transports: ["websocket"],
-      reconnection: false, // Manual reconnect in connect_error to avoid race with token refresh
+      transports: ["polling", "websocket"],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 2000,
     });
 
     socket.on("connect", () => {
