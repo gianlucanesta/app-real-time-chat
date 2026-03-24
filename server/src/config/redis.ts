@@ -44,20 +44,30 @@ sub.on("error", (e: Error) =>
  * Enable keyspace notifications for key-expiry events and subscribe.
  * When a message's Redis key expires, the corresponding MongoDB document
  * is deleted and a `message:expired` event is emitted via Socket.io.
+ *
+ * On managed Redis (e.g. Render) CONFIG SET is blocked, so keyspace events
+ * are unavailable. In that case we skip the subscription entirely — the
+ * media-cleanup polling job (media-cleanup.service.ts) serves as the
+ * fallback and handles expiry every 5 minutes.
  */
 export async function initKeyspaceExpiry(
   io: Server,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   MessageModel: Model<any>,
 ): Promise<void> {
+  let keyspaceAvailable = false;
   try {
     await redis.config("SET", "notify-keyspace-events", "KEx");
+    keyspaceAvailable = true;
   } catch (err) {
     console.warn(
-      "[redis] CONFIG SET not permitted (managed Redis?):",
+      "[redis] CONFIG SET not permitted – keyspace expiry disabled, falling back to polling:",
       (err as Error).message,
     );
+    return; // skip subscription — polling job takes over
   }
+
+  if (!keyspaceAvailable) return;
 
   await sub.subscribe("__keyevent@0__:expired");
 
