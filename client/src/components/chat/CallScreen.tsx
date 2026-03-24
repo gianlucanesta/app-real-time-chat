@@ -8,7 +8,7 @@ import {
   MonitorOff,
   RotateCw,
 } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { CallStatus } from "../../hooks/useWebRTC";
 
 interface CallScreenProps {
@@ -52,6 +52,15 @@ export function CallScreen({
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const [timer, setTimer] = useState(0);
 
+  // ── Draggable PiP state ───────────────────────────────────────────────
+  const [pipOffset, setPipOffset] = useState({ x: 0, y: 0 });
+  const [pipExpanded, setPipExpanded] = useState(false);
+  const dragRef = useRef({
+    active: false,
+    startMouse: { x: 0, y: 0 },
+    startOffset: { x: 0, y: 0 },
+  });
+
   const isOpen =
     status === "calling" ||
     status === "connecting" ||
@@ -73,6 +82,14 @@ export function CallScreen({
     return () => window.clearInterval(interval);
   }, [status]);
 
+  // Reset PiP when a new call starts
+  useEffect(() => {
+    if (status === "calling" || status === "connecting") {
+      setPipOffset({ x: 0, y: 0 });
+      setPipExpanded(false);
+    }
+  }, [status]);
+
   // Attach local stream
   useEffect(() => {
     if (localVideoRef.current && localStream) {
@@ -80,10 +97,19 @@ export function CallScreen({
     }
   }, [localStream]);
 
-  // Attach remote stream
+  // Attach remote stream — element is always in DOM so audio always plays
   useEffect(() => {
-    if (remoteVideoRef.current && remoteStream) {
+    if (remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = remoteStream;
+    }
+    // Route audio to the user's preferred speaker
+    const speakerId = localStorage.getItem("ephemeral-speaker-id");
+    if (
+      speakerId &&
+      remoteVideoRef.current &&
+      "setSinkId" in remoteVideoRef.current
+    ) {
+      (remoteVideoRef.current as any).setSinkId(speakerId).catch(() => {});
     }
   }, [remoteStream]);
 
@@ -95,25 +121,65 @@ export function CallScreen({
     return `${m}:${s}`;
   };
 
+  // ── PiP drag handlers ─────────────────────────────────────────────────
+  const handlePipPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      dragRef.current = {
+        active: true,
+        startMouse: { x: e.clientX, y: e.clientY },
+        startOffset: { ...pipOffset },
+      };
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      e.preventDefault();
+    },
+    [pipOffset],
+  );
+
+  const handlePipPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragRef.current.active) return;
+    setPipOffset({
+      x:
+        dragRef.current.startOffset.x +
+        (e.clientX - dragRef.current.startMouse.x),
+      y:
+        dragRef.current.startOffset.y +
+        (e.clientY - dragRef.current.startMouse.y),
+    });
+  }, []);
+
+  const handlePipPointerUp = useCallback(() => {
+    dragRef.current.active = false;
+  }, []);
+
+  const handlePipDoubleClick = useCallback(() => {
+    setPipExpanded((prev) => !prev);
+  }, []);
+
   if (!isOpen) return null;
 
   const hasRemoteVideo =
     remoteStream && remoteStream.getVideoTracks().length > 0;
+  const showRemoteVideo = hasRemoteVideo && status === "connected";
   const showLocalPip = localStream && callWithVideo;
 
   return (
     <div className="call-screen open" role="dialog" aria-label="Active call">
       {/* Video / Avatar area */}
       <div className="call-screen-content">
-        {/* Remote video (full area) */}
-        {hasRemoteVideo && status === "connected" ? (
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            className="call-remote-video"
-          />
-        ) : (
+        {/* Remote video — always in DOM so remote audio plays even on voice calls */}
+        <video
+          ref={remoteVideoRef}
+          autoPlay
+          playsInline
+          className="call-remote-video"
+          style={{
+            opacity: showRemoteVideo ? 1 : 0,
+            pointerEvents: showRemoteVideo ? "auto" : "none",
+          }}
+        />
+
+        {/* Avatar / status fallback (voice call or pre-connect) */}
+        {!showRemoteVideo && (
           <>
             {contactAvatarUrl ? (
               <img
@@ -131,7 +197,6 @@ export function CallScreen({
             )}
             <div className="call-name">{contactName}</div>
 
-            {/* Status text */}
             {status === "calling" && (
               <div className="call-status-text">Calling...</div>
             )}
@@ -166,9 +231,19 @@ export function CallScreen({
           </>
         )}
 
-        {/* Local video PiP */}
+        {/* Local video PiP — draggable & double-click to expand */}
         {showLocalPip && (
-          <div className="call-local-pip">
+          <div
+            className={`call-local-pip${pipExpanded ? " call-local-pip--expanded" : ""}`}
+            style={{
+              transform: `translate(${pipOffset.x}px, ${pipOffset.y}px)`,
+              cursor: dragRef.current.active ? "grabbing" : "grab",
+            }}
+            onPointerDown={handlePipPointerDown}
+            onPointerMove={handlePipPointerMove}
+            onPointerUp={handlePipPointerUp}
+            onDoubleClick={handlePipDoubleClick}
+          >
             <video
               ref={localVideoRef}
               autoPlay

@@ -242,6 +242,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
+  padding-right: var(--space-2);
 }
 .selection-action-btn {
   width: 40px;
@@ -511,6 +512,20 @@
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
   border: 2px solid rgba(255, 255, 255, 0.15);
   z-index: 10;
+  touch-action: none;
+  user-select: none;
+  transition:
+    width 0.25s ease,
+    height 0.25s ease;
+}
+
+.call-local-pip--expanded {
+  width: 320px;
+  height: 240px;
+}
+
+.call-local-pip:active {
+  cursor: grabbing;
 }
 
 .call-local-video {
@@ -678,6 +693,11 @@
     height: 82px;
     bottom: 140px;
     right: 12px;
+  }
+
+  .call-local-pip--expanded {
+    width: 220px;
+    height: 165px;
   }
 
   .incoming-call-banner {

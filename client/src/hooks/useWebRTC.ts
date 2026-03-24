@@ -10,6 +10,16 @@ const ICE_SERVERS: RTCIceServer[] = [
 const ICE_RESTART_TIMEOUT_MS = 8_000;
 const MAX_FULL_RETRIES = 2;
 
+/** Build getUserMedia constraints using saved device preferences. */
+function getMediaConstraints(withVideo: boolean): MediaStreamConstraints {
+  const micId = localStorage.getItem("ephemeral-mic-id");
+  const camId = localStorage.getItem("ephemeral-camera-id");
+  return {
+    audio: micId ? { deviceId: { ideal: micId } } : true,
+    video: withVideo ? (camId ? { deviceId: { ideal: camId } } : true) : false,
+  };
+}
+
 export type CallStatus =
   | "idle"
   | "calling"
@@ -127,10 +137,9 @@ export function useWebRTC(socket: TypedSocket | null) {
     pcRef.current = null;
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: withVideoRef.current,
-        audio: true,
-      });
+      const stream = await navigator.mediaDevices.getUserMedia(
+        getMediaConstraints(withVideoRef.current),
+      );
       setLocalStream(stream);
       const pc = createPC(stream);
       pcRef.current = pc;
@@ -184,10 +193,9 @@ export function useWebRTC(socket: TypedSocket | null) {
       setStatus("calling");
 
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: withVideo,
-          audio: true,
-        });
+        const stream = await navigator.mediaDevices.getUserMedia(
+          getMediaConstraints(withVideo),
+        );
         setLocalStream(stream);
         if (withVideo) {
           originalVideoTrackRef.current = stream.getVideoTracks()[0] ?? null;
@@ -219,10 +227,9 @@ export function useWebRTC(socket: TypedSocket | null) {
     setIncomingCall(null);
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: withVideo,
-        audio: true,
-      });
+      const stream = await navigator.mediaDevices.getUserMedia(
+        getMediaConstraints(withVideo),
+      );
       setLocalStream(stream);
       if (withVideo) {
         originalVideoTrackRef.current = stream.getVideoTracks()[0] ?? null;

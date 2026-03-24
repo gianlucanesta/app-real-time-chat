@@ -34,6 +34,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Select } from "../components/ui/select";
 import { apiFetch, normalizeUser, getAccessToken } from "../lib/api";
+import { VideoVoiceSettings } from "../components/settings/VideoVoiceSettings";
 import type { User as UserType } from "../types";
 
 const LANGUAGE_OPTIONS = [
@@ -623,6 +624,7 @@ function SettingsPage() {
   function renderSectionContent(id: string) {
     if (id === "general") return <GeneralSection />;
     if (id === "profile") return <AccountSection />;
+    if (id === "video") return <VideoVoiceSettings />;
     const item = NAV_ITEMS.find((n) => n.id === id);
     return <StubSection label={item?.label || id} />;
   }
@@ -1300,6 +1302,13 @@ function SettingsPageDesktop() {
                 </>
               );
             })()
+          ) : desktopSection === "video" ? (
+            <>
+              <h1 className="text-[22px] font-bold text-text-main mb-6">
+                Video & Voice
+              </h1>
+              <VideoVoiceSettings />
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-text-secondary gap-3">
               <Lock className="w-10 h-10 opacity-30" />
