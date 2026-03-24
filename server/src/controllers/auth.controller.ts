@@ -531,3 +531,128 @@ export async function googleCallback(
     res.redirect(failRedirect);
   }
 }
+
+// ── Facebook OAuth2 ─────────────────────────────────────────────────────────
+
+/**
+ * GET /api/auth/facebook
+ * Redirect the browser to Facebook's OAuth2 dialog.
+ */
+export function facebookAuth(_req: Request, res: Response): void {
+  if (!env.FACEBOOK_APP_ID) {
+    res.status(503).json({ error: "Facebook OAuth not configured" });
+    return;
+  }
+
+  const params = new URLSearchParams({
+    client_id: env.FACEBOOK_APP_ID,
+    redirect_uri: env.FACEBOOK_CALLBACK_URL,
+    response_type: "code",
+    scope: "public_profile,email",
+  });
+
+  res.redirect(`https://www.facebook.com/v22.0/dialog/oauth?${params}`);
+}
+
+/**
+ * GET /api/auth/facebook/callback
+ * Exchange the authorization code, upsert user, issue tokens.
+ */
+export async function facebookCallback(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const { code, error: oauthError } = req.query as {
+    code?: string;
+    error?: string;
+  };
+
+  const failRedirect = `${env.CLIENT_URL}/login?error=facebook_failed`;
+
+  if (oauthError || !code) {
+    res.redirect(failRedirect);
+    return;
+  }
+
+  try {
+    // 1. Exchange code for access token
+    const tokenParams = new URLSearchParams({
+      client_id: env.FACEBOOK_APP_ID,
+      client_secret: env.FACEBOOK_APP_SECRET,
+      redirect_uri: env.FACEBOOK_CALLBACK_URL,
+      code,
+    });
+
+    const tokenRes = await fetch(
+      `https://graph.facebook.com/v22.0/oauth/access_token?${tokenParams}`,
+    );
+
+    if (!tokenRes.ok) {
+      console.error("[facebook] token exchange failed:", await tokenRes.text());
+      res.redirect(failRedirect);
+      return;
+    }
+
+    const tokenData = (await tokenRes.json()) as { access_token: string };
+
+    // 2. Fetch user profile (id, name, email, picture)
+    const userParams = new URLSearchParams({
+      fields: "id,name,email,picture.type(large)",
+      access_token: tokenData.access_token,
+    });
+
+    const userInfoRes = await fetch(
+      `https://graph.facebook.com/v22.0/me?${userParams}`,
+    );
+
+    if (!userInfoRes.ok) {
+      console.error("[facebook] userinfo failed:", await userInfoRes.text());
+      res.redirect(failRedirect);
+      return;
+    }
+
+    const profile = (await userInfoRes.json()) as {
+      id: string;
+      name?: string;
+      email?: string;
+      picture?: { data?: { url?: string } };
+    };
+
+    if (!profile.id) {
+      res.redirect(failRedirect);
+      return;
+    }
+
+    // Facebook may not return an email (phone-only accounts).
+    // Fall back to a stable placeholder so the UNIQUE constraint is satisfied.
+    const email = profile.email ?? `fb_${profile.id}@facebook.invalid`;
+
+    // 3. Upsert user in PostgreSQL
+    const user = await UserModel.upsertFacebookUser({
+      facebookId: profile.id,
+      email,
+      displayName: profile.name || email.split("@")[0],
+      avatarUrl: profile.picture?.data?.url,
+    });
+
+    // 4. Issue access + refresh tokens
+    const accessToken = signAccessToken(user);
+    const refreshRaw = generateRefreshToken();
+    const refreshHash = hashRefreshToken(refreshRaw);
+    await UserModel.saveRefreshToken(
+      user.id,
+      refreshHash,
+      new Date(Date.now() + env.REFRESH_EXPIRES_MS),
+    );
+
+    setRefreshCookie(res, refreshRaw);
+
+    // 5. Redirect frontend to the OAuth callback route with accessToken
+    res.redirect(
+      `${env.CLIENT_URL}/oauth-callback?accessToken=${encodeURIComponent(accessToken)}`,
+    );
+  } catch (err) {
+    console.error("[facebook] callback error:", (err as Error).message);
+    res.redirect(failRedirect);
+  }
+}

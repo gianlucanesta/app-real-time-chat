@@ -31,4 +31,10 @@ export const env = {
   GOOGLE_CALLBACK_URL:
     process.env.GOOGLE_CALLBACK_URL ||
     "http://localhost:3001/api/auth/google/callback",
+  // Facebook OAuth2
+  FACEBOOK_APP_ID: process.env.FACEBOOK_APP_ID || "",
+  FACEBOOK_APP_SECRET: process.env.FACEBOOK_APP_SECRET || "",
+  FACEBOOK_CALLBACK_URL:
+    process.env.FACEBOOK_CALLBACK_URL ||
+    "http://localhost:3001/api/auth/facebook/callback",
 } as const;

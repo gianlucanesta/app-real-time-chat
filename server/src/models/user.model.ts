@@ -273,6 +273,52 @@ export async function upsertGoogleUser({
   return rows[0];
 }
 
+// ── Facebook OAuth ──────────────────────────────────────────────────────────
+
+/**
+ * Find-or-create a Facebook OAuth user.
+ * - If the facebook_id already exists → return existing user.
+ * - If the email exists but facebook_id is NULL → link and return.
+ * - Otherwise → create new user (email pre-verified, no password).
+ */
+export async function upsertFacebookUser({
+  facebookId,
+  email,
+  displayName,
+  avatarUrl,
+}: {
+  facebookId: string;
+  email: string;
+  displayName: string;
+  avatarUrl?: string;
+}): Promise<IUser> {
+  const initials = displayName
+    .trim()
+    .split(/\s+/)
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  const { rows } = await pool.query<IUser>(
+    `INSERT INTO users (email, password_hash, display_name, initials, avatar_url, facebook_id, email_verified)
+     VALUES ($1, '', $2, $3, $4, $5, true)
+     ON CONFLICT (email) DO UPDATE
+       SET facebook_id    = EXCLUDED.facebook_id,
+           email_verified = true,
+           avatar_url     = COALESCE(users.avatar_url, EXCLUDED.avatar_url)
+     RETURNING ${SAFE_COLUMNS}`,
+    [
+      email.toLowerCase().trim(),
+      displayName.trim(),
+      initials,
+      avatarUrl ?? null,
+      facebookId,
+    ],
+  );
+  return rows[0];
+}
+
 /** Update password and clear reset token. */
 export async function updatePassword(
   userId: string,

@@ -76,6 +76,14 @@ services:
       - key: GOOGLE_CALLBACK_URL
         value: https://app-real-time-chat-backend.onrender.com/api/auth/google/callback
 
+      # Facebook OAuth2 — set app_id and app_secret manually in the Render dashboard
+      - key: FACEBOOK_APP_ID
+        sync: false
+      - key: FACEBOOK_APP_SECRET
+        sync: false
+      - key: FACEBOOK_CALLBACK_URL
+        value: https://app-real-time-chat-backend.onrender.com/api/auth/facebook/callback
+
       # Frontend URL (used for post-OAuth redirects)
       - key: CLIENT_URL
         value: https://app-real-time-chat-frontend.onrender.com

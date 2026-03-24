@@ -17,3 +17,7 @@ authRouter.post("/reset-password", authLimiter, ctrl.resetPassword);
 // Google OAuth2
 authRouter.get("/google", ctrl.googleAuth);
 authRouter.get("/google/callback", ctrl.googleCallback);
+
+// Facebook OAuth2
+authRouter.get("/facebook", ctrl.facebookAuth);
+authRouter.get("/facebook/callback", ctrl.facebookCallback);
