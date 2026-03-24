@@ -43,6 +43,7 @@ export function useWebRTC(socket: TypedSocket | null) {
   const iceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const targetUserRef = useRef<string | null>(null);
   const withVideoRef = useRef(true);
+  const iceCandidateBuffer = useRef<RTCIceCandidateInit[]>([]);
 
   const [status, setStatus] = useState<CallStatus>("idle");
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -239,6 +240,15 @@ export function useWebRTC(socket: TypedSocket | null) {
       pcRef.current = pc;
 
       await pc.setRemoteDescription(offer);
+      // Flush any ICE candidates that arrived during the ringing phase
+      const buffered = iceCandidateBuffer.current.splice(0);
+      for (const c of buffered) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(c));
+        } catch (err) {
+          console.warn("[webrtc] buffered addIceCandidate error:", err);
+        }
+      }
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       socket.emit("call:answer", { to: from, answer });
@@ -268,6 +278,7 @@ export function useWebRTC(socket: TypedSocket | null) {
     }
     targetUserRef.current = null;
     retryCount.current = 0;
+    iceCandidateBuffer.current = [];
   }, [cleanupMedia, socket, clearIceTimer]);
 
   // ── Toggle mute ────────────────────────────────────────────────────────
@@ -362,12 +373,24 @@ export function useWebRTC(socket: TypedSocket | null) {
       setStatus("incoming");
     };
 
+    const flushIceBuffer = async (pc: RTCPeerConnection) => {
+      const candidates = iceCandidateBuffer.current.splice(0);
+      for (const c of candidates) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(c));
+        } catch (err) {
+          console.warn("[webrtc] buffered addIceCandidate error:", err);
+        }
+      }
+    };
+
     const handleAnswer = async (data: {
       from: string;
       answer: RTCSessionDescriptionInit;
     }) => {
       if (pcRef.current) {
         await pcRef.current.setRemoteDescription(data.answer);
+        await flushIceBuffer(pcRef.current);
       }
     };
 
@@ -375,10 +398,14 @@ export function useWebRTC(socket: TypedSocket | null) {
       from: string;
       candidate: RTCIceCandidateInit;
     }) => {
+      const pc = pcRef.current;
+      if (!pc || !pc.remoteDescription) {
+        // PC not ready yet — buffer for later
+        iceCandidateBuffer.current.push(data.candidate);
+        return;
+      }
       try {
-        await pcRef.current?.addIceCandidate(
-          new RTCIceCandidate(data.candidate),
-        );
+        await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
       } catch (err) {
         console.warn("[webrtc] addIceCandidate error:", err);
       }
@@ -388,6 +415,7 @@ export function useWebRTC(socket: TypedSocket | null) {
       clearIceTimer();
       pcRef.current?.close();
       pcRef.current = null;
+      iceCandidateBuffer.current = [];
       cleanupMedia();
       setStatus("idle");
       targetUserRef.current = null;
@@ -398,6 +426,7 @@ export function useWebRTC(socket: TypedSocket | null) {
       clearIceTimer();
       pcRef.current?.close();
       pcRef.current = null;
+      iceCandidateBuffer.current = [];
       cleanupMedia();
       setStatus("idle");
       targetUserRef.current = null;
