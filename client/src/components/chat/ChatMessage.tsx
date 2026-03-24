@@ -52,6 +52,7 @@ interface ChatMessageProps {
   onViewOnceOpen?: () => void;
   onOpenMedia?: () => void;
   linkPreview?: LinkPreview | null;
+  isUploading?: boolean;
 }
 
 const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
@@ -82,6 +83,7 @@ export function ChatMessage({
   onOpenMedia,
   currentUserId,
   linkPreview,
+  isUploading,
 }: ChatMessageProps) {
   const [isReactionMenuOpen, setIsReactionMenuOpen] = useState(false);
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
@@ -319,7 +321,7 @@ export function ChatMessage({
                 <>
                   {mediaUrl && mediaType === "image" && (
                     <div
-                      className="cursor-pointer"
+                      className="relative cursor-pointer"
                       onClick={
                         viewOnce && !isSent && !viewedAt && !viewOnceConsumed
                           ? handleViewOnceMediaClick
@@ -329,9 +331,14 @@ export function ChatMessage({
                       <img
                         src={mediaUrl}
                         alt=""
-                        className="w-[300px] h-[200px] object-cover"
+                        className={`w-[300px] h-[200px] object-cover${isUploading ? " opacity-60" : ""}`}
                         loading="lazy"
                       />
+                      {isUploading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                          <div className="w-9 h-9 border-[3px] border-white/80 border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      )}
                     </div>
                   )}
                   {mediaUrl && mediaType === "video" && (
@@ -348,71 +355,102 @@ export function ChatMessage({
                         className="w-full max-w-[320px]"
                         preload="metadata"
                       />
-                      {/* Play overlay */}
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center backdrop-blur-sm">
-                          <svg
-                            viewBox="0 0 24 24"
-                            fill="white"
-                            className="w-6 h-6 ml-0.5"
-                          >
-                            <polygon points="5,3 19,12 5,21" />
-                          </svg>
+                      {/* Play overlay (hidden while uploading) */}
+                      {!isUploading && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center backdrop-blur-sm">
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="white"
+                              className="w-6 h-6 ml-0.5"
+                            >
+                              <polygon points="5,3 19,12 5,21" />
+                            </svg>
+                          </div>
                         </div>
-                      </div>
+                      )}
+                      {isUploading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                          <div className="w-9 h-9 border-[3px] border-white/80 border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      )}
                     </div>
                   )}
-                  {mediaUrl && mediaType === "audio" && (
-                    <div className="min-w-[280px] w-full">
-                      <AudioPlayer
-                        src={mediaUrl}
-                        duration={mediaDuration ?? undefined}
-                        isSent={isSent}
-                        contactInitials={contactInitials}
-                        contactGradient={contactGradient}
-                        contactAvatarUrl={contactAvatarUrl}
-                        onFinish={
-                          viewOnce && !isSent
-                            ? handleViewOnceAudioFinish
-                            : undefined
-                        }
-                      />
+                  {(mediaUrl || isUploading) && mediaType === "audio" && (
+                    <div className="min-w-[280px] w-full relative">
+                      {mediaUrl && (
+                        <AudioPlayer
+                          src={mediaUrl}
+                          duration={mediaDuration ?? undefined}
+                          isSent={isSent}
+                          contactInitials={contactInitials}
+                          contactGradient={contactGradient}
+                          contactAvatarUrl={contactAvatarUrl}
+                          onFinish={
+                            viewOnce && !isSent
+                              ? handleViewOnceAudioFinish
+                              : undefined
+                          }
+                        />
+                      )}
+                      {isUploading && !mediaUrl && (
+                        <div
+                          className={`flex items-center gap-3 px-3 py-3 rounded-xl min-w-[240px] ${
+                            isSent ? "bg-blue-700/20" : "bg-input"
+                          }`}
+                        >
+                          <div className="w-8 h-8 border-[3px] border-accent border-t-transparent rounded-full animate-spin shrink-0" />
+                          <span
+                            className={`text-sm ${isSent ? "text-blue-100" : "text-text-secondary"}`}
+                          >
+                            Uploading audio…
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
-                  {mediaUrl && mediaType === "document" && (
-                    <a
-                      href={mediaUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl min-w-[220px] max-w-[280px] transition-opacity hover:opacity-80 ${
+                  {(mediaUrl || isUploading) && mediaType === "document" && (
+                    <div
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl min-w-[220px] max-w-[280px] ${
                         isSent
                           ? "bg-blue-700/30 text-white"
                           : "bg-input text-text-main"
                       }`}
                     >
                       <span className="w-9 h-9 rounded-lg bg-blue-500/20 flex items-center justify-center shrink-0">
-                        <FileText className="w-5 h-5 text-blue-400" />
+                        {isUploading ? (
+                          <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <FileText className="w-5 h-5 text-blue-400" />
+                        )}
                       </span>
                       <span className="flex-1 min-w-0">
                         <span className="block text-sm font-medium truncate">
-                          {mediaFileName ||
-                            mediaUrl.split("/").pop()?.split("?")[0] ||
-                            "Document"}
+                          {mediaFileName || "Document"}
                         </span>
                         <span
                           className={`block text-xs mt-0.5 ${
                             isSent ? "text-blue-200" : "text-text-secondary"
                           }`}
                         >
-                          Open document
+                          {isUploading ? "Uploading…" : "Open document"}
                         </span>
                       </span>
-                      <Download
-                        className={`w-4 h-4 shrink-0 ${
-                          isSent ? "text-blue-200" : "text-text-secondary"
-                        }`}
-                      />
-                    </a>
+                      {!isUploading && mediaUrl && (
+                        <a
+                          href={mediaUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Download
+                            className={`w-4 h-4 shrink-0 ${
+                              isSent ? "text-blue-200" : "text-text-secondary"
+                            }`}
+                          />
+                        </a>
+                      )}
+                    </div>
                   )}
                 </>
               )}

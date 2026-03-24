@@ -100,6 +100,8 @@ export function ChatArea({
     activeMessages,
     sendMessage,
     sendMediaMessage,
+    addOptimisticMediaMessage,
+    cancelOptimisticMediaMessage,
     socket,
     deleteForMe,
     deleteForEveryone,
@@ -158,7 +160,6 @@ export function ChatArea({
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [viewOnce, setViewOnce] = useState(false);
 
   // Media preview state
@@ -441,11 +442,26 @@ export function ChatArea({
   const handleFileUpload = useCallback(
     async (
       file: File,
-      _type: "image" | "video" | "audio" | "document",
+      type: "image" | "video" | "audio" | "document",
       caption?: string,
     ) => {
       if (!activeConversation) return;
-      setIsUploading(true);
+
+      // Blob URL for immediate in-bubble preview (image & video only)
+      const localPreviewUrl =
+        type === "image" || type === "video"
+          ? URL.createObjectURL(file)
+          : undefined;
+
+      // Show the bubble immediately with a loading overlay
+      const tempId = addOptimisticMediaMessage({
+        mediaType: type,
+        mediaFileName: file.name,
+        localPreviewUrl,
+        text: caption,
+        viewOnce,
+      });
+
       try {
         const formData = new FormData();
         formData.append("file", file);
@@ -470,6 +486,9 @@ export function ChatArea({
           duration: number | null;
           fileName?: string;
         } = await res.json();
+
+        if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+
         sendMediaMessage({
           mediaUrl: data.url,
           mediaType: data.mediaType,
@@ -477,18 +496,26 @@ export function ChatArea({
           mediaFileName: data.fileName,
           text: caption || undefined,
           viewOnce,
+          replaceTempId: tempId,
         });
         if (viewOnce) setViewOnce(false);
       } catch (err) {
+        if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+        cancelOptimisticMediaMessage(tempId);
         toast.showToast(
           (err as Error).message || "Failed to upload file",
           "error",
         );
-      } finally {
-        setIsUploading(false);
       }
     },
-    [activeConversation, sendMediaMessage, toast, viewOnce],
+    [
+      activeConversation,
+      addOptimisticMediaMessage,
+      cancelOptimisticMediaMessage,
+      sendMediaMessage,
+      toast,
+      viewOnce,
+    ],
   );
 
   // Handle voice recording send
@@ -954,6 +981,7 @@ export function ChatArea({
                 mediaType={msg.mediaType}
                 mediaDuration={msg.mediaDuration}
                 mediaFileName={msg.mediaFileName}
+                isUploading={msg.isUploading}
                 viewOnce={msg.viewOnce}
                 viewedAt={msg.viewedAt}
                 contactInitials={msg.isMe ? myInitials : contactInitials}
@@ -1229,31 +1257,22 @@ export function ChatArea({
               )}
             </div>
 
-            {isUploading ? (
-              <div className="flex-1 flex items-center justify-center px-2">
-                <div className="w-5 h-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-                <span className="ml-2 text-sm text-text-secondary">
-                  Uploading...
-                </span>
-              </div>
-            ) : (
-              <input
-                type="text"
-                placeholder="Write a message..."
-                value={inputValue}
-                className="flex-1 bg-transparent border-none outline-none text-[14px] text-text-main placeholder:text-text-secondary px-2"
-                onChange={(e) => {
-                  setInputValue(e.target.value);
-                  handleTypingEmit();
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-              />
-            )}
+            <input
+              type="text"
+              placeholder="Write a message..."
+              value={inputValue}
+              className="flex-1 bg-transparent border-none outline-none text-[14px] text-text-main placeholder:text-text-secondary px-2"
+              onChange={(e) => {
+                setInputValue(e.target.value);
+                handleTypingEmit();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+            />
 
             <div className="flex items-center gap-1.5 ml-2">
               {/* Mic: only when input is empty */}

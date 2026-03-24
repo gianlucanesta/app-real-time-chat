@@ -40,6 +40,7 @@ export interface Message {
   status: "sending" | "sent" | "delivered" | "read";
   isMe: boolean;
   linkPreview?: LinkPreview | null;
+  isUploading?: boolean;
 }
 
 export interface Reaction {
@@ -97,7 +98,17 @@ interface ChatContextType {
     mediaFileName?: string;
     text?: string;
     viewOnce?: boolean;
+    replaceTempId?: string;
   }) => void;
+  addOptimisticMediaMessage: (media: {
+    mediaType: "image" | "video" | "audio" | "document";
+    mediaDuration?: number;
+    mediaFileName?: string;
+    localPreviewUrl?: string;
+    text?: string;
+    viewOnce?: boolean;
+  }) => string;
+  cancelOptimisticMediaMessage: (tempId: string) => void;
   loadConversations: () => Promise<void>;
   addOrUpdateConversation: (conv: Conversation) => void;
   deleteMessages: (ids: string[]) => void;
@@ -1063,6 +1074,49 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   );
 
   // ── Send media message ───────────────────────────────────────────────────
+  // ── Add optimistic media bubble immediately (before upload) ────────────────
+  const addOptimisticMediaMessage = useCallback(
+    (media: {
+      mediaType: "image" | "video" | "audio" | "document";
+      mediaDuration?: number;
+      mediaFileName?: string;
+      localPreviewUrl?: string;
+      text?: string;
+      viewOnce?: boolean;
+    }): string => {
+      if (!activeConversation || !user) return "";
+      const tempId = `temp-${Date.now()}`;
+      const now = new Date();
+      const newMsg: Message = {
+        id: tempId,
+        senderId: user.id ?? "me",
+        senderName: user.displayName ?? "Me",
+        text: media.text || "",
+        mediaUrl: media.localPreviewUrl || null,
+        mediaType: media.mediaType,
+        mediaDuration: media.mediaDuration || null,
+        mediaFileName: media.mediaFileName || null,
+        viewOnce: media.viewOnce || false,
+        viewedAt: null,
+        timestamp: now.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        rawTimestamp: now.toISOString(),
+        status: "sending",
+        isMe: true,
+        isUploading: true,
+      };
+      setActiveMessages((prev) => [...prev, newMsg]);
+      return tempId;
+    },
+    [activeConversation, user],
+  );
+
+  const cancelOptimisticMediaMessage = useCallback((tempId: string) => {
+    setActiveMessages((prev) => prev.filter((m) => m.id !== tempId));
+  }, []);
+
   const sendMediaMessage = useCallback(
     (media: {
       mediaUrl: string;
@@ -1071,10 +1125,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       mediaFileName?: string;
       text?: string;
       viewOnce?: boolean;
+      replaceTempId?: string;
     }) => {
       if (!activeConversation || !user || !socket) return;
 
-      const tempId = `temp-${Date.now()}`;
+      const tempId = media.replaceTempId || `temp-${Date.now()}`;
       const now = new Date();
       const label =
         media.mediaType === "audio"
@@ -1105,9 +1160,21 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         rawTimestamp: now.toISOString(),
         status: "sending",
         isMe: true,
+        isUploading: false,
       };
 
-      setActiveMessages((prev) => [...prev, newMsg]);
+      if (media.replaceTempId) {
+        // Update the existing optimistic bubble in-place
+        setActiveMessages((prev) =>
+          prev.map((m) =>
+            m.id === media.replaceTempId
+              ? { ...newMsg, id: media.replaceTempId! }
+              : m,
+          ),
+        );
+      } else {
+        setActiveMessages((prev) => [...prev, newMsg]);
+      }
 
       setConversations((prev) =>
         prev.map((c) =>
@@ -1213,6 +1280,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         setMobileInChat,
         sendMessage,
         sendMediaMessage,
+        addOptimisticMediaMessage,
+        cancelOptimisticMediaMessage,
         loadConversations,
         addOrUpdateConversation,
         deleteMessages,

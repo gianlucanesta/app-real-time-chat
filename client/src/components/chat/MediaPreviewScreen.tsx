@@ -188,7 +188,7 @@ export function MediaPreviewScreen({
         <button
           type="button"
           onClick={onClose}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-text-main bg-input hover:bg-border transition-colors"
+          className="w-10 h-10 rounded-full flex items-center justify-center bg-white/20 hover:bg-white/30 text-white border border-white/30 transition-colors shadow-md"
           aria-label="Close preview"
         >
           <X className="w-5 h-5" />
