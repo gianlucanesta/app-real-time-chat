@@ -95,7 +95,10 @@ export function useWebRTC(socket: TypedSocket | null) {
   const createPC = useCallback(
     (stream: MediaStream): RTCPeerConnection => {
       const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
+      stream.getTracks().forEach((t) => {
+        pc.addTrack(t, stream);
+        console.log("[webrtc] added local track:", t.kind, t.id);
+      });
 
       pc.onicecandidate = ({ candidate }) => {
         if (candidate && targetUserRef.current && socket) {
@@ -106,11 +109,31 @@ export function useWebRTC(socket: TypedSocket | null) {
         }
       };
 
-      const remote = new MediaStream();
       pc.ontrack = (e) => {
-        remote.addTrack(e.track);
-        // Create new MediaStream each time to trigger React re-render
-        setRemoteStream(new MediaStream(remote.getTracks()));
+        console.log(
+          "[webrtc] ontrack fired — kind:",
+          e.track.kind,
+          "readyState:",
+          e.track.readyState,
+          "muted:",
+          e.track.muted,
+          "streams:",
+          e.streams.length,
+        );
+        // Use the browser-managed stream when available (recommended)
+        if (e.streams[0]) {
+          setRemoteStream(e.streams[0]);
+        } else {
+          // Fallback: build stream from individual tracks
+          setRemoteStream((prev) => {
+            const ms = prev ?? new MediaStream();
+            if (!ms.getTrackById(e.track.id)) {
+              ms.addTrack(e.track);
+            }
+            // Return new ref to trigger React re-render
+            return new MediaStream(ms.getTracks());
+          });
+        }
       };
 
       pc.oniceconnectionstatechange = () => {
@@ -126,6 +149,10 @@ export function useWebRTC(socket: TypedSocket | null) {
         if (state === "failed" || state === "disconnected") {
           handleIceFailed();
         }
+      };
+
+      pc.onconnectionstatechange = () => {
+        console.log("[webrtc] Connection state:", pc.connectionState);
       };
 
       return pc;
@@ -207,9 +234,11 @@ export function useWebRTC(socket: TypedSocket | null) {
       setStatus("calling");
 
       try {
+        console.log("[webrtc] startCall — getting user media, withVideo:", withVideo);
         const stream = await navigator.mediaDevices.getUserMedia(
           getMediaConstraints(withVideo),
         );
+        console.log("[webrtc] got local stream, tracks:", stream.getTracks().map(t => `${t.kind}:${t.readyState}`).join(", "));
         localStreamRef.current = stream;
         setLocalStream(stream);
         if (withVideo) {
@@ -242,9 +271,11 @@ export function useWebRTC(socket: TypedSocket | null) {
     setIncomingCall(null);
 
     try {
+      console.log("[webrtc] answerCall — getting user media, withVideo:", withVideo);
       const stream = await navigator.mediaDevices.getUserMedia(
         getMediaConstraints(withVideo),
       );
+      console.log("[webrtc] got local stream, tracks:", stream.getTracks().map(t => `${t.kind}:${t.readyState}`).join(", "));
       localStreamRef.current = stream;
       setLocalStream(stream);
       if (withVideo) {
@@ -254,9 +285,12 @@ export function useWebRTC(socket: TypedSocket | null) {
       const pc = createPC(stream);
       pcRef.current = pc;
 
-      await pc.setRemoteDescription(offer);
+      console.log("[webrtc] setting remote description (offer)...");
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      console.log("[webrtc] remote description set, signalingState:", pc.signalingState);
       // Flush any ICE candidates that arrived during the ringing phase
       const buffered = iceCandidateBuffer.current.splice(0);
+      console.log("[webrtc] flushing", buffered.length, "buffered ICE candidates");
       for (const c of buffered) {
         try {
           await pc.addIceCandidate(new RTCIceCandidate(c));
@@ -266,6 +300,7 @@ export function useWebRTC(socket: TypedSocket | null) {
       }
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
+      console.log("[webrtc] answer created & set, emitting to caller");
       socket.emit("call:answer", { to: from, answer });
       setStatus("connecting");
     } catch (err) {
@@ -405,8 +440,12 @@ export function useWebRTC(socket: TypedSocket | null) {
       from: string;
       answer: RTCSessionDescriptionInit;
     }) => {
+      console.log("[webrtc] received answer from:", data.from);
       if (pcRef.current) {
-        await pcRef.current.setRemoteDescription(data.answer);
+        await pcRef.current.setRemoteDescription(
+          new RTCSessionDescription(data.answer),
+        );
+        console.log("[webrtc] remote description (answer) set, signalingState:", pcRef.current.signalingState);
         await flushIceBuffer(pcRef.current);
       }
     };

@@ -99,23 +99,40 @@ export function CallScreen({
 
   // Attach remote stream — element is always in DOM so audio always plays
   useEffect(() => {
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = remoteStream;
-      // Explicit play() to overcome autoplay restrictions after async WebRTC setup
-      if (remoteStream) {
-        remoteVideoRef.current.play().catch(() => {});
-      }
+    const el = remoteVideoRef.current;
+    if (!el) return;
+    if (remoteStream) {
+      console.log(
+        "[call-screen] attaching remoteStream, tracks:",
+        remoteStream
+          .getTracks()
+          .map((t) => `${t.kind}:${t.readyState}:muted=${t.muted}`)
+          .join(", "),
+      );
+      el.srcObject = remoteStream;
+      el.play().catch((err) =>
+        console.warn("[call-screen] play() rejected:", err.message),
+      );
+    } else {
+      el.srcObject = null;
     }
     // Route audio to the user's preferred speaker
     const speakerId = localStorage.getItem("ephemeral-speaker-id");
-    if (
-      speakerId &&
-      remoteVideoRef.current &&
-      "setSinkId" in remoteVideoRef.current
-    ) {
-      (remoteVideoRef.current as any).setSinkId(speakerId).catch(() => {});
+    if (speakerId && "setSinkId" in el) {
+      (el as any).setSinkId(speakerId).catch(() => {});
     }
   }, [remoteStream]);
+
+  // Retry play when status transitions to "connected" (media data now flows)
+  useEffect(() => {
+    const el = remoteVideoRef.current;
+    if (status === "connected" && el && el.srcObject) {
+      console.log("[call-screen] status=connected → retrying play()");
+      el.play().catch((err) =>
+        console.warn("[call-screen] play() retry rejected:", err.message),
+      );
+    }
+  }, [status]);
 
   const formatTimer = (seconds: number) => {
     const m = Math.floor(seconds / 60)
