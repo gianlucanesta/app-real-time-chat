@@ -36,6 +36,7 @@ export function MediaPreviewScreen({
   const [activeIndex, setActiveIndex] = useState(0);
   const [localFiles, setLocalFiles] = useState<PreviewFile[]>(files);
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
   const [pdfPageCount, setPdfPageCount] = useState<number | null>(null);
@@ -182,13 +183,13 @@ export function MediaPreviewScreen({
   if (!activeFile) return null;
 
   return (
-    <div className="absolute inset-0 z-50 bg-bg flex flex-col">
+    <div className="absolute inset-0 z-[80] bg-bg flex flex-col">
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-3 shrink-0">
         <button
           type="button"
-          onClick={onClose}
-          className="w-10 h-10 rounded-full flex items-center justify-center bg-white/20 hover:bg-white/30 text-white border border-white/30 transition-colors shadow-md"
+          onClick={() => setShowCloseConfirm(true)}
+          className="w-10 h-10 rounded-full flex items-center justify-center bg-text-secondary/20 hover:bg-text-secondary/30 text-text-main transition-colors shadow-md ring-1 ring-text-secondary/30"
           aria-label="Close preview"
         >
           <X className="w-5 h-5" />
@@ -434,6 +435,37 @@ export function MediaPreviewScreen({
           className="absolute inset-0 z-10"
           onClick={() => setDeleteTarget(null)}
         />
+      )}
+
+      {/* Close confirmation modal */}
+      {showCloseConfirm && (
+        <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-card rounded-2xl border border-border/50 shadow-2xl p-6 mx-4 max-w-sm w-full space-y-4">
+            <h3 className="text-base font-semibold text-text-main">
+              Discard file?
+            </h3>
+            <p className="text-sm text-text-secondary">
+              If you go back now, the selected file
+              {localFiles.length > 1 ? "s" : ""} will be discarded.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowCloseConfirm(false)}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-text-main bg-input hover:bg-input/70 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition-colors"
+              >
+                Discard
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

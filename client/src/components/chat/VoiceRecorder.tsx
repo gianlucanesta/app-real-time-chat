@@ -9,6 +9,7 @@ interface VoiceRecorderProps {
 }
 
 const BAR_COUNT = 48;
+const SCROLL_INTERVAL_MS = 80; // how often a new bar is pushed
 
 export function VoiceRecorder({
   onSend,
@@ -29,36 +30,39 @@ export function VoiceRecorder({
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const animFrameRef = useRef<number>(0);
+  const barsRef = useRef<number[]>(Array(BAR_COUNT).fill(3));
+  const lastScrollRef = useRef<number>(0);
+  const currentLevelRef = useRef<number>(3);
 
-  // Waveform drawing extracted so it can be restarted on resume
+  // Waveform: sample audio level continuously, scroll bars at fixed interval
   const startWaveformLoop = useCallback(() => {
     const analyser = analyserRef.current;
     if (!analyser) return;
 
     const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    lastScrollRef.current = performance.now();
 
-    const draw = () => {
+    const draw = (now: number) => {
       if (!analyserRef.current) return;
       analyserRef.current.getByteFrequencyData(dataArray);
 
-      const step = Math.max(1, Math.floor(dataArray.length / BAR_COUNT));
-      const newBars: number[] = [];
-      for (let i = 0; i < BAR_COUNT; i++) {
-        let sum = 0;
-        for (let j = 0; j < step; j++) {
-          const idx = i * step + j;
-          if (idx < dataArray.length) {
-            sum += dataArray[idx];
-          }
-        }
-        const avg = sum / step; // 0–255
-        // Scale to 3–32 px with a power curve for more dynamic feel
-        newBars.push(Math.max(3, Math.pow(avg / 255, 0.7) * 32));
+      // Compute a single RMS-like level from the full spectrum
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+      const avg = sum / dataArray.length; // 0–255
+      currentLevelRef.current = Math.max(3, Math.pow(avg / 255, 0.7) * 32);
+
+      // Scroll: push a new bar every SCROLL_INTERVAL_MS
+      if (now - lastScrollRef.current >= SCROLL_INTERVAL_MS) {
+        lastScrollRef.current = now;
+        const next = [...barsRef.current.slice(1), currentLevelRef.current];
+        barsRef.current = next;
+        setBars(next);
       }
-      setBars(newBars);
+
       animFrameRef.current = requestAnimationFrame(draw);
     };
-    draw();
+    animFrameRef.current = requestAnimationFrame(draw);
   }, []);
 
   // Full teardown — releases mic, AudioContext, timers
@@ -223,56 +227,57 @@ export function VoiceRecorder({
   };
 
   return (
-    <div className="flex items-center bg-input/80 backdrop-blur-md rounded-full border border-border/50 p-1.5 shadow-lg gap-2">
+    <div className="flex items-center bg-input/80 backdrop-blur-md rounded-full border border-border/50 p-1.5 shadow-lg gap-1 md:gap-2">
       {/* Delete */}
       <button
         type="button"
         onClick={handleCancel}
-        className="w-11 h-11 rounded-full flex items-center justify-center text-text-secondary hover:bg-card hover:text-text-main transition-colors shrink-0"
+        className="w-10 h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center text-text-secondary hover:bg-card hover:text-text-main transition-colors shrink-0"
         aria-label="Cancel recording"
       >
-        <Trash2 className="w-[22px] h-[22px]" />
+        <Trash2 className="w-5 h-5 md:w-[22px] md:h-[22px]" />
       </button>
 
-      {/* Indicator + timer + waveform */}
-      <div className="flex items-center gap-2 flex-1 px-1 overflow-hidden">
+      {/* Indicator + timer */}
+      <div className="flex items-center gap-1.5 shrink-0">
         <span
-          className={`w-2.5 h-2.5 rounded-full shrink-0 ${isPaused ? "bg-yellow-400" : "bg-red-500 animate-pulse"}`}
+          className={`w-2 h-2 md:w-2.5 md:h-2.5 rounded-full shrink-0 ${isPaused ? "bg-yellow-400" : "bg-red-500 animate-pulse"}`}
         />
-        <span className="text-sm font-mono text-text-main min-w-[36px]">
+        <span className="text-xs md:text-sm font-mono text-text-main min-w-[32px] md:min-w-[36px]">
           {formatTime(elapsed)}
         </span>
+      </div>
 
-        <div className="flex-1 flex items-center justify-center gap-[1.5px] h-8 overflow-hidden">
-          {bars.map((h, i) => (
-            <div
-              key={i}
-              className="w-[2.5px] rounded-full bg-accent/70 transition-[height] duration-75"
-              style={{ height: `${h}px` }}
-            />
-          ))}
-        </div>
+      {/* Scrolling waveform — flexible width */}
+      <div className="flex-1 flex items-center justify-end gap-[1.5px] h-8 overflow-hidden min-w-[60px]">
+        {bars.map((h, i) => (
+          <div
+            key={i}
+            className="w-[2.5px] rounded-full bg-accent/70 shrink-0"
+            style={{ height: `${h}px` }}
+          />
+        ))}
       </div>
 
       {/* Pause / Resume */}
       <button
         type="button"
         onClick={handlePause}
-        className="w-11 h-11 rounded-full flex items-center justify-center text-text-secondary hover:bg-card hover:text-text-main transition-colors shrink-0"
+        className="w-10 h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center text-text-secondary hover:bg-card hover:text-text-main transition-colors shrink-0"
         aria-label={isPaused ? "Resume" : "Pause"}
       >
         {isPaused ? (
-          <Mic className="w-[22px] h-[22px] text-red-400" />
+          <Mic className="w-5 h-5 md:w-[22px] md:h-[22px] text-red-400" />
         ) : (
-          <Pause className="w-[22px] h-[22px]" />
+          <Pause className="w-5 h-5 md:w-[22px] md:h-[22px]" />
         )}
       </button>
 
-      {/* View Once Toggle */}
+      {/* View Once Toggle — hidden on mobile */}
       <button
         type="button"
         onClick={onToggleViewOnce}
-        className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+        className={`hidden md:flex w-11 h-11 rounded-full items-center justify-center shrink-0 transition-colors ${
           viewOnce
             ? "text-accent bg-accent/15"
             : "text-text-secondary hover:bg-card hover:text-text-main"
@@ -286,10 +291,10 @@ export function VoiceRecorder({
       <button
         type="button"
         onClick={handleSend}
-        className="w-11 h-11 rounded-full bg-accent flex items-center justify-center text-white shrink-0 hover:brightness-110 shadow-md transition-all"
+        className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-accent flex items-center justify-center text-white shrink-0 hover:brightness-110 shadow-md transition-all"
         aria-label="Send voice message"
       >
-        <Send className="w-[22px] h-[22px] ml-0.5" />
+        <Send className="w-5 h-5 md:w-[22px] md:h-[22px] ml-0.5" />
       </button>
     </div>
   );
