@@ -627,8 +627,53 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       }
     };
 
+    // ── Browser notifications for incoming messages ─────────────────────
+    const handleBrowserNotification = (msg: MessagePayload) => {
+      if (msg.sender === user.id) return;
+
+      // Check if messages notifications are enabled
+      const messagesOn =
+        localStorage.getItem("ephemeral-notif-messages") !== "false";
+      if (!messagesOn) return;
+
+      // Banner mode: "always" | "when-inactive" | "never"
+      const bannerMode =
+        localStorage.getItem("ephemeral-notif-banner") ?? "always";
+      if (bannerMode === "never") return;
+
+      const isConvActive = msg.conversationId === activeConvRef.current?.id;
+      if (bannerMode === "when-inactive" && document.hasFocus() && isConvActive)
+        return;
+
+      // Must have permission
+      if (
+        typeof Notification === "undefined" ||
+        Notification.permission !== "granted"
+      )
+        return;
+
+      const showPreview =
+        localStorage.getItem("ephemeral-notif-preview") !== "false";
+      const senderName = msg.senderDisplayName ?? "New message";
+      let body: string;
+      if (showPreview) {
+        if (msg.mediaType === "audio") body = "🎤 Voice message";
+        else if (msg.mediaType === "image") body = "📷 Photo";
+        else if (msg.mediaType === "video") body = "🎥 Video";
+        else if (msg.mediaType === "document") body = "📄 Document";
+        else body = msg.text?.slice(0, 100) || "New message";
+      } else {
+        body = "New message";
+      }
+
+      const n = new Notification(senderName, { body, tag: msg._id });
+      // Auto-close after 5 seconds
+      setTimeout(() => n.close(), 5000);
+    };
+
     socket.on("message:new", handleNewMessage);
     socket.on("message:new", handleDeliverOnReceive);
+    socket.on("message:new", handleBrowserNotification);
     socket.on("message:status", handleMessageStatus);
     socket.on("message:expired", handleMessageExpired);
     socket.on("message:deleted", handleMessageDeleted);
@@ -761,6 +806,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     return () => {
       socket.off("message:new", handleNewMessage);
       socket.off("message:new", handleDeliverOnReceive);
+      socket.off("message:new", handleBrowserNotification);
       socket.off("message:status", handleMessageStatus);
       socket.off("message:expired", handleMessageExpired);
       socket.off("message:deleted", handleMessageDeleted);
@@ -797,6 +843,25 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       };
 
       setActiveMessages((prev) => [...prev, newMsg]);
+
+      // Play sent-message sound if enabled
+      if (localStorage.getItem("ephemeral-notif-send-sound") === "true") {
+        try {
+          const ctx = new AudioContext();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.value = 600;
+          gain.gain.setValueAtTime(0.15, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+          osc.connect(gain).connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.15);
+          osc.onended = () => ctx.close();
+        } catch {
+          // AudioContext not available
+        }
+      }
 
       // Update sidebar snippet optimistically
       setConversations((prev) =>

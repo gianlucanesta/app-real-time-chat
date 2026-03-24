@@ -35,6 +35,7 @@ import { Label } from "../components/ui/label";
 import { Select } from "../components/ui/select";
 import { apiFetch, normalizeUser, getAccessToken } from "../lib/api";
 import { VideoVoiceSettings } from "../components/settings/VideoVoiceSettings";
+import { NotificationSettings } from "../components/settings/NotificationSettings";
 import type { User as UserType } from "../types";
 
 const LANGUAGE_OPTIONS = [
@@ -625,6 +626,7 @@ function SettingsPage() {
     if (id === "general") return <GeneralSection />;
     if (id === "profile") return <AccountSection />;
     if (id === "video") return <VideoVoiceSettings />;
+    if (id === "notifications") return <NotificationSettings />;
     const item = NAV_ITEMS.find((n) => n.id === id);
     return <StubSection label={item?.label || id} />;
   }
@@ -1308,6 +1310,13 @@ function SettingsPageDesktop() {
                 Video & Voice
               </h1>
               <VideoVoiceSettings />
+            </>
+          ) : desktopSection === "notifications" ? (
+            <>
+              <h1 className="text-[22px] font-bold text-text-main mb-6">
+                Notifications
+              </h1>
+              <NotificationSettings />
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-text-secondary gap-3">
