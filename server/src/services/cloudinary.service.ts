@@ -19,9 +19,12 @@ function extractPublicId(url: string): string | null {
 /**
  * Determine the Cloudinary resource_type from our mediaType field.
  * Cloudinary stores audio under "video" resource_type.
+ * Documents are uploaded with resource_type "raw".
  */
-function getResourceType(mediaType: string): "image" | "video" {
-  return mediaType === "image" ? "image" : "video";
+function getResourceType(mediaType: string): "image" | "video" | "raw" {
+  if (mediaType === "image") return "image";
+  if (mediaType === "document") return "raw";
+  return "video"; // audio and video both use "video" resource_type
 }
 
 /**
@@ -37,7 +40,7 @@ export async function deleteCloudinaryAsset(
 
   try {
     await cloudinary.uploader.destroy(publicId, {
-      resource_type: getResourceType(mediaType),
+      resource_type: getResourceType(mediaType) as "image" | "video" | "raw",
     });
   } catch (err) {
     console.warn(

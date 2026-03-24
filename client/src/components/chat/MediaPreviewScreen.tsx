@@ -122,10 +122,62 @@ export function MediaPreviewScreen({
   const isVideo = activeFile?.type === "video";
   const isAudio = activeFile?.type === "audio";
 
-  // Extract document extension
+  // Extract document extension and determine type color
   const docExt = isDocument
     ? activeFile.file.name.split(".").pop()?.toUpperCase() || "FILE"
     : "";
+
+  const docTypeStyle: { bg: string; text: string; icon: string } = (() => {
+    switch (docExt) {
+      case "DOC":
+      case "DOCX":
+        return {
+          bg: "bg-blue-500/15",
+          text: "text-blue-400",
+          icon: "bg-blue-500/20",
+        };
+      case "XLS":
+      case "XLSX":
+        return {
+          bg: "bg-green-500/15",
+          text: "text-green-400",
+          icon: "bg-green-500/20",
+        };
+      case "PPT":
+      case "PPTX":
+        return {
+          bg: "bg-orange-500/15",
+          text: "text-orange-400",
+          icon: "bg-orange-500/20",
+        };
+      case "PDF":
+        return {
+          bg: "bg-red-500/15",
+          text: "text-red-400",
+          icon: "bg-red-500/20",
+        };
+      case "TXT":
+      case "CSV":
+        return {
+          bg: "bg-gray-500/15",
+          text: "text-gray-400",
+          icon: "bg-gray-500/20",
+        };
+      case "ZIP":
+      case "RAR":
+        return {
+          bg: "bg-yellow-500/15",
+          text: "text-yellow-400",
+          icon: "bg-yellow-500/20",
+        };
+      default:
+        return {
+          bg: "bg-accent/15",
+          text: "text-accent",
+          icon: "bg-accent/20",
+        };
+    }
+  })();
 
   if (!activeFile) return null;
 
@@ -136,10 +188,10 @@ export function MediaPreviewScreen({
         <button
           type="button"
           onClick={onClose}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-text-secondary hover:bg-input hover:text-text-main transition-colors"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-text-main bg-input hover:bg-border transition-colors"
           aria-label="Close preview"
         >
-          <X className="w-6 h-6" />
+          <X className="w-5 h-5" />
         </button>
         {isDocument && (
           <div className="flex-1 text-center min-w-0 px-4">
@@ -217,9 +269,17 @@ export function MediaPreviewScreen({
                 )}
               </>
             ) : (
-              <div className="w-28 h-36 rounded-xl bg-card border border-border/50 shadow-md flex flex-col items-center justify-center gap-2">
-                <FileText className="w-12 h-12 text-accent/70" />
-                <span className="text-xs font-bold text-accent bg-accent/10 px-2 py-0.5 rounded">
+              <div
+                className={`w-28 h-36 rounded-xl border border-border/50 shadow-md flex flex-col items-center justify-center gap-2 ${docTypeStyle.bg}`}
+              >
+                <div
+                  className={`w-14 h-14 rounded-xl flex items-center justify-center ${docTypeStyle.icon}`}
+                >
+                  <FileText className={`w-8 h-8 ${docTypeStyle.text}`} />
+                </div>
+                <span
+                  className={`text-xs font-bold px-2 py-0.5 rounded ${docTypeStyle.text} bg-white/10`}
+                >
                   {docExt}
                 </span>
               </div>
