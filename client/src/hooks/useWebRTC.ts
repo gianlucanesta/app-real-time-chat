@@ -488,8 +488,15 @@ export function useWebRTC(socket: TypedSocket | null) {
       retryCount.current = 0;
     };
 
-    const handleEnded = () => doFullCleanup();
-    const handleRejected = () => doFullCleanup();
+    const handleEnded = (data?: { from?: string }) => {
+      // Only clean up if the ended signal is from our current call peer
+      if (data?.from && targetUserRef.current && data.from !== targetUserRef.current) return;
+      doFullCleanup();
+    };
+    const handleRejected = (data?: { from?: string }) => {
+      if (data?.from && targetUserRef.current && data.from !== targetUserRef.current) return;
+      doFullCleanup();
+    };
 
     socket.on("call:incoming", handleIncoming);
     socket.on("call:answer", handleAnswer);

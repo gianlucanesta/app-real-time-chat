@@ -50,6 +50,8 @@ export function CallScreen({
 }: CallScreenProps) {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteStreamRef = useRef<MediaStream | null>(null);
+  remoteStreamRef.current = remoteStream;
   const [timer, setTimer] = useState(0);
 
   // ── Draggable PiP state ───────────────────────────────────────────────
@@ -97,37 +99,53 @@ export function CallScreen({
     }
   }, [localStream]);
 
-  // Attach remote stream & play.
-  // Must depend on BOTH remoteStream and status because on the callee side
-  // ontrack fires while status is still "incoming" (CallScreen not mounted),
-  // so the ref is null. When status later transitions to "connecting" the
-  // component mounts and we need to attach the already-set remoteStream.
+  /** Attach stream to a <video> element and start playback. */
+  const attachStream = useCallback(
+    (el: HTMLVideoElement, stream: MediaStream | null) => {
+      if (stream) {
+        if (el.srcObject !== stream) {
+          console.log(
+            "[call-screen] attaching remoteStream, tracks:",
+            stream
+              .getTracks()
+              .map((t) => `${t.kind}:${t.readyState}:muted=${t.muted}`)
+              .join(", "),
+          );
+          el.srcObject = stream;
+        }
+        el.play().catch((err) =>
+          console.warn("[call-screen] play() rejected:", err.message),
+        );
+      } else {
+        el.srcObject = null;
+      }
+      const speakerId = localStorage.getItem("ephemeral-speaker-id");
+      if (speakerId && "setSinkId" in el) {
+        (el as any).setSinkId(speakerId).catch(() => {});
+      }
+    },
+    [],
+  );
+
+  // Callback ref: fires the instant the <video> element enters the DOM,
+  // so the stream is attached even if the component mounts after ontrack.
+  const remoteVideoCallback = useCallback(
+    (el: HTMLVideoElement | null) => {
+      remoteVideoRef.current = el;
+      if (el) {
+        console.log("[call-screen] remoteVideo ref attached, remoteStream:", !!remoteStreamRef.current);
+        attachStream(el, remoteStreamRef.current);
+      }
+    },
+    [attachStream],
+  );
+
+  // Also react to remoteStream / status changes AFTER the element is mounted.
   useEffect(() => {
     const el = remoteVideoRef.current;
     if (!el) return;
-    if (remoteStream) {
-      if (el.srcObject !== remoteStream) {
-        console.log(
-          "[call-screen] attaching remoteStream, tracks:",
-          remoteStream
-            .getTracks()
-            .map((t) => `${t.kind}:${t.readyState}:muted=${t.muted}`)
-            .join(", "),
-        );
-        el.srcObject = remoteStream;
-      }
-      el.play().catch((err) =>
-        console.warn("[call-screen] play() rejected:", err.message),
-      );
-    } else {
-      el.srcObject = null;
-    }
-    // Route audio to the user's preferred speaker
-    const speakerId = localStorage.getItem("ephemeral-speaker-id");
-    if (speakerId && "setSinkId" in el) {
-      (el as any).setSinkId(speakerId).catch(() => {});
-    }
-  }, [remoteStream, status]);
+    attachStream(el, remoteStream);
+  }, [remoteStream, status, attachStream]);
 
   const formatTimer = (seconds: number) => {
     const m = Math.floor(seconds / 60)
@@ -184,7 +202,7 @@ export function CallScreen({
       <div className="call-screen-content">
         {/* Remote video — always in DOM so remote audio plays even on voice calls */}
         <video
-          ref={remoteVideoRef}
+          ref={remoteVideoCallback}
           autoPlay
           playsInline
           className="call-remote-video"
