@@ -97,19 +97,25 @@ export function CallScreen({
     }
   }, [localStream]);
 
-  // Attach remote stream — element is always in DOM so audio always plays
+  // Attach remote stream & play.
+  // Must depend on BOTH remoteStream and status because on the callee side
+  // ontrack fires while status is still "incoming" (CallScreen not mounted),
+  // so the ref is null. When status later transitions to "connecting" the
+  // component mounts and we need to attach the already-set remoteStream.
   useEffect(() => {
     const el = remoteVideoRef.current;
     if (!el) return;
     if (remoteStream) {
-      console.log(
-        "[call-screen] attaching remoteStream, tracks:",
-        remoteStream
-          .getTracks()
-          .map((t) => `${t.kind}:${t.readyState}:muted=${t.muted}`)
-          .join(", "),
-      );
-      el.srcObject = remoteStream;
+      if (el.srcObject !== remoteStream) {
+        console.log(
+          "[call-screen] attaching remoteStream, tracks:",
+          remoteStream
+            .getTracks()
+            .map((t) => `${t.kind}:${t.readyState}:muted=${t.muted}`)
+            .join(", "),
+        );
+        el.srcObject = remoteStream;
+      }
       el.play().catch((err) =>
         console.warn("[call-screen] play() rejected:", err.message),
       );
@@ -121,18 +127,7 @@ export function CallScreen({
     if (speakerId && "setSinkId" in el) {
       (el as any).setSinkId(speakerId).catch(() => {});
     }
-  }, [remoteStream]);
-
-  // Retry play when status transitions to "connected" (media data now flows)
-  useEffect(() => {
-    const el = remoteVideoRef.current;
-    if (status === "connected" && el && el.srcObject) {
-      console.log("[call-screen] status=connected → retrying play()");
-      el.play().catch((err) =>
-        console.warn("[call-screen] play() retry rejected:", err.message),
-      );
-    }
-  }, [status]);
+  }, [remoteStream, status]);
 
   const formatTimer = (seconds: number) => {
     const m = Math.floor(seconds / 60)
