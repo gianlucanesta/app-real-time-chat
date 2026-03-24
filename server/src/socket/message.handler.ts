@@ -33,9 +33,16 @@ export function registerMessageHandlers(
         conversationId: string;
         text: string;
         mediaUrl?: string;
-        mediaType?: "image" | "video" | "audio";
+        mediaType?: "image" | "video" | "audio" | "document";
         mediaDuration?: number;
         viewOnce?: boolean;
+        linkPreview?: {
+          url: string;
+          title: string | null;
+          description: string | null;
+          image: string | null;
+          siteName: string | null;
+        } | null;
       },
       ack: (res: { ok: boolean; messageId?: string }) => void,
     ) => {
@@ -46,6 +53,7 @@ export function registerMessageHandlers(
         mediaType,
         mediaDuration,
         viewOnce,
+        linkPreview,
       } = data || {};
 
       if (!conversationId) {
@@ -81,6 +89,7 @@ export function registerMessageHandlers(
           mediaType: mediaType || null,
           mediaDuration: mediaDuration || null,
           viewOnce: !!viewOnce,
+          linkPreview: linkPreview || null,
           expires_at,
         });
 

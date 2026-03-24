@@ -19,3 +19,4 @@ uploadRouter.post(
 );
 
 uploadRouter.delete("/", authMiddleware, ctrl.deleteUpload);
+uploadRouter.get("/link-preview", authMiddleware, ctrl.getLinkPreview);

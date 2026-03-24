@@ -57,6 +57,17 @@ const messageSchema = new mongoose.Schema({
     ],
     default: [],
   },
+  // Link preview metadata (populated by client from OG tags)
+  linkPreview: {
+    type: {
+      url: { type: String, required: true },
+      title: { type: String, default: null },
+      description: { type: String, default: null },
+      image: { type: String, default: null },
+      siteName: { type: String, default: null },
+    },
+    default: null,
+  },
   // expires_at is set SERVER-SIDE on every write — never trust the client
   expires_at: {
     type: Date,

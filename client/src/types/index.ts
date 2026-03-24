@@ -20,6 +20,14 @@ export interface Contact {
   contactUser?: User; // Populated contact user data
 }
 
+export interface LinkPreview {
+  url: string;
+  title: string | null;
+  description: string | null;
+  image: string | null;
+  siteName: string | null;
+}
+
 export interface Message {
   _id: string;
   conversationId: string;
@@ -33,6 +41,7 @@ export interface Message {
   status: "sending" | "sent" | "delivered" | "read";
   expires_at?: Date | string;
   createdAt: Date | string;
+  linkPreview?: LinkPreview | null;
 }
 
 export interface AuthResponse {

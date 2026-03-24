@@ -2,6 +2,14 @@
 
 export type MessageStatus = "sent" | "delivered" | "read";
 
+export interface LinkPreview {
+  url: string;
+  title: string | null;
+  description: string | null;
+  image: string | null;
+  siteName: string | null;
+}
+
 export interface MessagePayload {
   _id: string;
   conversationId: string;
@@ -18,6 +26,7 @@ export interface MessagePayload {
   senderDisplayName?: string;
   senderInitials?: string;
   senderGradient?: string;
+  linkPreview?: LinkPreview | null;
 }
 
 export interface ServerToClientEvents {

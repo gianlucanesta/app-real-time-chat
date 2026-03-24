@@ -16,6 +16,14 @@ import {
 import { apiFetch } from "../lib/api";
 
 // --- Types ---
+export interface LinkPreview {
+  url: string;
+  title: string | null;
+  description: string | null;
+  image: string | null;
+  siteName: string | null;
+}
+
 export interface Message {
   id: string;
   senderId: string;
@@ -30,6 +38,7 @@ export interface Message {
   rawTimestamp: string;
   status: "sending" | "sent" | "delivered" | "read";
   isMe: boolean;
+  linkPreview?: LinkPreview | null;
 }
 
 export interface Reaction {
@@ -79,7 +88,7 @@ interface ChatContextType {
   mobileInChat: boolean;
   setActiveConversation: (conv: Conversation | null) => void;
   setMobileInChat: (v: boolean) => void;
-  sendMessage: (text: string) => void;
+  sendMessage: (text: string, linkPreview?: LinkPreview | null) => void;
   sendMediaMessage: (media: {
     mediaUrl: string;
     mediaType: "image" | "video" | "audio" | "document";
@@ -213,6 +222,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           emoji: string;
           displayName: string;
         }>;
+        linkPreview?: {
+          url: string;
+          title: string | null;
+          description: string | null;
+          image: string | null;
+          siteName: string | null;
+        } | null;
       }>;
     }>(`/messages/${activeConversation.id}`)
       .then(({ messages }) => {
@@ -234,6 +250,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             rawTimestamp: m.createdAt,
             status: m.status as "sent" | "delivered" | "read",
             isMe: m.sender === user?.id,
+            linkPreview: m.linkPreview || null,
           })),
         );
 
@@ -320,6 +337,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         rawTimestamp: msg.createdAt,
         status: msg.status as "sent" | "delivered" | "read",
         isMe,
+        linkPreview: (msg as any).linkPreview || null,
       };
 
       // For own messages, the optimistic update + ack callback already manages
@@ -742,7 +760,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   // ── Send message ─────────────────────────────────────────────────────────
   const sendMessage = useCallback(
-    (text: string) => {
+    (text: string, linkPreview?: LinkPreview | null) => {
       if (!activeConversation || !user || !socket) return;
 
       const tempId = `temp-${Date.now()}`;
@@ -759,6 +777,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         rawTimestamp: now.toISOString(),
         status: "sending",
         isMe: true,
+        linkPreview: linkPreview || null,
       };
 
       setActiveMessages((prev) => [...prev, newMsg]);
@@ -794,7 +813,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
       socket.emit(
         "message:send",
-        { conversationId: activeConversation.id, text },
+        {
+          conversationId: activeConversation.id,
+          text,
+          linkPreview: linkPreview || null,
+        },
         (res) => {
           clearTimeout(ackTimeoutId);
           if (res.ok && res.messageId) {

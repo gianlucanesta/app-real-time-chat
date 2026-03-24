@@ -23,6 +23,8 @@ import { useClickOutside } from "../../hooks/useClickOutside";
 import { AudioPlayer } from "./AudioPlayer";
 import { EmojiPicker } from "./EmojiPicker";
 import type { Reaction } from "../../contexts/ChatContext";
+import type { LinkPreview } from "../../types";
+import { LinkPreviewCard } from "./LinkPreviewCard";
 
 interface ChatMessageProps {
   id: string;
@@ -48,6 +50,7 @@ interface ChatMessageProps {
   currentUserId?: string;
   onViewOnceOpen?: () => void;
   onOpenMedia?: () => void;
+  linkPreview?: LinkPreview | null;
 }
 
 const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
@@ -76,6 +79,7 @@ export function ChatMessage({
   onViewOnceOpen,
   onOpenMedia,
   currentUserId,
+  linkPreview,
 }: ChatMessageProps) {
   const [isReactionMenuOpen, setIsReactionMenuOpen] = useState(false);
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
@@ -428,6 +432,12 @@ export function ChatMessage({
               {/* Inline text for non-media bubbles */}
               {text && !isViewOnceHidden && !isMediaBubble && (
                 <span>{text}</span>
+              )}
+              {/* Link preview card — only for non-media bubbles */}
+              {linkPreview && !isMediaBubble && (
+                <div className="mt-1.5">
+                  <LinkPreviewCard preview={linkPreview} isSent={isSent} />
+                </div>
               )}
               {/* Chevron — overlaid on media or at right edge for text */}
               {!isSelectMode &&

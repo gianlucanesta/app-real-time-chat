@@ -15,7 +15,7 @@ export interface MessagePayload {
   sender: string;
   text: string;
   mediaUrl?: string | null;
-  mediaType?: "image" | "video" | "audio" | null;
+  mediaType?: "image" | "video" | "audio" | "document" | null;
   mediaDuration?: number | null;
   viewOnce?: boolean;
   viewedAt?: string | null;
@@ -25,6 +25,13 @@ export interface MessagePayload {
   senderDisplayName?: string;
   senderInitials?: string;
   senderGradient?: string;
+  linkPreview?: {
+    url: string;
+    title: string | null;
+    description: string | null;
+    image: string | null;
+    siteName: string | null;
+  } | null;
 }
 
 export interface ServerToClientEvents {
@@ -92,9 +99,16 @@ export interface ClientToServerEvents {
       conversationId: string;
       text: string;
       mediaUrl?: string;
-      mediaType?: "image" | "video" | "audio";
+      mediaType?: "image" | "video" | "audio" | "document";
       mediaDuration?: number;
       viewOnce?: boolean;
+      linkPreview?: {
+        url: string;
+        title: string | null;
+        description: string | null;
+        image: string | null;
+        siteName: string | null;
+      } | null;
     },
     ack: (res: { ok: boolean; messageId?: string }) => void,
   ) => void;

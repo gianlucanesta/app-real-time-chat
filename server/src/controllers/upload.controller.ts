@@ -114,3 +114,189 @@ export async function deleteUpload(
     next(err);
   }
 }
+
+// ── Private IP SSRF guard ──────────────────────────────────────────────────
+const PRIVATE_IP_RE =
+  /^(localhost|127\.|0\.0\.0\.0|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|::1|fc[0-9a-f]{2}:|fd[0-9a-f]{2}:)/i;
+
+function isPrivateHost(hostname: string): boolean {
+  return PRIVATE_IP_RE.test(hostname);
+}
+
+function extractMeta(html: string, property: string): string | null {
+  // Try og:<property> content attr (either order)
+  let m =
+    html.match(
+      new RegExp(
+        `<meta[^>]+property=["']og:${property}["'][^>]+content=["']([^"']+)["']`,
+        "i",
+      ),
+    ) ||
+    html.match(
+      new RegExp(
+        `<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:${property}["']`,
+        "i",
+      ),
+    );
+  if (m) return m[1];
+  // Fallback to twitter:<property>
+  m =
+    html.match(
+      new RegExp(
+        `<meta[^>]+name=["']twitter:${property}["'][^>]+content=["']([^"']+)["']`,
+        "i",
+      ),
+    ) ||
+    html.match(
+      new RegExp(
+        `<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:${property}["']`,
+        "i",
+      ),
+    );
+  return m ? m[1] : null;
+}
+
+/** GET /api/link-preview?url=... — fetch OG metadata for a URL */
+export async function getLinkPreview(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const rawUrl = req.query.url;
+    if (!rawUrl || typeof rawUrl !== "string") {
+      res.status(400).json({ error: "url is required" });
+      return;
+    }
+
+    let parsed: URL;
+    try {
+      parsed = new URL(rawUrl);
+    } catch {
+      res.status(400).json({ error: "Invalid URL" });
+      return;
+    }
+
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      res.status(400).json({ error: "Invalid URL" });
+      return;
+    }
+
+    if (isPrivateHost(parsed.hostname)) {
+      res.status(400).json({ error: "Invalid URL" });
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+
+    let html: string;
+    try {
+      const response = await fetch(parsed.href, {
+        signal: controller.signal,
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (compatible; EphemeralChat/1.0; +https://github.com)",
+          Accept: "text/html",
+        },
+        redirect: "follow",
+      });
+      clearTimeout(timeout);
+      if (!response.ok) {
+        res
+          .status(200)
+          .json({
+            url: parsed.href,
+            title: null,
+            description: null,
+            image: null,
+            siteName: null,
+          });
+        return;
+      }
+      const ct = response.headers.get("content-type") || "";
+      if (!ct.includes("text/html")) {
+        res
+          .status(200)
+          .json({
+            url: parsed.href,
+            title: null,
+            description: null,
+            image: null,
+            siteName: null,
+          });
+        return;
+      }
+      // Read only first 100 KB to stay fast
+      const reader = response.body?.getReader();
+      if (!reader) {
+        res
+          .status(200)
+          .json({
+            url: parsed.href,
+            title: null,
+            description: null,
+            image: null,
+            siteName: null,
+          });
+        return;
+      }
+      const chunks: Uint8Array[] = [];
+      let bytes = 0;
+      while (bytes < 100_000) {
+        const { done, value } = await reader.read();
+        if (done || !value) break;
+        chunks.push(value);
+        bytes += value.length;
+      }
+      reader.cancel();
+      html = new TextDecoder().decode(
+        chunks.reduce((acc, c) => {
+          const merged = new Uint8Array(acc.length + c.length);
+          merged.set(acc);
+          merged.set(c, acc.length);
+          return merged;
+        }, new Uint8Array()),
+      );
+    } catch {
+      clearTimeout(timeout);
+      res
+        .status(200)
+        .json({
+          url: parsed.href,
+          title: null,
+          description: null,
+          image: null,
+          siteName: null,
+        });
+      return;
+    }
+
+    const title =
+      extractMeta(html, "title") ||
+      html.match(/<title[^>]*>([^<]{1,200})<\/title>/i)?.[1]?.trim() ||
+      null;
+    const description = extractMeta(html, "description") || null;
+    let image = extractMeta(html, "image") || null;
+    const siteName = extractMeta(html, "site_name") || parsed.hostname;
+
+    // Resolve relative image URLs
+    if (image && !image.startsWith("http")) {
+      try {
+        image = new URL(image, parsed.href).href;
+      } catch {
+        image = null;
+      }
+    }
+
+    res.status(200).json({
+      url: parsed.href,
+      title,
+      description,
+      image,
+      siteName,
+    });
+  } catch (err) {
+    next(err);
+  }
+}

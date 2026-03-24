@@ -37,11 +37,13 @@ import { MediaPreviewScreen } from "./MediaPreviewScreen";
 import { MediaViewer, type MediaItem } from "./MediaViewer";
 import { EmojiPicker } from "./EmojiPicker";
 import { useChat, type Message } from "../../contexts/ChatContext";
+import type { LinkPreview } from "../../types";
 import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "../../contexts/ToastContext";
 import { useWebRTC } from "../../hooks/useWebRTC";
 import { getAccessToken } from "../../lib/api";
 import { disintegrate } from "../../lib/disintegrate";
+import { LinkPreviewCard } from "./LinkPreviewCard";
 
 /** Return a human-friendly date label for a message group separator. */
 function dateSeparatorLabel(dateStr: string): string {
@@ -121,6 +123,12 @@ export function ChatArea({
   const [inputValue, setInputValue] = useState("");
   const [offlineTextVisible, setOfflineTextVisible] = useState(true);
   const offlineTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Link preview state
+  const [linkPreview, setLinkPreview] = useState<LinkPreview | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const linkPreviewDismissed = useRef(false);
+  const previewAbortRef = useRef<AbortController | null>(null);
 
   // Dropdowns
   const [isCallMenuOpen, setIsCallMenuOpen] = useState(false);
@@ -340,16 +348,64 @@ export function ChatArea({
     }, 2000);
   }, [activeConversation, socket]);
 
+  // Debounce URL detection from inputValue
+  useEffect(() => {
+    if (linkPreviewDismissed.current) return;
+    const urlMatch = inputValue.match(/https?:\/\/[^\s]+/);
+    if (!urlMatch) {
+      setLinkPreview(null);
+      setIsLoadingPreview(false);
+      previewAbortRef.current?.abort();
+      return;
+    }
+    const url = urlMatch[0];
+    const timer = setTimeout(async () => {
+      previewAbortRef.current?.abort();
+      const controller = new AbortController();
+      previewAbortRef.current = controller;
+      setIsLoadingPreview(true);
+      try {
+        const apiBase =
+          import.meta.env.VITE_API_URL ?? "http://localhost:3001/api";
+        const token = await getAccessToken();
+        const res = await fetch(
+          `${apiBase}/upload/link-preview?url=${encodeURIComponent(url)}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            signal: controller.signal,
+          },
+        );
+        if (res.ok) {
+          const data = (await res.json()) as LinkPreview;
+          setLinkPreview(data);
+        }
+      } catch {
+        // aborted or network error — silently ignore
+      } finally {
+        setIsLoadingPreview(false);
+      }
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [inputValue]);
+
+  // Reset dismissed flag when conversation changes
+  useEffect(() => {
+    linkPreviewDismissed.current = false;
+    setLinkPreview(null);
+  }, [activeConversation?.id]);
+
   const handleSend = useCallback(() => {
     if (!inputValue.trim()) return;
-    sendMessage(inputValue.trim());
+    sendMessage(inputValue.trim(), linkPreview);
     setInputValue("");
+    setLinkPreview(null);
+    linkPreviewDismissed.current = false;
     if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
     if (isTypingRef.current && activeConversation && socket) {
       isTypingRef.current = false;
       socket.emit("typing:stop", activeConversation.id);
     }
-  }, [inputValue, sendMessage, activeConversation, socket]);
+  }, [inputValue, linkPreview, sendMessage, activeConversation, socket]);
 
   // Handle file selection from AttachmentMenu → open preview screen
   const handleFileSelected = useCallback(
@@ -915,6 +971,7 @@ export function ChatArea({
                   const idx = allMedia.findIndex((m) => m.messageId === msg.id);
                   if (idx >= 0) setMediaViewerIndex(idx);
                 }}
+                linkPreview={msg.linkPreview}
               />
             ))}
           </div>
@@ -1091,6 +1148,26 @@ export function ChatArea({
 
       {/* Chat Input Area */}
       <div className="absolute bottom-0 left-0 right-0 z-20 px-3 pb-2 md:px-4 md:pb-2 pt-12 bg-gradient-to-t from-bg via-bg to-transparent">
+        {/* Link preview above input */}
+        {(linkPreview || isLoadingPreview) && !isRecording && (
+          <div className="mb-2 ml-1">
+            {isLoadingPreview && !linkPreview && (
+              <div className="flex items-center gap-2 text-xs text-text-secondary px-3 py-2 bg-input rounded-xl border border-border max-w-[280px]">
+                <div className="w-3 h-3 border-2 border-accent border-t-transparent rounded-full animate-spin shrink-0" />
+                Loading preview…
+              </div>
+            )}
+            {linkPreview && (
+              <LinkPreviewCard
+                preview={linkPreview}
+                onDismiss={() => {
+                  setLinkPreview(null);
+                  linkPreviewDismissed.current = true;
+                }}
+              />
+            )}
+          </div>
+        )}
         {isRecording ? (
           <VoiceRecorder
             onSend={handleVoiceSend}
