@@ -65,30 +65,46 @@ export async function upload(
       return;
     }
 
-    const result = await new Promise<{ secure_url: string; duration?: number }>(
-      (resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-          {
-            resource_type: resourceType,
-            folder: "ephemeral-chat",
-          },
-          (error, result) => {
-            if (error) reject(error);
-            else
-              resolve({
-                secure_url: result!.secure_url,
-                duration: result!.duration,
-              });
-          },
-        );
-        stream.end(file.buffer);
-      },
-    );
+    // Sanitise original filename to make it safe for Cloudinary
+    const originalName = file.originalname;
+    const safeBaseName =
+      originalName
+        .replace(/\.[^.]+$/, "") // strip extension
+        .replace(/[^a-zA-Z0-9_\-]/g, "_") // replace unsafe chars
+        .slice(0, 80) || "file";
+
+    const result = await new Promise<{
+      secure_url: string;
+      duration?: number;
+      original_filename?: string;
+      public_id?: string;
+    }>((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: resourceType,
+          folder: "ephemeral-chat",
+          use_filename: true,
+          unique_filename: true,
+          public_id: safeBaseName,
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else
+            resolve({
+              secure_url: result!.secure_url,
+              duration: result!.duration,
+              original_filename: result!.original_filename,
+            });
+        },
+      );
+      stream.end(file.buffer);
+    });
 
     res.status(200).json({
       url: result.secure_url,
       mediaType,
       duration: result.duration || null,
+      fileName: originalName,
     });
   } catch (err) {
     next(err);
@@ -203,42 +219,36 @@ export async function getLinkPreview(
       });
       clearTimeout(timeout);
       if (!response.ok) {
-        res
-          .status(200)
-          .json({
-            url: parsed.href,
-            title: null,
-            description: null,
-            image: null,
-            siteName: null,
-          });
+        res.status(200).json({
+          url: parsed.href,
+          title: null,
+          description: null,
+          image: null,
+          siteName: null,
+        });
         return;
       }
       const ct = response.headers.get("content-type") || "";
       if (!ct.includes("text/html")) {
-        res
-          .status(200)
-          .json({
-            url: parsed.href,
-            title: null,
-            description: null,
-            image: null,
-            siteName: null,
-          });
+        res.status(200).json({
+          url: parsed.href,
+          title: null,
+          description: null,
+          image: null,
+          siteName: null,
+        });
         return;
       }
       // Read only first 100 KB to stay fast
       const reader = response.body?.getReader();
       if (!reader) {
-        res
-          .status(200)
-          .json({
-            url: parsed.href,
-            title: null,
-            description: null,
-            image: null,
-            siteName: null,
-          });
+        res.status(200).json({
+          url: parsed.href,
+          title: null,
+          description: null,
+          image: null,
+          siteName: null,
+        });
         return;
       }
       const chunks: Uint8Array[] = [];
@@ -260,15 +270,13 @@ export async function getLinkPreview(
       );
     } catch {
       clearTimeout(timeout);
-      res
-        .status(200)
-        .json({
-          url: parsed.href,
-          title: null,
-          description: null,
-          image: null,
-          siteName: null,
-        });
+      res.status(200).json({
+        url: parsed.href,
+        title: null,
+        description: null,
+        image: null,
+        siteName: null,
+      });
       return;
     }
 

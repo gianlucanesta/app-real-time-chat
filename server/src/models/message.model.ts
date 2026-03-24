@@ -31,6 +31,10 @@ const messageSchema = new mongoose.Schema({
     type: Number, // audio/video duration in seconds
     default: null,
   },
+  mediaFileName: {
+    type: String,
+    default: null,
+  },
   // View-once: content can only be opened once by the recipient
   viewOnce: {
     type: Boolean,

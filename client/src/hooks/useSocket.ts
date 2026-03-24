@@ -17,6 +17,7 @@ export interface MessagePayload {
   mediaUrl?: string | null;
   mediaType?: "image" | "video" | "audio" | "document" | null;
   mediaDuration?: number | null;
+  mediaFileName?: string | null;
   viewOnce?: boolean;
   viewedAt?: string | null;
   status: MessageStatus;
@@ -101,6 +102,7 @@ export interface ClientToServerEvents {
       mediaUrl?: string;
       mediaType?: "image" | "video" | "audio" | "document";
       mediaDuration?: number;
+      mediaFileName?: string;
       viewOnce?: boolean;
       linkPreview?: {
         url: string;

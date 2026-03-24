@@ -32,6 +32,7 @@ export interface Message {
   mediaUrl?: string | null;
   mediaType?: "image" | "video" | "audio" | "document" | null;
   mediaDuration?: number | null;
+  mediaFileName?: string | null;
   viewOnce?: boolean;
   viewedAt?: string | null;
   timestamp: string;
@@ -93,6 +94,7 @@ interface ChatContextType {
     mediaUrl: string;
     mediaType: "image" | "video" | "audio" | "document";
     mediaDuration?: number;
+    mediaFileName?: string;
     text?: string;
     viewOnce?: boolean;
   }) => void;
@@ -213,6 +215,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         mediaUrl?: string | null;
         mediaType?: "image" | "video" | "audio" | "document" | null;
         mediaDuration?: number | null;
+        mediaFileName?: string | null;
         viewOnce?: boolean;
         viewedAt?: string | null;
         status: string;
@@ -244,6 +247,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             mediaUrl: m.mediaUrl || null,
             mediaType: m.mediaType || null,
             mediaDuration: m.mediaDuration || null,
+            mediaFileName: m.mediaFileName || null,
             viewOnce: m.viewOnce || false,
             viewedAt: m.viewedAt || null,
             timestamp: fmtTime(m.createdAt),
@@ -331,6 +335,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         mediaUrl: msg.mediaUrl || null,
         mediaType: msg.mediaType || null,
         mediaDuration: msg.mediaDuration || null,
+        mediaFileName: (msg as any).mediaFileName || null,
         viewOnce: msg.viewOnce || false,
         viewedAt: msg.viewedAt || null,
         timestamp: msgTimestamp,
@@ -1063,6 +1068,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       mediaUrl: string;
       mediaType: "image" | "video" | "audio" | "document";
       mediaDuration?: number;
+      mediaFileName?: string;
       text?: string;
       viewOnce?: boolean;
     }) => {
@@ -1089,6 +1095,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         mediaUrl: media.mediaUrl,
         mediaType: media.mediaType,
         mediaDuration: media.mediaDuration || null,
+        mediaFileName: media.mediaFileName || null,
         viewOnce: media.viewOnce || false,
         viewedAt: null,
         timestamp: now.toLocaleTimeString([], {
@@ -1125,6 +1132,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           mediaUrl: media.mediaUrl,
           mediaType: media.mediaType,
           mediaDuration: media.mediaDuration,
+          mediaFileName: media.mediaFileName,
           viewOnce: media.viewOnce || false,
         },
         (res) => {

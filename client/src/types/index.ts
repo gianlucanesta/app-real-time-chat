@@ -36,6 +36,7 @@ export interface Message {
   mediaUrl?: string | null;
   mediaType?: "image" | "video" | "audio" | "document" | null;
   mediaDuration?: number | null;
+  mediaFileName?: string | null;
   viewOnce?: boolean;
   viewedAt?: Date | string | null;
   status: "sending" | "sent" | "delivered" | "read";

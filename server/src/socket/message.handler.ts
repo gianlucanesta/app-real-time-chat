@@ -35,6 +35,7 @@ export function registerMessageHandlers(
         mediaUrl?: string;
         mediaType?: "image" | "video" | "audio" | "document";
         mediaDuration?: number;
+        mediaFileName?: string;
         viewOnce?: boolean;
         linkPreview?: {
           url: string;
@@ -52,6 +53,7 @@ export function registerMessageHandlers(
         mediaUrl,
         mediaType,
         mediaDuration,
+        mediaFileName,
         viewOnce,
         linkPreview,
       } = data || {};
@@ -88,6 +90,7 @@ export function registerMessageHandlers(
           mediaUrl: mediaUrl || null,
           mediaType: mediaType || null,
           mediaDuration: mediaDuration || null,
+          mediaFileName: mediaFileName || null,
           viewOnce: !!viewOnce,
           linkPreview: linkPreview || null,
           expires_at,

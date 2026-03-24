@@ -16,6 +16,7 @@ export interface IMessage {
   mediaUrl?: string | null;
   mediaType?: "image" | "video" | "audio" | "document" | null;
   mediaDuration?: number | null;
+  mediaFileName?: string | null;
   status: "sent" | "delivered" | "read";
   linkPreview?: LinkPreview | null;
   expires_at: Date;

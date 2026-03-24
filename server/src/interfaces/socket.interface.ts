@@ -18,6 +18,7 @@ export interface MessagePayload {
   mediaUrl?: string | null;
   mediaType?: "image" | "video" | "audio" | "document" | null;
   mediaDuration?: number | null;
+  mediaFileName?: string | null;
   viewOnce?: boolean;
   viewedAt?: string | null;
   status: MessageStatus;
