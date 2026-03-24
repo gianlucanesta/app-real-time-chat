@@ -100,9 +100,13 @@ async function start(): Promise<void> {
     // ── Graceful shutdown ─────────────────────────────────────────────────
     const shutdown = (signal: string): void => {
       console.log(`[server] ${signal} received – shutting down gracefully`);
-      httpServer.close(() => {
-        console.log("[server] HTTP server closed");
-        process.exit(0);
+      // Close Socket.io first so all clients receive a proper disconnect
+      // event (instead of "transport close") and can reconnect immediately.
+      io.close(() => {
+        httpServer.close(() => {
+          console.log("[server] HTTP server closed");
+          process.exit(0);
+        });
       });
     };
 
