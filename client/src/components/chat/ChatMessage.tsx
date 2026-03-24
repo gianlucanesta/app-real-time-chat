@@ -14,6 +14,8 @@ import {
   Timer,
   CircleDot,
   X,
+  FileText,
+  Download,
 } from "lucide-react";
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -31,7 +33,7 @@ interface ChatMessageProps {
   contactGradient?: string;
   contactAvatarUrl?: string | null;
   mediaUrl?: string | null;
-  mediaType?: "image" | "video" | "audio" | null;
+  mediaType?: "image" | "video" | "audio" | "document" | null;
   mediaDuration?: number | null;
   viewOnce?: boolean;
   viewedAt?: string | null;
@@ -164,7 +166,9 @@ export function ChatMessage({
         ? "Video"
         : mediaType === "image"
           ? "Photo"
-          : "Message";
+          : mediaType === "document"
+            ? "Document"
+            : "Message";
 
   const reactionMenuRef = useClickOutside<HTMLDivElement>(() => {
     setIsReactionMenuOpen(false);
@@ -368,6 +372,40 @@ export function ChatMessage({
                         }
                       />
                     </div>
+                  )}
+                  {mediaUrl && mediaType === "document" && (
+                    <a
+                      href={mediaUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl min-w-[220px] max-w-[280px] transition-opacity hover:opacity-80 ${
+                        isSent
+                          ? "bg-blue-700/30 text-white"
+                          : "bg-input text-text-main"
+                      }`}
+                    >
+                      <span className="w-9 h-9 rounded-lg bg-blue-500/20 flex items-center justify-center shrink-0">
+                        <FileText className="w-5 h-5 text-blue-400" />
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-sm font-medium truncate">
+                          {mediaUrl.split("/").pop()?.split("?")[0] ||
+                            "Document"}
+                        </span>
+                        <span
+                          className={`block text-xs mt-0.5 ${
+                            isSent ? "text-blue-200" : "text-text-secondary"
+                          }`}
+                        >
+                          Open document
+                        </span>
+                      </span>
+                      <Download
+                        className={`w-4 h-4 shrink-0 ${
+                          isSent ? "text-blue-200" : "text-text-secondary"
+                        }`}
+                      />
+                    </a>
                   )}
                 </>
               )}

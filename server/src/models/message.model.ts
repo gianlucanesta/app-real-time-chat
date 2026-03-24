@@ -24,7 +24,7 @@ const messageSchema = new mongoose.Schema({
   },
   mediaType: {
     type: String,
-    enum: ["image", "video", "audio", null],
+    enum: ["image", "video", "audio", "document", null],
     default: null,
   },
   mediaDuration: {

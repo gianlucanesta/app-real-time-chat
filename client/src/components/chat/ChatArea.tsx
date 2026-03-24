@@ -385,7 +385,7 @@ export function ChatArea({
   const handleFileUpload = useCallback(
     async (
       file: File,
-      _type: "image" | "video" | "audio",
+      _type: "image" | "video" | "audio" | "document",
       caption?: string,
     ) => {
       if (!activeConversation) return;
@@ -410,7 +410,7 @@ export function ChatArea({
         }
         const data: {
           url: string;
-          mediaType: "image" | "video" | "audio";
+          mediaType: "image" | "video" | "audio" | "document";
           duration: number | null;
         } = await res.json();
         sendMediaMessage({
@@ -461,8 +461,7 @@ export function ChatArea({
       files.forEach((f) => URL.revokeObjectURL(f.previewUrl));
 
       for (const f of files) {
-        const uploadType = f.type === "document" ? ("image" as const) : f.type;
-        await handleFileUpload(f.file, uploadType, caption);
+        await handleFileUpload(f.file, f.type, caption);
       }
     },
     [handleFileUpload],

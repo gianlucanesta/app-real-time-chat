@@ -5,7 +5,7 @@ export interface IMessage {
   sender: string;
   text: string;
   mediaUrl?: string | null;
-  mediaType?: "image" | "video" | "audio" | null;
+  mediaType?: "image" | "video" | "audio" | "document" | null;
   mediaDuration?: number | null;
   status: "sent" | "delivered" | "read";
   expires_at: Date;

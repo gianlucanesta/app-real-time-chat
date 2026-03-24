@@ -22,7 +22,7 @@ export interface Message {
   senderName: string;
   text: string;
   mediaUrl?: string | null;
-  mediaType?: "image" | "video" | "audio" | null;
+  mediaType?: "image" | "video" | "audio" | "document" | null;
   mediaDuration?: number | null;
   viewOnce?: boolean;
   viewedAt?: string | null;
@@ -51,7 +51,7 @@ export interface Conversation {
   lastMessageId?: string;
   lastMessageIsMine?: boolean;
   lastMessageStatus?: "sending" | "sent" | "delivered" | "read";
-  lastMediaType?: "image" | "video" | "audio" | null;
+  lastMediaType?: "image" | "video" | "audio" | "document" | null;
   lastMediaDuration?: number | null;
   lastMessageViewOnce?: boolean;
   lastMessageViewedAt?: string | null;
@@ -82,7 +82,7 @@ interface ChatContextType {
   sendMessage: (text: string) => void;
   sendMediaMessage: (media: {
     mediaUrl: string;
-    mediaType: "image" | "video" | "audio";
+    mediaType: "image" | "video" | "audio" | "document";
     mediaDuration?: number;
     text?: string;
     viewOnce?: boolean;
@@ -202,7 +202,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         sender: string;
         text: string;
         mediaUrl?: string | null;
-        mediaType?: "image" | "video" | "audio" | null;
+        mediaType?: "image" | "video" | "audio" | "document" | null;
         mediaDuration?: number | null;
         viewOnce?: boolean;
         viewedAt?: string | null;
@@ -645,6 +645,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                     if (msg.mediaType === "audio") return "🎤 Voice message";
                     if (msg.mediaType === "image") return "📷 Photo";
                     if (msg.mediaType === "video") return "🎥 Video";
+                    if (msg.mediaType === "document") return "📄 Document";
                     return `"${msg.text.slice(0, 50)}${msg.text.length > 50 ? "..." : ""}"`;
                   })()
                 : c.lastMessage || "";
@@ -1003,7 +1004,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
                 ? "📷 Photo"
                 : msg.mediaType === "video"
                   ? "🎥 Video"
-                  : `"${msg.text.slice(0, 50)}${msg.text.length > 50 ? "..." : ""}"`;
+                  : msg.mediaType === "document"
+                    ? "📄 Document"
+                    : `"${msg.text.slice(0, 50)}${msg.text.length > 50 ? "..." : ""}"`;
           const reactionText = `You reacted with ${emoji} to: ${msgText}`;
           const filtered = history.filter((e) => e.userId !== user.id);
           filtered.push({
@@ -1035,7 +1038,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const sendMediaMessage = useCallback(
     (media: {
       mediaUrl: string;
-      mediaType: "image" | "video" | "audio";
+      mediaType: "image" | "video" | "audio" | "document";
       mediaDuration?: number;
       text?: string;
       viewOnce?: boolean;
@@ -1049,7 +1052,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           ? "🎤 Voice message"
           : media.mediaType === "video"
             ? "🎬 Video"
-            : "📷 Photo";
+            : media.mediaType === "document"
+              ? "📄 Document"
+              : "📷 Photo";
       const sidebarLabel = media.viewOnce
         ? `🔒 ${label.replace(/^.+\s/, "")}`
         : label;

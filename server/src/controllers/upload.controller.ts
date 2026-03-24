@@ -6,6 +6,20 @@ const ALLOWED_TYPES: Record<string, string[]> = {
   image: ["image/jpeg", "image/png", "image/gif", "image/webp"],
   video: ["video/mp4", "video/webm", "video/quicktime"],
   audio: ["audio/webm", "audio/ogg", "audio/mp4", "audio/mpeg", "audio/wav"],
+  document: [
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "text/plain",
+    "text/csv",
+    "application/zip",
+    "application/x-rar-compressed",
+    "application/x-zip-compressed",
+  ],
 };
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
@@ -30,7 +44,7 @@ export async function upload(
 
     // Determine resource type
     let resourceType: "image" | "video" | "raw" = "raw";
-    let mediaType: "image" | "video" | "audio" = "audio";
+    let mediaType: "image" | "video" | "audio" | "document" = "document";
 
     if (ALLOWED_TYPES.image.includes(file.mimetype)) {
       resourceType = "image";
@@ -42,6 +56,10 @@ export async function upload(
       // Cloudinary treats audio as "video" resource type
       resourceType = "video";
       mediaType = "audio";
+    } else if (ALLOWED_TYPES.document.includes(file.mimetype)) {
+      // Documents uploaded as raw assets on Cloudinary
+      resourceType = "raw";
+      mediaType = "document";
     } else {
       res.status(400).json({ error: "Unsupported file type" });
       return;

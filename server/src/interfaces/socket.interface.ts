@@ -8,7 +8,7 @@ export interface MessagePayload {
   sender: string;
   text: string;
   mediaUrl?: string | null;
-  mediaType?: "image" | "video" | "audio" | null;
+  mediaType?: "image" | "video" | "audio" | "document" | null;
   mediaDuration?: number | null;
   viewOnce?: boolean;
   viewedAt?: string | null;
