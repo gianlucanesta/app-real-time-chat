@@ -340,7 +340,7 @@ export function Sidebar({
             onClick={() => setActiveConversation(chat)}
             className={`group flex items-center gap-3 px-4 py-3.5 md:py-3 cursor-pointer transition-colors relative ${
               activeConversation?.id === chat.id
-                ? "bg-accent/5 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-accent before:rounded-r-full"
+                ? "bg-accent/15 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-accent before:rounded-r-full"
                 : "hover:bg-input/50"
             }`}
           >
