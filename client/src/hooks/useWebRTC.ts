@@ -59,6 +59,16 @@ export function useWebRTC(socket: TypedSocket | null) {
   const screenTrackRef = useRef<MediaStreamTrack | null>(null);
   const originalVideoTrackRef = useRef<MediaStreamTrack | null>(null);
 
+  // ── Refs that mirror state so socket handlers stay stable ────────────
+  const statusRef = useRef<CallStatus>("idle");
+  const localStreamRef = useRef<MediaStream | null>(null);
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+  useEffect(() => {
+    localStreamRef.current = localStream;
+  }, [localStream]);
+
   // ── Helpers ──────────────────────────────────────────────────────────────
   const clearIceTimer = useCallback(() => {
     if (iceTimerRef.current) {
@@ -67,17 +77,19 @@ export function useWebRTC(socket: TypedSocket | null) {
     }
   }, []);
 
+  /** Stop all media tracks and reset stream state. Uses ref — no deps. */
   const cleanupMedia = useCallback(() => {
-    localStream?.getTracks().forEach((t) => t.stop());
+    localStreamRef.current?.getTracks().forEach((t) => t.stop());
     screenTrackRef.current?.stop();
     screenTrackRef.current = null;
     originalVideoTrackRef.current = null;
+    localStreamRef.current = null;
     setLocalStream(null);
     setRemoteStream(null);
     setIsScreenSharing(false);
     setIsMuted(false);
     setIsCameraOff(false);
-  }, [localStream]);
+  }, []);
 
   // ── Create PeerConnection ───────────────────────────────────────────────
   const createPC = useCallback(
@@ -141,6 +153,7 @@ export function useWebRTC(socket: TypedSocket | null) {
       const stream = await navigator.mediaDevices.getUserMedia(
         getMediaConstraints(withVideoRef.current),
       );
+      localStreamRef.current = stream;
       setLocalStream(stream);
       const pc = createPC(stream);
       pcRef.current = pc;
@@ -186,7 +199,7 @@ export function useWebRTC(socket: TypedSocket | null) {
   // ── Start a call (caller) ──────────────────────────────────────────────
   const startCall = useCallback(
     async (toUserId: string, withVideo = true) => {
-      if (!socket || status !== "idle") return;
+      if (!socket || statusRef.current !== "idle") return;
       targetUserRef.current = toUserId;
       withVideoRef.current = withVideo;
       retryCount.current = 0;
@@ -197,6 +210,7 @@ export function useWebRTC(socket: TypedSocket | null) {
         const stream = await navigator.mediaDevices.getUserMedia(
           getMediaConstraints(withVideo),
         );
+        localStreamRef.current = stream;
         setLocalStream(stream);
         if (withVideo) {
           originalVideoTrackRef.current = stream.getVideoTracks()[0] ?? null;
@@ -214,7 +228,7 @@ export function useWebRTC(socket: TypedSocket | null) {
         setStatus("failed");
       }
     },
-    [socket, status, createPC],
+    [socket, createPC],
   );
 
   // ── Answer a call (callee) ─────────────────────────────────────────────
@@ -231,6 +245,7 @@ export function useWebRTC(socket: TypedSocket | null) {
       const stream = await navigator.mediaDevices.getUserMedia(
         getMediaConstraints(withVideo),
       );
+      localStreamRef.current = stream;
       setLocalStream(stream);
       if (withVideo) {
         originalVideoTrackRef.current = stream.getVideoTracks()[0] ?? null;
@@ -283,24 +298,24 @@ export function useWebRTC(socket: TypedSocket | null) {
 
   // ── Toggle mute ────────────────────────────────────────────────────────
   const toggleMute = useCallback(() => {
-    localStream?.getAudioTracks().forEach((t) => {
+    localStreamRef.current?.getAudioTracks().forEach((t) => {
       t.enabled = !t.enabled;
     });
     setIsMuted((prev) => !prev);
-  }, [localStream]);
+  }, []);
 
   // ── Toggle camera ──────────────────────────────────────────────────────
   const toggleCamera = useCallback(() => {
-    localStream?.getVideoTracks().forEach((t) => {
+    localStreamRef.current?.getVideoTracks().forEach((t) => {
       t.enabled = !t.enabled;
     });
     setIsCameraOff((prev) => !prev);
-  }, [localStream]);
+  }, []);
 
   // ── Screen sharing ─────────────────────────────────────────────────────
   const toggleScreenShare = useCallback(async () => {
     const pc = pcRef.current;
-    if (!pc || !localStream) return;
+    if (!pc || !localStreamRef.current) return;
 
     if (!isScreenSharing) {
       try {
@@ -325,7 +340,7 @@ export function useWebRTC(socket: TypedSocket | null) {
     } else {
       await stopScreenShare();
     }
-  }, [isScreenSharing, localStream]);
+  }, [isScreenSharing]);
 
   const stopScreenShare = useCallback(async () => {
     const pc = pcRef.current;
@@ -346,7 +361,7 @@ export function useWebRTC(socket: TypedSocket | null) {
 
   // ── Retry from failed state ────────────────────────────────────────────
   const retryCall = useCallback(() => {
-    if (status !== "failed" || !targetUserRef.current) return;
+    if (statusRef.current !== "failed" || !targetUserRef.current) return;
     const target = targetUserRef.current;
     cleanupMedia();
     pcRef.current?.close();
@@ -357,15 +372,17 @@ export function useWebRTC(socket: TypedSocket | null) {
     setTimeout(() => {
       void startCall(target, withVideoRef.current);
     }, 200);
-  }, [status, cleanupMedia, startCall]);
+  }, [cleanupMedia, startCall]);
 
   // ── Socket event listeners ─────────────────────────────────────────────
+  // Handlers read current values from refs so this effect only depends on
+  // `socket` and never re-registers mid-call.
   useEffect(() => {
     if (!socket) return;
 
     const handleIncoming = (data: IncomingCallData) => {
       // If already in a call, send busy signal
-      if (status !== "idle" || pcRef.current) {
+      if (statusRef.current !== "idle" || pcRef.current) {
         socket.emit("call:reject", { to: data.from });
         return;
       }
@@ -411,27 +428,29 @@ export function useWebRTC(socket: TypedSocket | null) {
       }
     };
 
-    const handleEnded = () => {
+    const doFullCleanup = () => {
       clearIceTimer();
       pcRef.current?.close();
       pcRef.current = null;
       iceCandidateBuffer.current = [];
-      cleanupMedia();
+      // Stop media via ref (no stale closure)
+      localStreamRef.current?.getTracks().forEach((t) => t.stop());
+      screenTrackRef.current?.stop();
+      screenTrackRef.current = null;
+      originalVideoTrackRef.current = null;
+      localStreamRef.current = null;
+      setLocalStream(null);
+      setRemoteStream(null);
+      setIsScreenSharing(false);
+      setIsMuted(false);
+      setIsCameraOff(false);
       setStatus("idle");
       targetUserRef.current = null;
       retryCount.current = 0;
     };
 
-    const handleRejected = () => {
-      clearIceTimer();
-      pcRef.current?.close();
-      pcRef.current = null;
-      iceCandidateBuffer.current = [];
-      cleanupMedia();
-      setStatus("idle");
-      targetUserRef.current = null;
-      retryCount.current = 0;
-    };
+    const handleEnded = () => doFullCleanup();
+    const handleRejected = () => doFullCleanup();
 
     socket.on("call:incoming", handleIncoming);
     socket.on("call:answer", handleAnswer);
@@ -446,7 +465,9 @@ export function useWebRTC(socket: TypedSocket | null) {
       socket.off("call:ended", handleEnded);
       socket.off("call:rejected", handleRejected);
     };
-  }, [socket, status, cleanupMedia, clearIceTimer]);
+    // Only re-register when socket instance changes — handlers read refs
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket]);
 
   return {
     status,

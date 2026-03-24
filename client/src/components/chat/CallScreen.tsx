@@ -101,6 +101,10 @@ export function CallScreen({
   useEffect(() => {
     if (remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = remoteStream;
+      // Explicit play() to overcome autoplay restrictions after async WebRTC setup
+      if (remoteStream) {
+        remoteVideoRef.current.play().catch(() => {});
+      }
     }
     // Route audio to the user's preferred speaker
     const speakerId = localStorage.getItem("ephemeral-speaker-id");
