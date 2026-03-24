@@ -468,11 +468,13 @@ export function ChatArea({
           url: string;
           mediaType: "image" | "video" | "audio" | "document";
           duration: number | null;
+          fileName?: string;
         } = await res.json();
         sendMediaMessage({
           mediaUrl: data.url,
           mediaType: data.mediaType,
           mediaDuration: data.duration ?? undefined,
+          mediaFileName: data.fileName,
           text: caption || undefined,
           viewOnce,
         });
@@ -951,6 +953,7 @@ export function ChatArea({
                 mediaUrl={msg.mediaUrl}
                 mediaType={msg.mediaType}
                 mediaDuration={msg.mediaDuration}
+                mediaFileName={msg.mediaFileName}
                 viewOnce={msg.viewOnce}
                 viewedAt={msg.viewedAt}
                 contactInitials={msg.isMe ? myInitials : contactInitials}

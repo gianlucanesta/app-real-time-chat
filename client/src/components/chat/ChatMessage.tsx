@@ -37,6 +37,7 @@ interface ChatMessageProps {
   mediaUrl?: string | null;
   mediaType?: "image" | "video" | "audio" | "document" | null;
   mediaDuration?: number | null;
+  mediaFileName?: string | null;
   viewOnce?: boolean;
   viewedAt?: string | null;
   status?: "sending" | "sent" | "delivered" | "read";
@@ -66,6 +67,7 @@ export function ChatMessage({
   mediaUrl,
   mediaType,
   mediaDuration,
+  mediaFileName,
   viewOnce,
   viewedAt,
   status,
@@ -393,7 +395,8 @@ export function ChatMessage({
                       </span>
                       <span className="flex-1 min-w-0">
                         <span className="block text-sm font-medium truncate">
-                          {mediaUrl.split("/").pop()?.split("?")[0] ||
+                          {mediaFileName ||
+                            mediaUrl.split("/").pop()?.split("?")[0] ||
                             "Document"}
                         </span>
                         <span
