@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { MessageSquare } from "lucide-react";
 import { setAccessToken } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
@@ -10,8 +10,10 @@ export const Route = createFileRoute("/oauth-callback")({
 
 function OAuthCallbackPage() {
   const navigate = useNavigate();
-  const { checkAuth } = useAuth();
+  const { checkAuth, isAuthenticated } = useAuth();
+  const [authAttempted, setAuthAttempted] = useState(false);
 
+  // Step 1: set the token and kick off the auth check.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const accessToken = params.get("accessToken");
@@ -23,10 +25,21 @@ function OAuthCallbackPage() {
     }
 
     setAccessToken(accessToken);
-    checkAuth().then(() => {
-      navigate({ to: "/" });
-    });
+    checkAuth().finally(() => setAuthAttempted(true));
   }, []);
+
+  // Step 2: once checkAuth() resolves and React has re-rendered with the new
+  // auth state, navigate to the correct destination.  Doing the navigation
+  // here (rather than in a .then()) avoids a race where the router's
+  // beforeLoad guard reads stale context before the state update is applied.
+  useEffect(() => {
+    if (!authAttempted) return;
+    if (isAuthenticated) {
+      navigate({ to: "/" });
+    } else {
+      navigate({ to: "/login", search: { error: "google_failed" } as any });
+    }
+  }, [authAttempted, isAuthenticated, navigate]);
 
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-bg text-text-main">
