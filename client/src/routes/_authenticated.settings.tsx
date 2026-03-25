@@ -108,7 +108,6 @@ const NAV_ITEMS = [
     icon: Bell,
     label: "Notifications",
     description: "Messages, groups, sounds",
-    badge: true,
   },
   {
     id: "keyboard",
@@ -1337,6 +1336,13 @@ function SettingsPageDesktop() {
                 Notifications
               </h1>
               <NotificationSettings />
+            </>
+          ) : desktopSection === "privacy" ? (
+            <>
+              <h1 className="text-[22px] font-bold text-text-main mb-6">
+                Privacy
+              </h1>
+              <PrivacySettings />
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-text-secondary gap-3">
