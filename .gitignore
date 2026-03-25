@@ -1,7 +1,9 @@
 .env
 node_modules
 dist
+documents
 .agent
+
 
 
 # Logs
