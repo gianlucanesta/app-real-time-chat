@@ -1,4 +1,4 @@
-import { ArrowLeft, Lock } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import type { StatusPrivacy } from "../../types";
 
 interface StatusPrivacyPanelProps {
