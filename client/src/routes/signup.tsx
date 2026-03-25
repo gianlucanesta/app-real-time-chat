@@ -4,7 +4,6 @@ import {
   Mail,
   Lock,
   User,
-  MessageSquare,
   Eye,
   EyeOff,
   Phone,

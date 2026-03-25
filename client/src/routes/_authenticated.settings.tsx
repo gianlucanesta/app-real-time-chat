@@ -13,7 +13,6 @@ import {
   Briefcase,
   HelpCircle,
   Search,
-  Keyboard,
   ChevronRight,
   ChevronLeft,
   MessageSquare,
@@ -42,7 +41,9 @@ import { PrivacySettings } from "../components/settings/PrivacySettings";
 import { AccountSettings } from "../components/settings/AccountSettings";
 import type { User as UserType } from "../types";
 
-const LANGUAGE_OPTIONS = [{ value: "en", label: "English" }];
+const LANGUAGE_OPTIONS = [
+  { value: "en", label: "English" },
+];
 
 const TEXT_SIZE_OPTIONS = [
   { value: "75", label: "75%" },

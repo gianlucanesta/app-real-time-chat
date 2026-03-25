@@ -2,11 +2,7 @@
  * Animated skeleton placeholder for loading states.
  * Renders a pulsing rounded rectangle.
  */
-export function Skeleton({
-  className = "",
-}: {
-  className?: string;
-}) {
+export function Skeleton({ className = "" }: { className?: string }) {
   return (
     <div
       className={`animate-pulse rounded bg-input/60 ${className}`}

@@ -9,8 +9,8 @@ const RESTART_PAUSE = 1000; // pause after disintegration before loop
 const ELEMENT_STAGGER = 0; // gap between each element disintegrating
 
 /* ── Per-element disintegration ──────────────────────────── */
-const PARTICLE_COUNT = 25; // per element (letter or icon)
-const DISINTEGRATE_MS = 250;
+const PARTICLE_COUNT = 55; // per element (letter or icon)
+const DISINTEGRATE_MS = 100; // how long the particle animation lasts (longer = bigger spread)
 
 function rand(min: number, max: number) {
   return min + Math.random() * (max - min);
@@ -29,6 +29,7 @@ function disintegrateElement(
     const rect = el.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) {
       el.style.opacity = "0";
+      el.style.clipPath = "none";
       resolve();
       return;
     }
@@ -64,14 +65,20 @@ function disintegrateElement(
 
     document.body.appendChild(wrapper);
 
-    // Clip-hide element right → left
-    el.animate(
+    // Clip-hide element right → left — NO fill:forwards to avoid
+    // the animation layer overriding inline styles on the next cycle
+    const clipAnim = el.animate(
       [
         { clipPath: "inset(0 0 0 0)", opacity: 1 },
         { clipPath: "inset(0 100% 0 0)", opacity: 0 },
       ],
-      { duration: DISINTEGRATE_MS * 0.5, easing: "ease-in", fill: "forwards" },
+      { duration: DISINTEGRATE_MS * 0.5, easing: "ease-in" },
     );
+    // Commit final state to inline styles when clip animation ends
+    clipAnim.onfinish = () => {
+      el.style.clipPath = "inset(0 100% 0 0)";
+      el.style.opacity = "0";
+    };
 
     // Particles fly right
     const anims = (Array.from(wrapper.children) as HTMLDivElement[]).map(
@@ -99,7 +106,9 @@ function disintegrateElement(
 
     Promise.all(anims.map((a) => a.finished)).then(() => {
       wrapper.remove();
+      // Cancel any lingering animations and commit final inline state
       el.getAnimations().forEach((a) => a.cancel());
+      el.style.clipPath = "inset(0 100% 0 0)";
       el.style.opacity = "0";
       resolve();
     });
@@ -169,8 +178,21 @@ export default function EphemeralBrand() {
     icon.style.transform = "scale(0.6)";
     icon.style.clipPath = "none";
 
-    // Force layout flush so hidden state is painted
-    void icon.offsetHeight;
+    // Force the reset to be fully painted before scheduling appearances.
+    // Double-rAF guarantees a full frame has been committed.
+    requestAnimationFrame(() => {
+      if (!aliveRef.current) return;
+      requestAnimationFrame(() => {
+        if (!aliveRef.current) return;
+        scheduleAppearances();
+      });
+    });
+  }
+
+  function scheduleAppearances() {
+    const letters = letterRefs.current;
+    const icon = iconRef.current;
+    if (!icon) return;
 
     // ── 1. Letters appear one by one ────────────────────
     for (let i = 0; i < letters.length; i++) {

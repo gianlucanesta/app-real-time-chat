@@ -1,4 +1,4 @@
-import { ArrowLeft, Search, Users, UserPlus } from "lucide-react";
+import { ArrowLeft, Search, UserPlus } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { apiFetch } from "../../lib/api";
 import { useAuth } from "../../contexts/AuthContext";
@@ -184,12 +184,7 @@ export function NewChatPanel({
             role="button"
             tabIndex={0}
             onClick={() => handleSelectUser(u)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                handleSelectUser(u);
-              }
-            }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectUser(u); } }}
             className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-input/50 transition-colors"
           >
             <div className="relative inline-block shrink-0">
