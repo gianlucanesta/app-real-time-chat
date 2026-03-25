@@ -279,7 +279,7 @@
       "text": "Redis",
       "fontSize": 24,
       "fontFamily": 1,
-      "strokeColor": "#e03131",
+      "strokeColor": "#ff6b6b",
       "seed": 20
     },
     {
@@ -323,15 +323,19 @@
           0
         ],
         [
-          120,
+          60,
           0
+        ],
+        [
+          60,
+          -225
         ],
         [
           120,
           -225
         ]
       ],
-      "strokeColor": "#e03131",
+      "strokeColor": "#ff6b6b",
       "strokeWidth": 2,
       "strokeStyle": "dashed",
       "seed": 23
@@ -339,14 +343,14 @@
     {
       "id": "ttl-label",
       "type": "text",
-      "x": 672,
-      "y": 565,
-      "width": 100,
+      "x": 725,
+      "y": 455,
+      "width": 120,
       "height": 20,
-      "text": "TTL sync",
-      "fontSize": 12,
+      "text": "TTL expiry trigger",
+      "fontSize": 13,
       "fontFamily": 1,
-      "strokeColor": "#e03131",
+      "strokeColor": "#ff6b6b",
       "seed": 24
     }
   ],
