@@ -89,7 +89,23 @@ services:
         value: https://app-real-time-chat-frontend.onrender.com
 
   # ──────────────────────────────────────────────
-  # 3.  Render-managed Redis (Key-Value store)
+  # 3.  Docs site (Fumadocs / Next.js)
+  # ──────────────────────────────────────────────
+  - type: web
+    name: app-real-time-chat-docs
+    runtime: node
+    plan: free
+    rootDir: docs
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+
+  # ──────────────────────────────────────────────
+  # 4.  Render-managed Redis (Key-Value store)
   # ──────────────────────────────────────────────
   - type: redis
     name: app-real-time-chat-redis
