@@ -55,4 +55,10 @@ export function registerCallHandlers(
     if (typeof to !== "string" || !to) return;
     io.to(`user:${to}`).emit("call:rejected", { from: userId });
   });
+
+  // ── Screen share status relay ──
+  socket.on("call:screenshare", ({ to, active }) => {
+    if (typeof to !== "string" || !to) return;
+    io.to(`user:${to}`).emit("call:screenshare", { from: userId, active });
+  });
 }

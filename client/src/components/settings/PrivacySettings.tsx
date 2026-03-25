@@ -16,11 +16,10 @@ import {
   Search,
   Check,
   X,
-  UserPlus,
   Loader2,
 } from "lucide-react";
 import { useSettings } from "../../contexts/SettingsContext";
-import { apiFetch, normalizeUser } from "../../lib/api";
+import { apiFetch } from "../../lib/api";
 
 // ── Toggle (matching existing style from NotificationSettings) ──────────
 function Toggle({
@@ -483,10 +482,6 @@ export function PrivacySettings() {
     }
     setPickerFor(null);
   }, [pickerFor, pickerIds, saveExceptIds]);
-
-  // ── Derive subtitle for except options ────────────────────────────────
-  const exceptCount = (ids: string[]) =>
-    ids.length > 0 ? `${ids.length} excluded` : "";
 
   // ── Contact picker overlay ────────────────────────────────────────────
   if (pickerFor) {

@@ -303,7 +303,9 @@
   position: fixed;
   inset: 0;
   z-index: 600;
-  background: var(--color-bg);
+  /* Always use a dark background so light-colored controls remain visible
+     regardless of the active app theme. */
+  background: #0f0f0f;
   transform: translateY(100%);
   transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -392,7 +394,15 @@
   gap: 10px;
   flex-wrap: wrap;
   z-index: 20;
-  padding: 0 16px;
+  padding: 12px 24px;
+  /* Dark pill backdrop so buttons are always visible over any background */
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 28px;
+  width: fit-content;
+  left: 50%;
+  transform: translateX(-50%);
 }
 .call-bar-group {
   display: flex;
@@ -406,18 +416,23 @@
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.1s;
 }
 .call-bar-btn:hover {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: scale(1.05);
 }
 .call-bar-camera[data-active="true"],
 .call-bar-mic[data-active="true"] {
@@ -450,6 +465,61 @@
   display: none;
 }
 
+/* ── Screen share zoom view ──────────────────────────────── */
+.call-screen-share-wrapper {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+  touch-action: none;
+}
+
+.call-screen-share-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform-origin: top left;
+  will-change: transform;
+}
+
+.call-share-zoom-badge {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  letter-spacing: 0.3px;
+}
+
+.call-share-zoom-hint {
+  position: absolute;
+  bottom: 110px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  pointer-events: none;
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  animation: call-pulse 2.5s ease-in-out infinite;
+}
+
 /* ── Call screen mobile responsive ───────────────────────── */
 @media (max-width: 767px) {
   .call-screen-bar {
@@ -473,6 +543,9 @@
   .call-screen-bar .call-bar-btn svg {
     width: 20px;
     height: 20px;
+  }
+  .call-share-zoom-hint {
+    display: none;
   }
   .call-mobile-end {
     display: flex;

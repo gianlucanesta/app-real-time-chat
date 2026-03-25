@@ -25,6 +25,7 @@ interface CallScreenProps {
   isMuted: boolean;
   isCameraOff: boolean;
   isScreenSharing: boolean;
+  remoteIsScreenSharing: boolean;
   callWithVideo: boolean;
   onEndCall: () => void;
   onToggleMute: () => void;
@@ -47,6 +48,7 @@ export function CallScreen({
   isMuted,
   isCameraOff,
   isScreenSharing,
+  remoteIsScreenSharing,
   callWithVideo,
   onEndCall,
   onToggleMute,
@@ -77,6 +79,19 @@ export function CallScreen({
   const controlsTimerRef = useRef<number | undefined>(undefined);
   const clickTimerRef = useRef<number | undefined>(undefined);
   const remoteVideoPipRef = useRef<HTMLVideoElement>(null);
+
+  // ── Screen share zoom / pan state ────────────────────────────────────
+  const SHARE_ZOOM_MIN = 1;
+  const SHARE_ZOOM_MAX = 4;
+  const [shareZoom, setShareZoom] = useState(1);
+  const [sharePan, setSharePan] = useState({ x: 0, y: 0 });
+  const [showZoomBadge, setShowZoomBadge] = useState(false);
+  const shareZoomRef = useRef(1);
+  const sharePanRef = useRef({ x: 0, y: 0 });
+  const shareContainerRef = useRef<HTMLDivElement>(null);
+  const sharePanActive = useRef(false);
+  const sharePanStart = useRef({ mx: 0, my: 0, px: 0, py: 0 });
+  const zoomBadgeTimerRef = useRef<number | undefined>(undefined);
 
   const isOpen =
     status === "calling" ||
@@ -298,6 +313,131 @@ export function CallScreen({
     }, 220);
   }, [callWithVideo, localStream]);
 
+  // ── Screen share zoom / pan ─────────────────────────────────────────
+  // Keep refs in sync with state so native wheel handler has fresh values.
+  shareZoomRef.current = shareZoom;
+  sharePanRef.current = sharePan;
+
+  // Reset zoom/pan when remote screen share ends.
+  useEffect(() => {
+    if (!remoteIsScreenSharing) {
+      setShareZoom(1);
+      setSharePan({ x: 0, y: 0 });
+      setShowZoomBadge(false);
+      window.clearTimeout(zoomBadgeTimerRef.current);
+    }
+  }, [remoteIsScreenSharing]);
+
+  const flashZoomBadge = useCallback(() => {
+    setShowZoomBadge(true);
+    window.clearTimeout(zoomBadgeTimerRef.current);
+    zoomBadgeTimerRef.current = window.setTimeout(
+      () => setShowZoomBadge(false),
+      1500,
+    );
+  }, []);
+
+  // Native (non-passive) wheel listener so we can call preventDefault.
+  useEffect(() => {
+    const el = shareContainerRef.current;
+    if (!el || !remoteIsScreenSharing) return;
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+
+      const oldZoom = shareZoomRef.current;
+      // Exponential feel: each tick ≈ 10% zoom change.
+      const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+      const newZoom = Math.min(
+        SHARE_ZOOM_MAX,
+        Math.max(SHARE_ZOOM_MIN, oldZoom * factor),
+      );
+      if (Math.abs(newZoom - oldZoom) < 0.001) return;
+
+      // Zoom centred on cursor position.
+      const { x: px, y: py } = sharePanRef.current;
+      const ratio = newZoom / oldZoom;
+      const newPanX = cx - (cx - px) * ratio;
+      const newPanY = cy - (cy - py) * ratio;
+      const clamped = {
+        x: Math.min(0, Math.max(rect.width * (1 - newZoom), newPanX)),
+        y: Math.min(0, Math.max(rect.height * (1 - newZoom), newPanY)),
+      };
+
+      setShareZoom(newZoom);
+      setSharePan(clamped);
+      // Also update refs immediately so rapid wheel events stay accurate.
+      shareZoomRef.current = newZoom;
+      sharePanRef.current = clamped;
+
+      setShowZoomBadge(true);
+      window.clearTimeout(zoomBadgeTimerRef.current);
+      zoomBadgeTimerRef.current = window.setTimeout(
+        () => setShowZoomBadge(false),
+        1500,
+      );
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [remoteIsScreenSharing]);
+
+  const handleSharePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (shareZoomRef.current <= SHARE_ZOOM_MIN) return;
+      sharePanActive.current = true;
+      sharePanStart.current = {
+        mx: e.clientX,
+        my: e.clientY,
+        px: sharePanRef.current.x,
+        py: sharePanRef.current.y,
+      };
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      e.preventDefault();
+    },
+    [],
+  );
+
+  const handleSharePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!sharePanActive.current) return;
+      const dx = e.clientX - sharePanStart.current.mx;
+      const dy = e.clientY - sharePanStart.current.my;
+      const el = shareContainerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const zoom = shareZoomRef.current;
+      const clamped = {
+        x: Math.min(
+          0,
+          Math.max(rect.width * (1 - zoom), sharePanStart.current.px + dx),
+        ),
+        y: Math.min(
+          0,
+          Math.max(rect.height * (1 - zoom), sharePanStart.current.py + dy),
+        ),
+      };
+      setSharePan(clamped);
+      sharePanRef.current = clamped;
+    },
+    [],
+  );
+
+  const handleSharePointerUp = useCallback(() => {
+    sharePanActive.current = false;
+  }, []);
+
+  const handleShareDoubleClick = useCallback(() => {
+    setShareZoom(1);
+    setSharePan({ x: 0, y: 0 });
+    shareZoomRef.current = 1;
+    sharePanRef.current = { x: 0, y: 0 };
+    flashZoomBadge();
+  }, [flashZoomBadge]);
+
   if (!isOpen) return null;
 
   const hasRemoteVideo =
@@ -315,17 +455,53 @@ export function CallScreen({
     >
       {/* Video / Avatar area */}
       <div className="call-screen-content">
-        {/* Remote video — always in DOM for audio; visually hidden when swapped */}
-        <video
-          ref={remoteVideoCallback}
-          autoPlay
-          playsInline
-          className="call-remote-video"
-          style={{
-            opacity: !isSwapped && showRemoteVideo ? 1 : 0,
-            pointerEvents: !isSwapped && showRemoteVideo ? "auto" : "none",
-          }}
-        />
+        {/* Remote video: screen share view (with zoom/pan) or regular camera view */}
+        {!isSwapped && remoteIsScreenSharing ? (
+          <div
+            ref={shareContainerRef}
+            className="call-screen-share-wrapper"
+            style={{ opacity: showRemoteVideo ? 1 : 0 }}
+            onPointerDown={handleSharePointerDown}
+            onPointerMove={handleSharePointerMove}
+            onPointerUp={handleSharePointerUp}
+            onPointerCancel={handleSharePointerUp}
+            onDoubleClick={handleShareDoubleClick}
+          >
+            <video
+              ref={remoteVideoCallback}
+              autoPlay
+              playsInline
+              className="call-screen-share-video"
+              style={{
+                transform: `translate(${sharePan.x}px, ${sharePan.y}px) scale(${shareZoom})`,
+              }}
+            />
+            {showZoomBadge && (
+              <div className="call-share-zoom-badge">
+                {shareZoom <= SHARE_ZOOM_MIN
+                  ? "1×"
+                  : `${shareZoom.toFixed(1)}×`}
+              </div>
+            )}
+            {shareZoom <= SHARE_ZOOM_MIN && (
+              <div className="call-share-zoom-hint">
+                Scroll to zoom · drag to pan · double-click to reset
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Regular remote video — always in DOM for audio routing */
+          <video
+            ref={remoteVideoCallback}
+            autoPlay
+            playsInline
+            className="call-remote-video"
+            style={{
+              opacity: !isSwapped && showRemoteVideo ? 1 : 0,
+              pointerEvents: !isSwapped && showRemoteVideo ? "auto" : "none",
+            }}
+          />
+        )}
 
         {/* Local video in full-screen main area when swapped */}
         {isSwapped && showLocalPip && (

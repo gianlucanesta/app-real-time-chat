@@ -131,6 +131,7 @@ interface ChatContextType {
     isMuted: boolean;
     isCameraOff: boolean;
     isScreenSharing: boolean;
+    remoteIsScreenSharing: boolean;
     incomingCall: IncomingCallData | null;
     callWithVideo: boolean;
     callContactId: string | null;

@@ -78,6 +78,7 @@ export interface ServerToClientEvents {
   "call:ended": (data: { from: string }) => void;
   "call:rejected": (data: { from: string }) => void;
   "call:busy": (data: { from: string }) => void;
+  "call:screenshare": (data: { from: string; active: boolean }) => void;
   "user:profile-updated": (data: {
     userId: string;
     displayName: string;
@@ -130,6 +131,7 @@ export interface ClientToServerEvents {
   "call:ice": (data: { to: string; candidate: RTCIceCandidateInit }) => void;
   "call:end": (data: { to: string }) => void;
   "call:reject": (data: { to: string }) => void;
+  "call:screenshare": (data: { to: string; active: boolean }) => void;
 }
 
 export interface SocketData {

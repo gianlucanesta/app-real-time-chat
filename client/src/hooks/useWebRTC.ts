@@ -51,6 +51,7 @@ export function useWebRTC(socket: TypedSocket | null) {
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [remoteIsScreenSharing, setRemoteIsScreenSharing] = useState(false);
   const [incomingCall, setIncomingCall] = useState<IncomingCallData | null>(
     null,
   );
@@ -88,6 +89,7 @@ export function useWebRTC(socket: TypedSocket | null) {
     setLocalStream(null);
     setRemoteStream(null);
     setIsScreenSharing(false);
+    setRemoteIsScreenSharing(false);
     setIsMuted(false);
     setIsCameraOff(false);
   }, []);
@@ -395,6 +397,13 @@ export function useWebRTC(socket: TypedSocket | null) {
           await sender.replaceTrack(screenTrack);
         }
         setIsScreenSharing(true);
+        // Notify remote peer that screen sharing has started
+        if (targetUserRef.current && socket) {
+          socket.emit("call:screenshare", {
+            to: targetUserRef.current,
+            active: true,
+          });
+        }
 
         screenTrack.onended = () => {
           void stopScreenShare();
@@ -422,7 +431,14 @@ export function useWebRTC(socket: TypedSocket | null) {
       }
     }
     setIsScreenSharing(false);
-  }, []);
+    // Notify remote peer that screen sharing has stopped
+    if (targetUserRef.current && socket) {
+      socket.emit("call:screenshare", {
+        to: targetUserRef.current,
+        active: false,
+      });
+    }
+  }, [socket]);
 
   // ── Retry from failed state ────────────────────────────────────────────
   const retryCall = useCallback(() => {
@@ -515,6 +531,7 @@ export function useWebRTC(socket: TypedSocket | null) {
       setLocalStream(null);
       setRemoteStream(null);
       setIsScreenSharing(false);
+      setRemoteIsScreenSharing(false);
       setIsMuted(false);
       setIsCameraOff(false);
       setStatus("idle");
@@ -543,11 +560,20 @@ export function useWebRTC(socket: TypedSocket | null) {
       doFullCleanup();
     };
 
+    const handleRemoteScreenShare = (data: {
+      from: string;
+      active: boolean;
+    }) => {
+      if (targetUserRef.current && data.from !== targetUserRef.current) return;
+      setRemoteIsScreenSharing(data.active);
+    };
+
     socket.on("call:incoming", handleIncoming);
     socket.on("call:answer", handleAnswer);
     socket.on("call:ice", handleIce);
     socket.on("call:ended", handleEnded);
     socket.on("call:rejected", handleRejected);
+    socket.on("call:screenshare", handleRemoteScreenShare);
 
     return () => {
       socket.off("call:incoming", handleIncoming);
@@ -555,6 +581,7 @@ export function useWebRTC(socket: TypedSocket | null) {
       socket.off("call:ice", handleIce);
       socket.off("call:ended", handleEnded);
       socket.off("call:rejected", handleRejected);
+      socket.off("call:screenshare", handleRemoteScreenShare);
     };
     // Only re-register when socket instance changes — handlers read refs
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -567,6 +594,7 @@ export function useWebRTC(socket: TypedSocket | null) {
     isMuted,
     isCameraOff,
     isScreenSharing,
+    remoteIsScreenSharing,
     incomingCall,
     callContactId,
     callWithVideo,

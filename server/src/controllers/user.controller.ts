@@ -231,7 +231,7 @@ export async function unblockUser(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const blockedId = req.params.userId;
+    const blockedId = req.params.userId as string;
     if (!blockedId) {
       res.status(400).json({ error: "userId param is required" });
       return;

@@ -89,6 +89,7 @@ function LayoutContent() {
         isMuted={webrtc.isMuted}
         isCameraOff={webrtc.isCameraOff}
         isScreenSharing={webrtc.isScreenSharing}
+        remoteIsScreenSharing={webrtc.remoteIsScreenSharing}
         callWithVideo={webrtc.callWithVideo}
         onEndCall={webrtc.endCall}
         onToggleMute={webrtc.toggleMute}
