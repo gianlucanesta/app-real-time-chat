@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from "next/link";
 
 export default function HomePage() {
   return (
@@ -19,7 +19,7 @@ export default function HomePage() {
           Read the Docs
         </Link>
         <a
-          href="https://github.com/gianlucaromeo/app-real-time-chat"
+          href="https://github.com/gianlucanesta/app-real-time-chat"
           target="_blank"
           rel="noopener noreferrer"
           className="px-5 py-2.5 rounded-lg border border-fd-border font-medium text-sm hover:bg-fd-muted transition-colors"
