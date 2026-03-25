@@ -58,13 +58,12 @@ export function StatusViewer({
   const [replyText, setReplyText] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
   const replyInputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef(Date.now());
   const elapsedRef = useRef(0);
 
-  useClickOutside(menuRef, () => setShowMenu(false));
+  const menuRef = useClickOutside<HTMLDivElement>(() => setShowMenu(false));
 
   const items = contactStatus?.items ?? [];
   const totalItems = items.length;
