@@ -282,23 +282,10 @@
       "seed": 20
     },
     {
-      "id": "webrtc-arrow",
-      "type": "arrow",
-      "x": 150,
-      "y": 190,
-      "width": 0,
-      "height": 0,
-      "points": [[0, 0], [300, -120]],
-      "strokeColor": "#e03131",
-      "strokeWidth": 2,
-      "strokeStyle": "dashed",
-      "seed": 21
-    },
-    {
       "id": "webrtc-label",
       "type": "text",
-      "x": 200,
-      "y": 100,
+      "x": 170,
+      "y": 140,
       "width": 160,
       "height": 20,
       "text": "WebRTC (P2P calls)",
