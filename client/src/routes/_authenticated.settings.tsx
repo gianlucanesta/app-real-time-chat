@@ -30,12 +30,14 @@ import {
 import { useClickOutside } from "../hooks/useClickOutside";
 import { useAuth } from "../contexts/AuthContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { useSettings } from "../contexts/SettingsContext";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Select } from "../components/ui/select";
 import { apiFetch, normalizeUser, getAccessToken } from "../lib/api";
 import { VideoVoiceSettings } from "../components/settings/VideoVoiceSettings";
 import { NotificationSettings } from "../components/settings/NotificationSettings";
+import { ChatSettings } from "../components/settings/ChatSettings";
 import type { User as UserType } from "../types";
 
 const LANGUAGE_OPTIONS = [
@@ -133,15 +135,19 @@ function SettingsPage() {
   );
   const [navSearch, setNavSearch] = useState("");
 
-  // Text size state with localStorage persistence
-  const [textSize, setTextSize] = useState(() => {
-    const saved = localStorage.getItem("ephemeral-text-size");
-    return saved ? Number(saved) : 100;
-  });
+  // Text size from settings context
+  const { settings, updateSetting } = useSettings();
+  const textSize = settings.textSize;
+  const setTextSize = useCallback(
+    (v: number) => {
+      updateSetting("textSize", v);
+      document.documentElement.style.fontSize = `${v}%`;
+    },
+    [updateSetting],
+  );
 
   useEffect(() => {
     document.documentElement.style.fontSize = `${textSize}%`;
-    localStorage.setItem("ephemeral-text-size", String(textSize));
   }, [textSize]);
 
   // Profile form state
@@ -625,6 +631,7 @@ function SettingsPage() {
   function renderSectionContent(id: string) {
     if (id === "general") return <GeneralSection />;
     if (id === "profile") return <AccountSection />;
+    if (id === "chat") return <ChatSettings />;
     if (id === "video") return <VideoVoiceSettings />;
     if (id === "notifications") return <NotificationSettings />;
     const item = NAV_ITEMS.find((n) => n.id === id);
@@ -752,15 +759,19 @@ function SettingsPageDesktop() {
   );
   const [navSearch, setNavSearch] = useState("");
 
-  // Text size state with localStorage persistence
-  const [textSize, setTextSize] = useState(() => {
-    const saved = localStorage.getItem("ephemeral-text-size");
-    return saved ? Number(saved) : 100;
-  });
+  // Text size from settings context
+  const { settings, updateSetting } = useSettings();
+  const textSize = settings.textSize;
+  const setTextSize = useCallback(
+    (v: number) => {
+      updateSetting("textSize", v);
+      document.documentElement.style.fontSize = `${v}%`;
+    },
+    [updateSetting],
+  );
 
   useEffect(() => {
     document.documentElement.style.fontSize = `${textSize}%`;
-    localStorage.setItem("ephemeral-text-size", String(textSize));
   }, [textSize]);
 
   const nameParts = (user?.displayName || "").split(" ");
@@ -1304,6 +1315,13 @@ function SettingsPageDesktop() {
                 </>
               );
             })()
+          ) : desktopSection === "chat" ? (
+            <>
+              <h1 className="text-[22px] font-bold text-text-main mb-6">
+                Chat
+              </h1>
+              <ChatSettings />
+            </>
           ) : desktopSection === "video" ? (
             <>
               <h1 className="text-[22px] font-bold text-text-main mb-6">

@@ -9,28 +9,7 @@ import {
 } from "lucide-react";
 import { Select } from "../ui/select";
 import { Label } from "../ui/label";
-
-// ── Persistence keys ────────────────────────────────────────────────────
-const KEYS = {
-  bannerMode: "ephemeral-notif-banner",
-  badgeMode: "ephemeral-notif-badge",
-  messages: "ephemeral-notif-messages",
-  groups: "ephemeral-notif-groups",
-  status: "ephemeral-notif-status",
-  calls: "ephemeral-notif-calls",
-  showPreview: "ephemeral-notif-preview",
-  sendSound: "ephemeral-notif-send-sound",
-} as const;
-
-function load(key: string, fallback: string): string {
-  return localStorage.getItem(key) ?? fallback;
-}
-
-function loadBool(key: string, fallback: boolean): boolean {
-  const v = localStorage.getItem(key);
-  if (v === null) return fallback;
-  return v === "true";
-}
+import { useSettings } from "../../contexts/SettingsContext";
 
 // ── Toggle switch ───────────────────────────────────────────────────────
 function Toggle({
@@ -78,51 +57,33 @@ const BADGE_OPTIONS = [
 // ── Category row ────────────────────────────────────────────────────────
 type CategoryId = "messages" | "groups" | "status" | "calls";
 
+/** Maps CategoryId → the corresponding key in UserSettings. */
+const CATEGORY_SETTINGS_KEY: Record<CategoryId, "notifMessages" | "notifGroups" | "notifStatus" | "notifCalls"> = {
+  messages: "notifMessages",
+  groups: "notifGroups",
+  status: "notifStatus",
+  calls: "notifCalls",
+};
+
 interface CategoryConfig {
   id: CategoryId;
   icon: typeof MessageSquare;
   label: string;
-  storageKey: string;
 }
 
 const CATEGORIES: CategoryConfig[] = [
-  {
-    id: "messages",
-    icon: MessageSquare,
-    label: "Messages",
-    storageKey: KEYS.messages,
-  },
-  { id: "groups", icon: Users, label: "Groups", storageKey: KEYS.groups },
-  { id: "status", icon: Activity, label: "Status", storageKey: KEYS.status },
-  { id: "calls", icon: Phone, label: "Calls", storageKey: KEYS.calls },
+  { id: "messages", icon: MessageSquare, label: "Messages" },
+  { id: "groups", icon: Users, label: "Groups" },
+  { id: "status", icon: Activity, label: "Status" },
+  { id: "calls", icon: Phone, label: "Calls" },
 ];
 
 // ── Main component ──────────────────────────────────────────────────────
 export function NotificationSettings() {
-  const [bannerMode, setBannerMode] = useState(() =>
-    load(KEYS.bannerMode, "always"),
-  );
-  const [badgeMode, setBadgeMode] = useState(() =>
-    load(KEYS.badgeMode, "always"),
-  );
-  const [showPreview, setShowPreview] = useState(() =>
-    loadBool(KEYS.showPreview, true),
-  );
-  const [sendSound, setSendSound] = useState(() =>
-    loadBool(KEYS.sendSound, false),
-  );
+  const { settings, updateSetting } = useSettings();
+
   const [permissionState, setPermissionState] =
     useState<NotificationPermission>("default");
-
-  // Category on/off (each is a bool)
-  const [catStates, setCatStates] = useState<Record<CategoryId, boolean>>(
-    () => ({
-      messages: loadBool(KEYS.messages, true),
-      groups: loadBool(KEYS.groups, true),
-      status: loadBool(KEYS.status, true),
-      calls: loadBool(KEYS.calls, true),
-    }),
-  );
 
   // ── Expand panel state (per-category advanced) ────────────────────────
   const [expandedCat, setExpandedCat] = useState<CategoryId | null>(null);
@@ -139,32 +100,6 @@ export function NotificationSettings() {
     const result = await Notification.requestPermission();
     setPermissionState(result);
   }, []);
-
-  // ── Persist changes ───────────────────────────────────────────────────
-  useEffect(() => {
-    localStorage.setItem(KEYS.bannerMode, bannerMode);
-  }, [bannerMode]);
-  useEffect(() => {
-    localStorage.setItem(KEYS.badgeMode, badgeMode);
-  }, [badgeMode]);
-  useEffect(() => {
-    localStorage.setItem(KEYS.showPreview, String(showPreview));
-  }, [showPreview]);
-  useEffect(() => {
-    localStorage.setItem(KEYS.sendSound, String(sendSound));
-  }, [sendSound]);
-  useEffect(() => {
-    for (const cat of CATEGORIES) {
-      localStorage.setItem(cat.storageKey, String(catStates[cat.id]));
-    }
-  }, [catStates]);
-
-  const toggleCategory = (id: CategoryId) => {
-    setCatStates((prev) => {
-      const next = { ...prev, [id]: !prev[id] };
-      return next;
-    });
-  };
 
   // ── Permission banner ─────────────────────────────────────────────────
   if (permissionState === "denied") {
@@ -212,8 +147,8 @@ export function NotificationSettings() {
         </Label>
         <Select
           options={BANNER_OPTIONS}
-          value={bannerMode}
-          onChange={setBannerMode}
+          value={settings.notifBanner}
+          onChange={(v) => updateSetting("notifBanner", v)}
           icon={<Bell className="w-[17px] h-[17px]" />}
         />
       </div>
@@ -225,8 +160,8 @@ export function NotificationSettings() {
         </Label>
         <Select
           options={BADGE_OPTIONS}
-          value={badgeMode}
-          onChange={setBadgeMode}
+          value={settings.notifBadge}
+          onChange={(v) => updateSetting("notifBadge", v)}
           icon={<Bell className="w-[17px] h-[17px]" />}
         />
       </div>
@@ -235,7 +170,8 @@ export function NotificationSettings() {
       <div className="flex flex-col border-b border-border">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
-          const isOn = catStates[cat.id];
+          const settingsKey = CATEGORY_SETTINGS_KEY[cat.id];
+          const isOn = settings[settingsKey];
           const isExpanded = expandedCat === cat.id;
 
           return (
@@ -270,7 +206,7 @@ export function NotificationSettings() {
                     </span>
                     <Toggle
                       checked={isOn}
-                      onChange={() => toggleCategory(cat.id)}
+                      onChange={(v) => updateSetting(settingsKey, v)}
                       label={`Toggle ${cat.label} notifications`}
                     />
                   </div>
@@ -292,8 +228,8 @@ export function NotificationSettings() {
           </span>
         </div>
         <Toggle
-          checked={showPreview}
-          onChange={setShowPreview}
+          checked={settings.notifPreview}
+          onChange={(v) => updateSetting("notifPreview", v)}
           label="Show previews"
         />
       </div>
@@ -309,8 +245,8 @@ export function NotificationSettings() {
           </span>
         </div>
         <Toggle
-          checked={sendSound}
-          onChange={setSendSound}
+          checked={settings.notifSendSound}
+          onChange={(v) => updateSetting("notifSendSound", v)}
           label="Play sound on sent messages"
         />
       </div>

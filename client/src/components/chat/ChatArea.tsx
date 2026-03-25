@@ -41,6 +41,7 @@ import { useToast } from "../../contexts/ToastContext";
 import { getAccessToken } from "../../lib/api";
 import { disintegrate } from "../../lib/disintegrate";
 import { LinkPreviewCard } from "./LinkPreviewCard";
+import { useChatSettings, applyEmojiReplace, DOODLE_BG_IMAGE } from "../../hooks/useChatSettings";
 
 /** Return a human-friendly date label for a message group separator. */
 function dateSeparatorLabel(dateStr: string): string {
@@ -111,6 +112,7 @@ export function ChatArea({
     reactToMessage,
   } = useChat();
   const toast = useToast();
+  const chatSettings = useChatSettings();
 
   // Derive live state from the conversations array (activeConversation is a stale copy)
   const liveConv = conversations.find((c) => c.id === activeConversation?.id);
@@ -956,6 +958,14 @@ export function ChatArea({
       {/* Messages Area */}
       <div
         className={`flex-1 overflow-y-auto px-4 md:px-8 flex flex-col pt-6 pb-28 md:pb-32 scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-toggle-off ${isSelectMode ? "select-mode" : ""}`}
+        style={{
+          ...(chatSettings.wallpaperColor
+            ? { backgroundColor: chatSettings.wallpaperColor }
+            : {}),
+          ...(chatSettings.doodlesEnabled && chatSettings.wallpaperColor
+            ? { backgroundImage: DOODLE_BG_IMAGE, backgroundSize: "200px 200px" }
+            : {}),
+        }}
       >
         {groupMessagesByDate(activeMessages).map(([label, msgs]) => (
           <div key={label} className="flex flex-col">
@@ -1258,13 +1268,22 @@ export function ChatArea({
               type="text"
               placeholder="Write a message..."
               value={inputValue}
+              spellCheck={chatSettings.spellCheck}
               className="flex-1 bg-transparent border-none outline-none text-[14px] text-text-main placeholder:text-text-secondary px-2"
               onChange={(e) => {
-                setInputValue(e.target.value);
+                const val = applyEmojiReplace(
+                  e.target.value,
+                  chatSettings.emojiReplace,
+                );
+                setInputValue(val);
                 handleTypingEmit();
               }}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                if (
+                  e.key === "Enter" &&
+                  !e.shiftKey &&
+                  chatSettings.enterToSend
+                ) {
                   e.preventDefault();
                   handleSend();
                 }

@@ -144,3 +144,36 @@ export async function lookupPhone(
     next(err);
   }
 }
+
+/** GET /api/users/me/settings */
+export async function getSettings(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const settings = await UserModel.getSettings(req.user!.sub);
+    res.status(200).json({ settings });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** PATCH /api/users/me/settings */
+export async function updateSettings(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const partial = req.body as Record<string, unknown>;
+    if (!partial || typeof partial !== "object" || Array.isArray(partial)) {
+      res.status(422).json({ error: "Body must be a JSON object" });
+      return;
+    }
+    const settings = await UserModel.updateSettings(req.user!.sub, partial);
+    res.status(200).json({ settings });
+  } catch (err) {
+    next(err);
+  }
+}

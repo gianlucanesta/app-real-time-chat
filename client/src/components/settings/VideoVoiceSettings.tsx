@@ -2,12 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Video, Mic, Volume2, Play } from "lucide-react";
 import { Select } from "../ui/select";
 import { Label } from "../ui/label";
-
-const STORAGE_KEYS = {
-  camera: "ephemeral-camera-id",
-  mic: "ephemeral-mic-id",
-  speaker: "ephemeral-speaker-id",
-} as const;
+import { useSettings } from "../../contexts/SettingsContext";
 
 interface DeviceInfo {
   deviceId: string;
@@ -15,20 +10,16 @@ interface DeviceInfo {
 }
 
 export function VideoVoiceSettings() {
+  const { settings, updateSetting } = useSettings();
+
   const [cameras, setCameras] = useState<DeviceInfo[]>([]);
   const [mics, setMics] = useState<DeviceInfo[]>([]);
   const [speakers, setSpeakers] = useState<DeviceInfo[]>([]);
   const [permissionDenied, setPermissionDenied] = useState(false);
 
-  const [selectedCamera, setSelectedCamera] = useState(
-    () => localStorage.getItem(STORAGE_KEYS.camera) || "",
-  );
-  const [selectedMic, setSelectedMic] = useState(
-    () => localStorage.getItem(STORAGE_KEYS.mic) || "",
-  );
-  const [selectedSpeaker, setSelectedSpeaker] = useState(
-    () => localStorage.getItem(STORAGE_KEYS.speaker) || "",
-  );
+  const selectedCamera = settings.cameraId;
+  const selectedMic = settings.micId;
+  const selectedSpeaker = settings.speakerId;
 
   const previewRef = useRef<HTMLVideoElement>(null);
   const previewStreamRef = useRef<MediaStream | null>(null);
@@ -212,18 +203,15 @@ export function VideoVoiceSettings() {
 
   // ── Handlers ──────────────────────────────────────────────────────────
   const handleCameraChange = (id: string) => {
-    setSelectedCamera(id);
-    localStorage.setItem(STORAGE_KEYS.camera, id);
+    updateSetting("cameraId", id);
   };
 
   const handleMicChange = (id: string) => {
-    setSelectedMic(id);
-    localStorage.setItem(STORAGE_KEYS.mic, id);
+    updateSetting("micId", id);
   };
 
   const handleSpeakerChange = (id: string) => {
-    setSelectedSpeaker(id);
-    localStorage.setItem(STORAGE_KEYS.speaker, id);
+    updateSetting("speakerId", id);
   };
 
   const testSpeaker = useCallback(() => {

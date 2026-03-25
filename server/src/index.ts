@@ -100,11 +100,28 @@ async function start(): Promise<void> {
     // ── Graceful shutdown ─────────────────────────────────────────────────
     const shutdown = (signal: string): void => {
       console.log(`[server] ${signal} received – shutting down gracefully`);
+
+      // Hard-exit fallback: if graceful shutdown doesn't complete within
+      // 10 s (e.g. lingering keep-alive connections), force-exit so Render
+      // counts it as a clean stop rather than a crash / force-kill.
+      const forceExit = setTimeout(() => {
+        console.warn("[server] graceful shutdown timed out – forcing exit");
+        process.exit(0);
+      }, 10_000);
+      forceExit.unref(); // don't keep the event loop alive just for this
+
       // Close Socket.io first so all clients receive a proper disconnect
       // event (instead of "transport close") and can reconnect immediately.
       io.close(() => {
+        // Explicitly destroy lingering keep-alive connections (Node ≥ 18.2).
+        // Without this, httpServer.close() waits indefinitely for idle
+        // keep-alive sockets (cron-job pinger, browser tabs, self-ping).
+        if (typeof httpServer.closeAllConnections === "function") {
+          httpServer.closeAllConnections();
+        }
         httpServer.close(() => {
           console.log("[server] HTTP server closed");
+          clearTimeout(forceExit);
           process.exit(0);
         });
       });

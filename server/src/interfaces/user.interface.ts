@@ -15,6 +15,7 @@ export interface IUser {
   avatar_gradient: string;
   email_verified: boolean;
   created_at: string;
+  settings: Record<string, unknown>;
 }
 
 /**

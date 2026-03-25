@@ -7,7 +7,7 @@ import type {
 } from "../interfaces/user.interface.js";
 
 const SAFE_COLUMNS =
-  "id, email, display_name, first_name, last_name, phone, role, avatar_url, initials, avatar_gradient, email_verified, created_at";
+  "id, email, display_name, first_name, last_name, phone, role, avatar_url, initials, avatar_gradient, email_verified, settings, created_at";
 
 /** Find a user by primary key (UUID). */
 export async function findById(id: string): Promise<IUser | null> {
@@ -128,6 +128,32 @@ export async function update(
     [id, ...values],
   );
   return rows[0] ?? null;
+}
+
+// ── User settings ───────────────────────────────────────────────────────
+
+/** Get settings JSONB for a user. */
+export async function getSettings(
+  userId: string,
+): Promise<Record<string, unknown>> {
+  const { rows } = await pool.query<{ settings: Record<string, unknown> }>(
+    `SELECT settings FROM users WHERE id = $1`,
+    [userId],
+  );
+  return rows[0]?.settings ?? {};
+}
+
+/** Merge partial settings into the existing JSONB (shallow merge). */
+export async function updateSettings(
+  userId: string,
+  partial: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const { rows } = await pool.query<{ settings: Record<string, unknown> }>(
+    `UPDATE users SET settings = settings || $2::jsonb WHERE id = $1
+     RETURNING settings`,
+    [userId, JSON.stringify(partial)],
+  );
+  return rows[0]?.settings ?? {};
 }
 
 /** Store a hashed refresh token tied to a user. */
