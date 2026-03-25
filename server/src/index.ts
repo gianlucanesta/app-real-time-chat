@@ -21,12 +21,11 @@ function startSelfPing(): void {
   if (!externalUrl) return; // local dev — skip
 
   const pingUrl = `${externalUrl}/api/health`;
-  const INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+  const INTERVAL_MS = 5 * 60 * 1000; // 5 minutes — well within Render's 15-min idle cutoff
 
   const ping = (): void => {
     const client = pingUrl.startsWith("https") ? https : http;
     const req = client.get(pingUrl, (res) => {
-      console.log(`[keep-alive] self-ping → ${res.statusCode}`);
       res.resume(); // drain the response
     });
     req.on("error", (err) => {
@@ -35,8 +34,12 @@ function startSelfPing(): void {
     req.end();
   };
 
+  // Fire immediately so the very first boot also resets Render's idle timer,
+  // then keep pinging every 5 min. Using setInterval alone would wait the
+  // full interval before the first ping, leaving a gap during fast restarts.
+  ping();
   setInterval(ping, INTERVAL_MS);
-  console.log(`[keep-alive] self-ping active → ${pingUrl} every 10 min`);
+  console.log(`[keep-alive] self-ping active → ${pingUrl} every 5 min`);
 }
 
 /**
