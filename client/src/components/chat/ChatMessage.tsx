@@ -53,6 +53,14 @@ interface ChatMessageProps {
   onOpenMedia?: () => void;
   linkPreview?: LinkPreview | null;
   isUploading?: boolean;
+  statusReply?: {
+    mediaType: "text" | "image" | "video";
+    text?: string | null;
+    textBgGradient?: string | null;
+    mediaUrl?: string | null;
+    caption?: string | null;
+    senderName: string;
+  } | null;
 }
 
 const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
@@ -84,6 +92,7 @@ export function ChatMessage({
   currentUserId,
   linkPreview,
   isUploading,
+  statusReply,
 }: ChatMessageProps) {
   const [isReactionMenuOpen, setIsReactionMenuOpen] = useState(false);
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
@@ -472,7 +481,40 @@ export function ChatMessage({
               )}
               {/* Inline text for non-media bubbles */}
               {text && !isViewOnceHidden && !isMediaBubble && (
-                <span>{text}</span>
+                <>
+                  {/* Status reply preview box */}
+                  {statusReply && (
+                    <div
+                      className={`mb-1.5 rounded-lg overflow-hidden border-l-4 ${isSent ? "border-white/50 bg-white/10" : "border-accent/60 bg-accent/5"}`}
+                    >
+                      <div className="px-2 pt-1.5 pb-1">
+                        <p className={`text-[11px] font-semibold mb-1 ${isSent ? "text-white/80" : "text-accent"}`}>
+                          {statusReply.senderName}'s status
+                        </p>
+                        {statusReply.mediaType === "text" && statusReply.text ? (
+                          <div
+                            className="w-full h-12 rounded-md flex items-center justify-center text-white text-[11px] font-medium text-center px-2"
+                            style={{ background: statusReply.textBgGradient || "linear-gradient(135deg,#6366f1,#a855f7)" }}
+                          >
+                            <span className="line-clamp-2">{statusReply.text}</span>
+                          </div>
+                        ) : statusReply.mediaUrl ? (
+                          <div className="w-full h-12 rounded-md overflow-hidden">
+                            {statusReply.mediaType === "image" ? (
+                              <img src={statusReply.mediaUrl} alt="status" className="w-full h-full object-cover" />
+                            ) : (
+                              <video src={statusReply.mediaUrl} className="w-full h-full object-cover" />
+                            )}
+                          </div>
+                        ) : null}
+                        {statusReply.caption && (
+                          <p className={`text-[11px] mt-1 truncate ${isSent ? "text-white/70" : "text-text-secondary"}`}>{statusReply.caption}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <span>{text}</span>
+                </>
               )}
               {/* Link preview card — only for non-media bubbles */}
               {linkPreview && !isMediaBubble && (

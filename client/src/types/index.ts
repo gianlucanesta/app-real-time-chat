@@ -123,3 +123,29 @@ export interface MyStatus {
   items: StatusItem[];
   lastUpdated?: string;
 }
+
+export interface StatusReply {
+  mediaType: "text" | "image" | "video";
+  text?: string | null;
+  textBgGradient?: string | null;
+  mediaUrl?: string | null;
+  caption?: string | null;
+  senderName: string;
+}
+
+// ── Channel Types ──
+
+export interface Channel {
+  id: string;
+  owner_id: string;
+  name: string;
+  description: string;
+  avatar_url: string | null;
+  privacy: "public" | "private";
+  follower_count: number;
+  created_at: string;
+  owner_display_name?: string;
+  owner_initials?: string;
+  owner_avatar_gradient?: string;
+  is_following?: boolean;
+}

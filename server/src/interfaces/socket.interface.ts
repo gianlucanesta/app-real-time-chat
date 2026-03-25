@@ -10,6 +10,15 @@ export interface LinkPreview {
   siteName: string | null;
 }
 
+export interface StatusReply {
+  mediaType: "text" | "image" | "video";
+  text?: string | null;
+  textBgGradient?: string | null;
+  mediaUrl?: string | null;
+  caption?: string | null;
+  senderName: string;
+}
+
 export interface MessagePayload {
   _id: string;
   conversationId: string;
@@ -28,6 +37,7 @@ export interface MessagePayload {
   senderInitials?: string;
   senderGradient?: string;
   linkPreview?: LinkPreview | null;
+  statusReply?: StatusReply | null;
 }
 
 export interface ServerToClientEvents {
@@ -92,7 +102,17 @@ export interface ClientToServerEvents {
   "join:conversation": (conversationId: string) => void;
   "leave:conversation": (conversationId: string) => void;
   "message:send": (
-    data: { conversationId: string; text: string; viewOnce?: boolean },
+    data: {
+      conversationId: string;
+      text: string;
+      viewOnce?: boolean;
+      mediaUrl?: string;
+      mediaType?: "image" | "video" | "audio" | "document";
+      mediaDuration?: number;
+      mediaFileName?: string;
+      linkPreview?: LinkPreview | null;
+      statusReply?: StatusReply | null;
+    },
     ack: (res: { ok: boolean; messageId?: string }) => void,
   ) => void;
   "message:viewOnce:open": (data: {

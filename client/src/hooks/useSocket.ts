@@ -33,6 +33,14 @@ export interface MessagePayload {
     image: string | null;
     siteName: string | null;
   } | null;
+  statusReply?: {
+    mediaType: "text" | "image" | "video";
+    text?: string | null;
+    textBgGradient?: string | null;
+    mediaUrl?: string | null;
+    caption?: string | null;
+    senderName: string;
+  } | null;
 }
 
 export interface ServerToClientEvents {
@@ -111,6 +119,14 @@ export interface ClientToServerEvents {
         description: string | null;
         image: string | null;
         siteName: string | null;
+      } | null;
+      statusReply?: {
+        mediaType: "text" | "image" | "video";
+        text?: string | null;
+        textBgGradient?: string | null;
+        mediaUrl?: string | null;
+        caption?: string | null;
+        senderName: string;
       } | null;
     },
     ack: (res: { ok: boolean; messageId?: string }) => void,

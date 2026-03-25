@@ -3,7 +3,7 @@ import {
   MessageSquare,
   Phone,
   Users2,
-  Users,
+  Megaphone,
   Star,
   Archive,
   CircleDashed,
@@ -35,7 +35,7 @@ export function VerticalNav() {
     { icon: MessageSquare, path: "/", label: "Chats" },
     { icon: Phone, path: "/calls", label: "Calls" },
     { icon: CircleDashed, path: "/status", label: "Status" },
-    { icon: Users, path: "/contacts", label: "Contacts" },
+    { icon: Megaphone, path: "/channels", label: "Channels" },
     { icon: Star, path: "/favorites", label: "Favorites" },
     { icon: Archive, path: "/archive", label: "Archive" },
   ];

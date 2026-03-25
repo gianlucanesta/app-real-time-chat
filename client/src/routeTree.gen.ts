@@ -19,6 +19,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
 import { Route as AuthenticatedStatusRouteImport } from './routes/_authenticated.status'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
+import { Route as AuthenticatedChannelsRouteImport } from './routes/_authenticated.channels'
 import { Route as AuthenticatedCallsRouteImport } from './routes/_authenticated.calls'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
@@ -70,6 +71,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedChannelsRoute = AuthenticatedChannelsRouteImport.update({
+  id: '/channels',
+  path: '/channels',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedCallsRoute = AuthenticatedCallsRouteImport.update({
   id: '/calls',
   path: '/calls',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/calls': typeof AuthenticatedCallsRoute
+  '/channels': typeof AuthenticatedChannelsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/status': typeof AuthenticatedStatusRoute
 }
@@ -96,6 +103,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/calls': typeof AuthenticatedCallsRoute
+  '/channels': typeof AuthenticatedChannelsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/status': typeof AuthenticatedStatusRoute
   '/': typeof AuthenticatedIndexRoute
@@ -110,6 +118,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/verify-email': typeof VerifyEmailRoute
   '/_authenticated/calls': typeof AuthenticatedCallsRoute
+  '/_authenticated/channels': typeof AuthenticatedChannelsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/status': typeof AuthenticatedStatusRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/calls'
+    | '/channels'
     | '/settings'
     | '/status'
   fileRoutesByTo: FileRoutesByTo
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/calls'
+    | '/channels'
     | '/settings'
     | '/status'
     | '/'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/verify-email'
     | '/_authenticated/calls'
+    | '/_authenticated/channels'
     | '/_authenticated/settings'
     | '/_authenticated/status'
     | '/_authenticated/'
@@ -236,6 +248,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/channels': {
+      id: '/_authenticated/channels'
+      path: '/channels'
+      fullPath: '/channels'
+      preLoaderRoute: typeof AuthenticatedChannelsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/calls': {
       id: '/_authenticated/calls'
       path: '/calls'
@@ -248,6 +267,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedCallsRoute: typeof AuthenticatedCallsRoute
+  AuthenticatedChannelsRoute: typeof AuthenticatedChannelsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStatusRoute: typeof AuthenticatedStatusRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -255,6 +275,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCallsRoute: AuthenticatedCallsRoute,
+  AuthenticatedChannelsRoute: AuthenticatedChannelsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStatusRoute: AuthenticatedStatusRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

@@ -72,6 +72,18 @@ const messageSchema = new mongoose.Schema({
     },
     default: null,
   },
+  // Status reply: reference to the status item being replied to
+  statusReply: {
+    type: {
+      mediaType: { type: String, enum: ["text", "image", "video"], required: true },
+      text: { type: String, default: null },
+      textBgGradient: { type: String, default: null },
+      mediaUrl: { type: String, default: null },
+      caption: { type: String, default: null },
+      senderName: { type: String, required: true },
+    },
+    default: null,
+  },
   // expires_at is set SERVER-SIDE on every write — never trust the client
   expires_at: {
     type: Date,

@@ -94,6 +94,25 @@ export async function initSchema(): Promise<void> {
       created_at  TIMESTAMPTZ DEFAULT now(),
       UNIQUE (blocker_id, blocked_id)
     );
+
+    -- Idempotent migration: channels
+    CREATE TABLE IF NOT EXISTS channels (
+      id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+      owner_id        UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name            TEXT        NOT NULL,
+      description     TEXT        NOT NULL DEFAULT '',
+      avatar_url      TEXT,
+      privacy         TEXT        NOT NULL DEFAULT 'public',
+      follower_count  INT         NOT NULL DEFAULT 0,
+      created_at      TIMESTAMPTZ DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS channel_followers (
+      channel_id  UUID NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+      user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      followed_at TIMESTAMPTZ DEFAULT now(),
+      PRIMARY KEY (channel_id, user_id)
+    );
   `);
   console.log("[pg] schema ready");
 }

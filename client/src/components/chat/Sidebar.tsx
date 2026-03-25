@@ -147,6 +147,7 @@ export function Sidebar({
     activeConversation,
     setActiveConversation,
     addOrUpdateConversation,
+    feedStatusUserIds,
   } = useChat();
 
   // Filter + search + sort conversations
@@ -360,24 +361,39 @@ export function Sidebar({
             }`}
           >
             <div className="relative inline-block shrink-0">
-              {chat.avatar ? (
-                <img
-                  src={chat.avatar}
-                  alt={chat.name}
-                  className="w-[48px] h-[48px] min-w-[48px] md:w-[42px] md:h-[42px] md:min-w-[42px] rounded-full object-cover"
-                />
-              ) : (
-                <div
-                  className="w-[48px] h-[48px] min-w-[48px] md:w-[42px] md:h-[42px] md:min-w-[42px] rounded-full flex items-center justify-center font-bold text-[14px] md:text-[13px] text-white"
-                  style={{ background: chat.gradient }}
-                >
-                  {chat.initials}
-                </div>
-              )}
-              {chat.isOnline && (
-                <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-success border-2 border-bg md:border-card box-content"></span>
-              )}
-            </div>
+              {(() => {
+                const hasStatus =
+                  chat.type === "direct" &&
+                  chat.participants.some((p) => feedStatusUserIds.has(p));
+                return (
+                  <div
+                    className={`relative inline-block shrink-0${
+                      hasStatus
+                        ? " ring-2 ring-blue-500 ring-offset-2 ring-offset-card rounded-full"
+                        : ""
+                    }`}
+                  >
+                    {chat.avatar ? (
+                      <img
+                        src={chat.avatar}
+                        alt={chat.name}
+                        className="w-[48px] h-[48px] min-w-[48px] md:w-[42px] md:h-[42px] md:min-w-[42px] rounded-full object-cover"
+                      />
+                    ) : (
+                      <div
+                        className="w-[48px] h-[48px] min-w-[48px] md:w-[42px] md:h-[42px] md:min-w-[42px] rounded-full flex items-center justify-center font-bold text-[14px] md:text-[13px] text-white"
+                        style={{ background: chat.gradient }}
+                      >
+                        {chat.initials}
+                      </div>
+                    )}
+                    {chat.isOnline && (
+                      <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-success border-2 border-bg md:border-card box-content"></span>
+                    )}
+                  </div>
+                );
+              })()
+              }
 
             <div className="flex-1 min-w-0 py-0.5">
               <div className="flex items-center justify-between gap-2 mb-0.5">

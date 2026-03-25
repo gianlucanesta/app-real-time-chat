@@ -43,6 +43,14 @@ export interface Message {
   isMe: boolean;
   linkPreview?: LinkPreview | null;
   isUploading?: boolean;
+  statusReply?: {
+    mediaType: "text" | "image" | "video";
+    text?: string | null;
+    textBgGradient?: string | null;
+    mediaUrl?: string | null;
+    caption?: string | null;
+    senderName: string;
+  } | null;
 }
 
 export interface Reaction {
@@ -124,6 +132,20 @@ interface ChatContextType {
   confirmRemoteDeletion: (ids: string[]) => void;
   reactions: Record<string, Reaction[]>;
   reactToMessage: (messageId: string, emoji: string) => void;
+  feedStatusUserIds: Set<string>;
+  sendStatusReplyMessage: (
+    recipientId: string,
+    conversationId: string,
+    text: string,
+    statusReply: {
+      mediaType: "text" | "image" | "video";
+      text?: string | null;
+      textBgGradient?: string | null;
+      mediaUrl?: string | null;
+      caption?: string | null;
+      senderName: string;
+    },
+  ) => void;
   // ── WebRTC ──
   webrtc: {
     status: CallStatus;
@@ -175,6 +197,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     string[]
   >([]);
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
+  const [feedStatusUserIds, setFeedStatusUserIds] = useState<Set<string>>(new Set());
   const [hiddenMessageIds, setHiddenMessageIds] = useState<Set<string>>(() => {
     try {
       const stored = localStorage.getItem("hiddenMessageIds");
@@ -234,10 +257,17 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (user) {
       void loadConversations();
+      // Fetch status feed to know which contacts have active statuses (for blue border)
+      apiFetch<{ statuses: Array<{ contactId: string }> }>("/status/feed")
+        .then(({ statuses }) => {
+          setFeedStatusUserIds(new Set(statuses.map((s) => s.contactId)));
+        })
+        .catch(() => {});
     } else {
       setConversations([]);
       setActiveConversation(null);
       setActiveMessages([]);
+      setFeedStatusUserIds(new Set());
     }
   }, [user, loadConversations]);
 
@@ -272,6 +302,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           image: string | null;
           siteName: string | null;
         } | null;
+        statusReply?: {
+          mediaType: "text" | "image" | "video";
+          text?: string | null;
+          textBgGradient?: string | null;
+          mediaUrl?: string | null;
+          caption?: string | null;
+          senderName: string;
+        } | null;
       }>;
     }>(`/messages/${activeConversation.id}`)
       .then(({ messages }) => {
@@ -295,6 +333,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             status: m.status as "sent" | "delivered" | "read",
             isMe: m.sender === user?.id,
             linkPreview: m.linkPreview || null,
+            statusReply: (m as any).statusReply || null,
           })),
         );
 
@@ -383,6 +422,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         status: msg.status as "sent" | "delivered" | "read",
         isMe,
         linkPreview: (msg as any).linkPreview || null,
+        statusReply: (msg as any).statusReply || null,
       };
 
       // For own messages, the optimistic update + ack callback already manages
@@ -969,6 +1009,96 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     [activeConversation, user, socket],
   );
 
+  // ── Send a status reply message (from the Status page) ──────────────────
+  const sendStatusReplyMessage = useCallback(
+    (
+      recipientId: string,
+      conversationId: string,
+      text: string,
+      statusReply: {
+        mediaType: "text" | "image" | "video";
+        text?: string | null;
+        textBgGradient?: string | null;
+        mediaUrl?: string | null;
+        caption?: string | null;
+        senderName: string;
+      },
+    ) => {
+      if (!socket || !user) return;
+
+      const tempId = `temp-${Date.now()}`;
+      const now = new Date();
+      const newMsg: Message = {
+        id: tempId,
+        senderId: user.id ?? "me",
+        senderName: user.displayName ?? "Me",
+        text,
+        timestamp: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        rawTimestamp: now.toISOString(),
+        status: "sending",
+        isMe: true,
+        statusReply,
+      };
+
+      // If this conversation is already active, append optimistically
+      if (activeConvRef.current?.id === conversationId) {
+        setActiveMessages((prev) => [...prev, newMsg]);
+      }
+
+      // Update sidebar snippet optimistically
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === conversationId
+            ? {
+                ...c,
+                lastMessage: `You: ${text}`,
+                lastMessageTime: newMsg.timestamp,
+                lastMessageId: tempId,
+                lastMessageIsMine: true,
+                lastMessageStatus: "sending",
+              }
+            : c,
+        ),
+      );
+
+      socket.emit(
+        "join:conversation",
+        conversationId,
+      );
+
+      socket.emit(
+        "message:send",
+        {
+          conversationId,
+          text,
+          statusReply,
+        } as any,
+        (res) => {
+          if (res.ok && res.messageId) {
+            sentMsgsRef.current.set(res.messageId!, conversationId);
+            if (activeConvRef.current?.id === conversationId) {
+              setActiveMessages((prev) =>
+                prev.map((m) =>
+                  m.id === tempId
+                    ? { ...m, id: res.messageId!, status: "sent" }
+                    : m,
+                ),
+              );
+            }
+            setConversations((prev) =>
+              prev.map((c) =>
+                c.id === conversationId && c.lastMessageId === tempId
+                  ? { ...c, lastMessageId: res.messageId!, lastMessageStatus: "sent" }
+                  : c,
+              ),
+            );
+          }
+        },
+      );
+    },
+    [user, socket],
+  );
+
   const deleteMessages = useCallback((ids: string[]) => {
     // Optimistic local removal
     setActiveMessages((prev) => prev.filter((m) => !ids.includes(m.id)));
@@ -1389,6 +1519,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         confirmRemoteDeletion,
         reactions,
         reactToMessage,
+        feedStatusUserIds,
+        sendStatusReplyMessage,
         webrtc,
       }}
     >

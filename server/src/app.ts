@@ -11,6 +11,7 @@ import { healthRouter } from "./routes/health.routes.js";
 import { authRouter } from "./routes/auth.routes.js";
 import { userRouter } from "./routes/user.routes.js";
 import { contactRouter } from "./routes/contact.routes.js";
+import { channelRouter } from "./routes/channel.routes.js";
 import { messageRouter } from "./routes/message.routes.js";
 import { conversationRouter } from "./routes/conversation.routes.js";
 import { uploadRouter } from "./routes/upload.routes.js";
@@ -80,6 +81,7 @@ export function createApp(): express.Express {
   app.use("/api/auth", authRouter);
   app.use("/api/users", userRouter);
   app.use("/api/contacts", contactRouter);
+  app.use("/api/channels", channelRouter);
   app.use("/api/messages", messageRouter);
   app.use("/api/conversations", conversationRouter);
   app.use("/api/upload", uploadRouter);

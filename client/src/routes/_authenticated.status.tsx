@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CircleDashed, Lock } from "lucide-react";
 import { StatusSidebar } from "../components/chat/StatusSidebar";
 import { StatusViewer } from "../components/chat/StatusViewer";
@@ -48,7 +48,8 @@ function buildPrivacyContacts(
 
 function StatusPage() {
   const { user } = useAuth();
-  const { conversations } = useChat();
+  const { conversations, sendStatusReplyMessage, setActiveConversation } = useChat();
+  const navigate = useNavigate();
 
   // Privacy state
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
@@ -149,6 +150,40 @@ function StatusPage() {
     setViewingStatus(null);
     setViewingMyStatus(false);
   };
+
+  const handleStatusReply = useCallback(
+    (contactId: string, text: string, statusItemId: string) => {
+      if (!viewingStatus) return;
+
+      // Find the status item being replied to
+      const item = viewingStatus.items.find((i) => i.id === statusItemId);
+      if (!item) return;
+
+      // Find or construct the direct conversation ID for this contact
+      const conv = conversations.find(
+        (c) =>
+          c.type === "direct" && c.participants.includes(contactId),
+      );
+      if (!conv) return;
+
+      sendStatusReplyMessage(contactId, conv.id, text, {
+        mediaType: item.mediaType,
+        text: item.text || null,
+        textBgGradient: item.textBgGradient || null,
+        mediaUrl: item.mediaUrl || null,
+        caption: item.caption || null,
+        senderName: viewingStatus.contactName,
+      });
+
+      // Navigate to chat and open this conversation
+      setActiveConversation(conv);
+      void navigate({ to: "/" });
+
+      // Close the viewer
+      handleCloseViewer();
+    },
+    [viewingStatus, conversations, sendStatusReplyMessage, setActiveConversation, navigate],
+  );
 
   const handleOpenCreator = useCallback((mode?: "text" | "media") => {
     setCreatorMode(mode);
@@ -319,6 +354,7 @@ function StatusPage() {
           userGradient={user?.avatarGradient}
           userInitials={userInitials}
           onClose={handleCloseViewer}
+          onReply={handleStatusReply}
         />
       )}
     </div>

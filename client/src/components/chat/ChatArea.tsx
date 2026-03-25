@@ -1017,6 +1017,7 @@ export function ChatArea({
                   if (idx >= 0) setMediaViewerIndex(idx);
                 }}
                 linkPreview={msg.linkPreview}
+                statusReply={msg.statusReply}
               />
             ))}
           </div>

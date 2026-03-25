@@ -44,6 +44,14 @@ export function registerMessageHandlers(
           image: string | null;
           siteName: string | null;
         } | null;
+        statusReply?: {
+          mediaType: "text" | "image" | "video";
+          text?: string | null;
+          textBgGradient?: string | null;
+          mediaUrl?: string | null;
+          caption?: string | null;
+          senderName: string;
+        } | null;
       },
       ack: (res: { ok: boolean; messageId?: string }) => void,
     ) => {
@@ -56,6 +64,7 @@ export function registerMessageHandlers(
         mediaFileName,
         viewOnce,
         linkPreview,
+        statusReply,
       } = data || {};
 
       if (!conversationId) {
@@ -93,6 +102,7 @@ export function registerMessageHandlers(
           mediaFileName: mediaFileName || null,
           viewOnce: !!viewOnce,
           linkPreview: linkPreview || null,
+          statusReply: statusReply || null,
           expires_at,
         });
 
