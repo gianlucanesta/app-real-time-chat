@@ -1,0 +1,71 @@
+---
+title: Deployment
+description: Deploying Ephemeral to Render with render.yaml.
+icon: Rocket
+---
+
+Ephemeral is deployed on **Render** using Infrastructure-as-Code via `render.yaml`.
+
+## Architecture on Render
+
+```
+render.yaml
+├── web service: ephemeral-server   (Node.js backend)
+└── static site: ephemeral-client   (Vite SPA build)
+```
+
+## render.yaml
+
+The `render.yaml` at the project root defines both services:
+
+### Server (Web Service)
+
+```yaml
+- type: web
+  name: ephemeral-server
+  runtime: node
+  plan: free
+  buildCommand: cd server && npm install && npm run build
+  startCommand: cd server && node dist/index.js
+```
+
+### Client (Static Site)
+
+```yaml
+- type: web
+  name: ephemeral-client
+  runtime: static
+  buildCommand: cd client && npm install && npm run build
+  staticPublishPath: client/dist
+```
+
+## Environment Variables
+
+The server requires environment variables configured in the Render dashboard:
+
+| Variable | Required | Description |
+|---|---|---|
+| `MONGO_URI` | Yes | MongoDB connection string |
+| `PG_*` | Yes | PostgreSQL credentials |
+| `JWT_SECRET` | Yes | Secret for signing tokens |
+| `CLOUDINARY_*` | Yes | Cloudinary API keys |
+| `MAILJET_*` | No | Email service (verification, password reset) |
+| `CLIENT_URL` | Yes | Frontend URL for CORS |
+
+See the [Environment Variables](/docs/getting-started/environment) page for the full reference.
+
+## Build Process
+
+1. Render detects a push to `main`
+2. **Server**: `npm install` → `tsc` → starts `dist/index.js`
+3. **Client**: `npm install` → `tsc -b` → `vite build` → serves `dist/` as static files
+
+## Manual Deploy
+
+To trigger a manual deploy, push to the `main` branch:
+
+```bash
+git push origin main
+```
+
+Render will automatically pick up the changes and rebuild both services.
