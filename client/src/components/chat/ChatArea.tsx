@@ -27,8 +27,6 @@ import { useClickOutside } from "../../hooks/useClickOutside";
 import { ContactProfilePanel } from "./ContactProfilePanel";
 import { EditContactPanel } from "./EditContactPanel";
 import { ChatMessage } from "./ChatMessage";
-import { CallScreen } from "./CallScreen";
-import { IncomingCallBanner } from "./IncomingCallBanner";
 import { ConfirmModal } from "./ConfirmModal";
 import { DeleteChoiceModal } from "./DeleteChoiceModal";
 import { AttachmentMenu } from "./AttachmentMenu";
@@ -40,7 +38,6 @@ import { useChat, type Message } from "../../contexts/ChatContext";
 import type { LinkPreview } from "../../types";
 import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "../../contexts/ToastContext";
-import { useWebRTC } from "../../hooks/useWebRTC";
 import { getAccessToken } from "../../lib/api";
 import { disintegrate } from "../../lib/disintegrate";
 import { LinkPreviewCard } from "./LinkPreviewCard";
@@ -289,7 +286,7 @@ export function ChatArea({
   }, [activeMessages, selectedMessages, toast]);
 
   // Call & Modal State
-  const webrtc = useWebRTC(socket);
+  const webrtc = useChat().webrtc;
   const [activeModal, setActiveModal] = useState<
     "delete-messages" | "clear-chat" | "delete-chat" | null
   >(null);
@@ -1329,35 +1326,6 @@ export function ChatArea({
           onClose={() => setMediaViewerIndex(null)}
         />
       )}
-
-      {/* Incoming Call Banner */}
-      {webrtc.incomingCall && webrtc.status === "incoming" && (
-        <IncomingCallBanner
-          data={webrtc.incomingCall}
-          onAnswer={() => void webrtc.answerCall()}
-          onReject={webrtc.rejectCall}
-        />
-      )}
-
-      {/* Call Screen Overlay */}
-      <CallScreen
-        status={webrtc.status}
-        contactName={contactName}
-        contactInitials={contactInitials}
-        contactGradient={contactGradient}
-        contactAvatarUrl={contactAvatarUrl}
-        localStream={webrtc.localStream}
-        remoteStream={webrtc.remoteStream}
-        isMuted={webrtc.isMuted}
-        isCameraOff={webrtc.isCameraOff}
-        isScreenSharing={webrtc.isScreenSharing}
-        callWithVideo={webrtc.callWithVideo}
-        onEndCall={webrtc.endCall}
-        onToggleMute={webrtc.toggleMute}
-        onToggleCamera={webrtc.toggleCamera}
-        onToggleScreenShare={() => void webrtc.toggleScreenShare()}
-        onRetry={webrtc.retryCall}
-      />
 
       {/* Confirmation Modals */}
       <DeleteChoiceModal

@@ -8,6 +8,8 @@ import { useEffect } from "react";
 import { VerticalNav } from "../components/layout/VerticalNav";
 import { ChatProvider, useChat } from "../contexts/ChatContext";
 import { useAuth } from "../contexts/AuthContext";
+import { CallScreen } from "../components/chat/CallScreen";
+import { IncomingCallBanner } from "../components/chat/IncomingCallBanner";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: ({ context, location }) => {
@@ -27,7 +29,33 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function LayoutContent() {
-  const { mobileInChat } = useChat();
+  const { mobileInChat, conversations, webrtc } = useChat();
+  const { user } = useAuth();
+
+  // Derive contact info from conversations using the callContactId
+  const callConv = conversations.find(
+    (c) =>
+      webrtc.callContactId && c.participants.includes(webrtc.callContactId),
+  );
+  const contactName = callConv?.name ?? webrtc.incomingCall?.fromName ?? "";
+  const contactInitials = callConv?.initials ?? "";
+  const contactGradient =
+    callConv?.gradient ?? "linear-gradient(135deg,#2563EB,#7C3AED)";
+  const contactAvatarUrl = callConv?.avatar ?? null;
+
+  // Current user info
+  const myInitials = user?.displayName
+    ? user.displayName
+        .split(" ")
+        .map((w: string) => w[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "";
+  const myGradient =
+    user?.avatarGradient ?? "linear-gradient(135deg,#2563EB,#7C3AED)";
+  const myAvatarUrl = user?.avatarUrl ?? null;
+
   return (
     <div className="flex h-screen w-full overflow-hidden bg-bg">
       <VerticalNav />
@@ -36,6 +64,38 @@ function LayoutContent() {
       >
         <Outlet />
       </main>
+
+      {/* Global incoming call banner — visible across the whole app */}
+      {webrtc.incomingCall && webrtc.status === "incoming" && (
+        <IncomingCallBanner
+          data={webrtc.incomingCall}
+          onAnswer={() => void webrtc.answerCall()}
+          onReject={webrtc.rejectCall}
+        />
+      )}
+
+      {/* Global call screen — fixed full-viewport overlay */}
+      <CallScreen
+        status={webrtc.status}
+        contactName={contactName}
+        contactInitials={contactInitials}
+        contactGradient={contactGradient}
+        contactAvatarUrl={contactAvatarUrl}
+        localInitials={myInitials}
+        localGradient={myGradient}
+        localAvatarUrl={myAvatarUrl}
+        localStream={webrtc.localStream}
+        remoteStream={webrtc.remoteStream}
+        isMuted={webrtc.isMuted}
+        isCameraOff={webrtc.isCameraOff}
+        isScreenSharing={webrtc.isScreenSharing}
+        callWithVideo={webrtc.callWithVideo}
+        onEndCall={webrtc.endCall}
+        onToggleMute={webrtc.toggleMute}
+        onToggleCamera={webrtc.toggleCamera}
+        onToggleScreenShare={() => void webrtc.toggleScreenShare()}
+        onRetry={webrtc.retryCall}
+      />
     </div>
   );
 }

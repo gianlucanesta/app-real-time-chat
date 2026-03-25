@@ -13,6 +13,8 @@ import {
   type MessagePayload,
   type TypedSocket,
 } from "../hooks/useSocket";
+import { useWebRTC, type IncomingCallData } from "../hooks/useWebRTC";
+import type { CallStatus } from "../hooks/useWebRTC";
 import { apiFetch } from "../lib/api";
 
 // --- Types ---
@@ -121,6 +123,26 @@ interface ChatContextType {
   confirmRemoteDeletion: (ids: string[]) => void;
   reactions: Record<string, Reaction[]>;
   reactToMessage: (messageId: string, emoji: string) => void;
+  // ── WebRTC ──
+  webrtc: {
+    status: CallStatus;
+    localStream: MediaStream | null;
+    remoteStream: MediaStream | null;
+    isMuted: boolean;
+    isCameraOff: boolean;
+    isScreenSharing: boolean;
+    incomingCall: IncomingCallData | null;
+    callWithVideo: boolean;
+    callContactId: string | null;
+    startCall: (toUserId: string, withVideo?: boolean) => Promise<void>;
+    answerCall: () => Promise<void>;
+    rejectCall: () => void;
+    endCall: () => void;
+    toggleMute: () => void;
+    toggleCamera: () => void;
+    toggleScreenShare: () => Promise<void>;
+    retryCall: () => void;
+  };
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -136,6 +158,7 @@ function fmtTime(iso: string): string {
 export function ChatProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { socket } = useSocket();
+  const webrtc = useWebRTC(socket);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversation, setActiveConversation] =
@@ -1359,6 +1382,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         confirmRemoteDeletion,
         reactions,
         reactToMessage,
+        webrtc,
       }}
     >
       {children}

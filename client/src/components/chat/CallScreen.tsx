@@ -17,6 +17,9 @@ interface CallScreenProps {
   contactInitials: string;
   contactGradient: string;
   contactAvatarUrl?: string | null;
+  localInitials: string;
+  localGradient: string;
+  localAvatarUrl?: string | null;
   localStream: MediaStream | null;
   remoteStream: MediaStream | null;
   isMuted: boolean;
@@ -36,6 +39,9 @@ export function CallScreen({
   contactInitials,
   contactGradient,
   contactAvatarUrl,
+  localInitials,
+  localGradient,
+  localAvatarUrl,
   localStream,
   remoteStream,
   isMuted,
@@ -55,6 +61,7 @@ export function CallScreen({
   const localStreamRef = useRef<MediaStream | null>(null);
   localStreamRef.current = localStream;
   const [timer, setTimer] = useState(0);
+  const [remoteCameraOff, setRemoteCameraOff] = useState(false);
 
   // ── Draggable PiP state ───────────────────────────────────────────────
   const [pipOffset, setPipOffset] = useState({ x: 0, y: 0 });
@@ -93,6 +100,30 @@ export function CallScreen({
       setPipExpanded(false);
     }
   }, [status]);
+
+  // Track remote video track mute/unmute to detect when remote user toggles camera
+  useEffect(() => {
+    if (!remoteStream) {
+      setRemoteCameraOff(false);
+      return;
+    }
+    const videoTrack = remoteStream.getVideoTracks()[0];
+    if (!videoTrack) {
+      setRemoteCameraOff(true);
+      return;
+    }
+    // Initial state: track.muted reflects whether media is flowing
+    // track.enabled reflects local intent — for remote tracks, muted is what matters
+    setRemoteCameraOff(videoTrack.muted || !videoTrack.enabled);
+    const onMute = () => setRemoteCameraOff(true);
+    const onUnmute = () => setRemoteCameraOff(false);
+    videoTrack.addEventListener("mute", onMute);
+    videoTrack.addEventListener("unmute", onUnmute);
+    return () => {
+      videoTrack.removeEventListener("mute", onMute);
+      videoTrack.removeEventListener("unmute", onUnmute);
+    };
+  }, [remoteStream]);
 
   // Callback ref for local video: attaches stream the instant the element mounts
   const localVideoCallback = useCallback((el: HTMLVideoElement | null) => {
@@ -206,7 +237,8 @@ export function CallScreen({
 
   const hasRemoteVideo =
     remoteStream && remoteStream.getVideoTracks().length > 0;
-  const showRemoteVideo = hasRemoteVideo && status === "connected";
+  const showRemoteVideo =
+    hasRemoteVideo && status === "connected" && !remoteCameraOff;
   const showLocalPip = localStream && callWithVideo;
 
   return (
@@ -225,7 +257,7 @@ export function CallScreen({
           }}
         />
 
-        {/* Avatar / status fallback (voice call or pre-connect) */}
+        {/* Avatar / status fallback (voice call, pre-connect, or remote camera off) */}
         {!showRemoteVideo && (
           <>
             {contactAvatarUrl ? (
@@ -258,7 +290,15 @@ export function CallScreen({
                 Connection failed. Network may not support P2P calls.
               </div>
             )}
-            {status === "connected" && !hasRemoteVideo && (
+            {status === "connected" && remoteCameraOff && (
+              <div
+                className="call-status-text"
+                style={{ opacity: 0.6, fontSize: "0.85rem" }}
+              >
+                Camera off
+              </div>
+            )}
+            {status === "connected" && !hasRemoteVideo && !remoteCameraOff && (
               <div className="call-waveform" aria-hidden="true">
                 <span></span>
                 <span></span>
@@ -291,13 +331,56 @@ export function CallScreen({
             onPointerUp={handlePipPointerUp}
             onDoubleClick={handlePipDoubleClick}
           >
-            <video
-              ref={localVideoCallback}
-              autoPlay
-              playsInline
-              muted
-              className="call-local-video"
-            />
+            {isCameraOff ? (
+              <div
+                className="call-local-avatar"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "inherit",
+                  overflow: "hidden",
+                }}
+              >
+                {localAvatarUrl ? (
+                  <img
+                    src={localAvatarUrl}
+                    alt="You"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      background: localGradient,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#fff",
+                      fontSize: pipExpanded ? "2rem" : "1rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {localInitials}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <video
+                ref={localVideoCallback}
+                autoPlay
+                playsInline
+                muted
+                className="call-local-video"
+              />
+            )}
           </div>
         )}
 

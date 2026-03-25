@@ -55,6 +55,7 @@ export function useWebRTC(socket: TypedSocket | null) {
     null,
   );
   const [callWithVideo, setCallWithVideo] = useState(true);
+  const [callContactId, setCallContactId] = useState<string | null>(null);
 
   const screenTrackRef = useRef<MediaStreamTrack | null>(null);
   const originalVideoTrackRef = useRef<MediaStreamTrack | null>(null);
@@ -231,14 +232,24 @@ export function useWebRTC(socket: TypedSocket | null) {
       withVideoRef.current = withVideo;
       retryCount.current = 0;
       setCallWithVideo(withVideo);
+      setCallContactId(toUserId);
       setStatus("calling");
 
       try {
-        console.log("[webrtc] startCall — getting user media, withVideo:", withVideo);
+        console.log(
+          "[webrtc] startCall — getting user media, withVideo:",
+          withVideo,
+        );
         const stream = await navigator.mediaDevices.getUserMedia(
           getMediaConstraints(withVideo),
         );
-        console.log("[webrtc] got local stream, tracks:", stream.getTracks().map(t => `${t.kind}:${t.readyState}`).join(", "));
+        console.log(
+          "[webrtc] got local stream, tracks:",
+          stream
+            .getTracks()
+            .map((t) => `${t.kind}:${t.readyState}`)
+            .join(", "),
+        );
         localStreamRef.current = stream;
         setLocalStream(stream);
         if (withVideo) {
@@ -271,11 +282,20 @@ export function useWebRTC(socket: TypedSocket | null) {
     setIncomingCall(null);
 
     try {
-      console.log("[webrtc] answerCall — getting user media, withVideo:", withVideo);
+      console.log(
+        "[webrtc] answerCall — getting user media, withVideo:",
+        withVideo,
+      );
       const stream = await navigator.mediaDevices.getUserMedia(
         getMediaConstraints(withVideo),
       );
-      console.log("[webrtc] got local stream, tracks:", stream.getTracks().map(t => `${t.kind}:${t.readyState}`).join(", "));
+      console.log(
+        "[webrtc] got local stream, tracks:",
+        stream
+          .getTracks()
+          .map((t) => `${t.kind}:${t.readyState}`)
+          .join(", "),
+      );
       localStreamRef.current = stream;
       setLocalStream(stream);
       if (withVideo) {
@@ -287,10 +307,17 @@ export function useWebRTC(socket: TypedSocket | null) {
 
       console.log("[webrtc] setting remote description (offer)...");
       await pc.setRemoteDescription(new RTCSessionDescription(offer));
-      console.log("[webrtc] remote description set, signalingState:", pc.signalingState);
+      console.log(
+        "[webrtc] remote description set, signalingState:",
+        pc.signalingState,
+      );
       // Flush any ICE candidates that arrived during the ringing phase
       const buffered = iceCandidateBuffer.current.splice(0);
-      console.log("[webrtc] flushing", buffered.length, "buffered ICE candidates");
+      console.log(
+        "[webrtc] flushing",
+        buffered.length,
+        "buffered ICE candidates",
+      );
       for (const c of buffered) {
         try {
           await pc.addIceCandidate(new RTCIceCandidate(c));
@@ -313,16 +340,19 @@ export function useWebRTC(socket: TypedSocket | null) {
   const rejectCall = useCallback(() => {
     if (!socket || !incomingCall) return;
     socket.emit("call:reject", { to: incomingCall.from });
+    setCallContactId(null);
     setIncomingCall(null);
   }, [socket, incomingCall]);
 
   // ── End call ───────────────────────────────────────────────────────────
+  // endCall also needs to clear callContactId
   const endCall = useCallback(() => {
     clearIceTimer();
     pcRef.current?.close();
     pcRef.current = null;
     cleanupMedia();
     setStatus("idle");
+    setCallContactId(null);
     if (targetUserRef.current && socket) {
       socket.emit("call:end", { to: targetUserRef.current });
     }
@@ -421,6 +451,7 @@ export function useWebRTC(socket: TypedSocket | null) {
         socket.emit("call:reject", { to: data.from });
         return;
       }
+      setCallContactId(data.from);
       setIncomingCall(data);
       setStatus("incoming");
     };
@@ -445,7 +476,10 @@ export function useWebRTC(socket: TypedSocket | null) {
         await pcRef.current.setRemoteDescription(
           new RTCSessionDescription(data.answer),
         );
-        console.log("[webrtc] remote description (answer) set, signalingState:", pcRef.current.signalingState);
+        console.log(
+          "[webrtc] remote description (answer) set, signalingState:",
+          pcRef.current.signalingState,
+        );
         await flushIceBuffer(pcRef.current);
       }
     };
@@ -484,17 +518,28 @@ export function useWebRTC(socket: TypedSocket | null) {
       setIsMuted(false);
       setIsCameraOff(false);
       setStatus("idle");
+      setCallContactId(null);
       targetUserRef.current = null;
       retryCount.current = 0;
     };
 
     const handleEnded = (data?: { from?: string }) => {
       // Only clean up if the ended signal is from our current call peer
-      if (data?.from && targetUserRef.current && data.from !== targetUserRef.current) return;
+      if (
+        data?.from &&
+        targetUserRef.current &&
+        data.from !== targetUserRef.current
+      )
+        return;
       doFullCleanup();
     };
     const handleRejected = (data?: { from?: string }) => {
-      if (data?.from && targetUserRef.current && data.from !== targetUserRef.current) return;
+      if (
+        data?.from &&
+        targetUserRef.current &&
+        data.from !== targetUserRef.current
+      )
+        return;
       doFullCleanup();
     };
 
@@ -523,6 +568,7 @@ export function useWebRTC(socket: TypedSocket | null) {
     isCameraOff,
     isScreenSharing,
     incomingCall,
+    callContactId,
     callWithVideo,
     startCall,
     answerCall,

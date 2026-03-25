@@ -296,7 +296,7 @@
 
 /* ── Call Screen Overlay ─────────────────────────────── */
 .call-screen {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 600;
   background: var(--color-bg);
@@ -563,7 +563,7 @@
 
 /* ── Incoming call banner ────────────────────────────────── */
 .incoming-call-banner {
-  position: absolute;
+  position: fixed;
   top: 70px;
   left: 50%;
   transform: translateX(-50%);
