@@ -59,7 +59,12 @@ export interface ApiError {
 
 export type CallDirection = "incoming" | "outgoing";
 export type CallType = "voice" | "video";
-export type CallResult = "accepted" | "missed" | "declined" | "no_answer" | "accepted_elsewhere";
+export type CallResult =
+  | "accepted"
+  | "missed"
+  | "declined"
+  | "no_answer"
+  | "accepted_elsewhere";
 
 export interface CallRecord {
   id: string;
@@ -84,4 +89,37 @@ export interface CallGroup {
   calls: CallRecord[];
   lastCall: CallRecord;
   count: number;
+}
+
+// ── Status / Stories Types ──
+
+export type StatusPrivacy = "contacts" | "contacts_except" | "only_share_with";
+
+export type StatusMediaType = "image" | "video" | "text";
+
+export interface StatusItem {
+  id: string;
+  mediaType: StatusMediaType;
+  mediaUrl?: string;
+  text?: string;
+  textBgGradient?: string;
+  caption?: string;
+  timestamp: string; // ISO
+  viewed: boolean;
+}
+
+export interface ContactStatus {
+  contactId: string;
+  contactName: string;
+  contactAvatar?: string | null;
+  contactGradient?: string;
+  contactInitials: string;
+  items: StatusItem[];
+  lastUpdated: string; // ISO — timestamp of the most recent item
+  allViewed: boolean;
+}
+
+export interface MyStatus {
+  items: StatusItem[];
+  lastUpdated?: string;
 }
