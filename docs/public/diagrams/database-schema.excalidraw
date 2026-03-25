@@ -138,9 +138,9 @@
     {
       "id": "fk-arrow-1",
       "type": "arrow",
-      "x": 335,
-      "y": 170,
-      "width": 60,
+      "x": 330,
+      "y": 150,
+      "width": 70,
       "height": 0,
       "points": [
         [
@@ -148,7 +148,7 @@
           0
         ],
         [
-          60,
+          70,
           0
         ]
       ],
@@ -159,18 +159,18 @@
     {
       "id": "fk-arrow-2",
       "type": "arrow",
-      "x": 335,
-      "y": 300,
-      "width": 60,
-      "height": 90,
+      "x": 330,
+      "y": 350,
+      "width": 70,
+      "height": 40,
       "points": [
         [
           0,
           0
         ],
         [
-          60,
-          90
+          70,
+          40
         ]
       ],
       "strokeColor": "#c1c2c5",
@@ -313,26 +313,22 @@
     {
       "id": "ttl-arrow",
       "type": "arrow",
-      "x": 665,
+      "x": 660,
       "y": 590,
-      "width": 115,
-      "height": 370,
+      "width": 120,
+      "height": 225,
       "points": [
         [
           0,
           0
         ],
         [
-          110,
+          120,
           0
         ],
         [
-          110,
-          -200
-        ],
-        [
-          115,
-          -370
+          120,
+          -225
         ]
       ],
       "strokeColor": "#e03131",
@@ -343,8 +339,8 @@
     {
       "id": "ttl-label",
       "type": "text",
-      "x": 690,
-      "y": 560,
+      "x": 672,
+      "y": 565,
       "width": 100,
       "height": 20,
       "text": "TTL sync",
