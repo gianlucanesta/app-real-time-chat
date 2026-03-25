@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 
 const Excalidraw = dynamic(
@@ -11,27 +11,20 @@ const Excalidraw = dynamic(
 const BG = '#1a1b26';
 
 interface ExcalidrawDiagramProps {
-  /** Path relative to /public/diagrams/, e.g. "architecture-overview" */
   name: string;
-  /** Optional height in px (default 500) */
   height?: number;
-  /** Optional caption below the diagram */
   caption?: string;
 }
 
-export function ExcalidrawDiagram({
-  name,
-  height = 500,
-  caption,
-}: ExcalidrawDiagramProps) {
+export function ExcalidrawDiagram({ name, height = 500, caption }: ExcalidrawDiagramProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [scene, setScene] = useState<any>(null);
   const [error, setError] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [api, setApi] = useState<any>(null);
+  const apiRef = useRef<any>(null);
 
   useEffect(() => {
-    fetch(`/diagrams/${name}.excalidraw`)
+    fetch('/diagrams/' + name + '.excalidraw')
       .then((res) => {
         if (!res.ok) throw new Error('Not found');
         return res.json();
@@ -40,19 +33,29 @@ export function ExcalidrawDiagram({
       .catch(() => setError(true));
   }, [name]);
 
-  // Fit all elements into view once both the API and scene are ready
-  useEffect(() => {
-    if (!api || !scene?.elements?.length) return;
-    const id = setTimeout(() => {
-      api.scrollToContent(api.getSceneElements(), {
-        fitToContent: true,
-        animate: false,
-      });
-    }, 80);
-    return () => clearTimeout(id);
-  }, [api, scene]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fitToContent = (api: any) => {
+    const els = api?.getSceneElements?.();
+    if (!els?.length) return;
+    setTimeout(() => {
+      api.scrollToContent(els, { fitToContent: true, animate: false });
+    }, 60);
+  };
 
-  const handleApi = useCallback((instance: unknown) => setApi(instance), []);
+  // Called by Excalidraw with its imperative API — using a ref avoids a
+  // re-render cycle that would blank out the canvas.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleApi = (api: any) => {
+    apiRef.current = api;
+    fitToContent(api);
+  };
+
+  // Fallback: if the scene arrived after the API was already ready
+  useEffect(() => {
+    if (scene && apiRef.current) {
+      fitToContent(apiRef.current);
+    }
+  }, [scene]);
 
   if (error) {
     return (
@@ -78,7 +81,7 @@ export function ExcalidrawDiagram({
         style={{ height, background: BG }}
       >
         <Excalidraw
-          excalidrawAPI={handleApi as any}
+          excalidrawAPI={handleApi}
           initialData={{
             elements: scene.elements,
             appState: {
