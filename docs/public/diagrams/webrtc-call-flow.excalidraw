@@ -29,6 +29,7 @@
       "roundness": {
         "type": 3
       },
+      "boundElements": [{"type": "text", "id": "caller-text"}],
       "seed": 2
     },
     {
@@ -58,6 +59,7 @@
       "roundness": {
         "type": 3
       },
+      "boundElements": [{"type": "text", "id": "signaling-text"}],
       "seed": 4
     },
     {
@@ -87,6 +89,7 @@
       "roundness": {
         "type": 3
       },
+      "boundElements": [{"type": "text", "id": "callee-text"}],
       "seed": 6
     },
     {
@@ -456,6 +459,7 @@
       "roundness": {
         "type": 3
       },
+      "boundElements": [{"type": "text", "id": "ice-text"}],
       "seed": 27
     },
     {

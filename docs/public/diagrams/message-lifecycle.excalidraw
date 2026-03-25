@@ -26,6 +26,7 @@
       "backgroundColor": "#868e96",
       "fillStyle": "solid",
       "strokeWidth": 2,
+      "boundElements": [{"type": "text", "id": "sending-text"}],
       "seed": 2
     },
     {
@@ -52,6 +53,7 @@
       "backgroundColor": "#a5d8ff",
       "fillStyle": "solid",
       "strokeWidth": 2,
+      "boundElements": [{"type": "text", "id": "sent-text"}],
       "seed": 4
     },
     {
@@ -78,6 +80,7 @@
       "backgroundColor": "#b2f2bb",
       "fillStyle": "solid",
       "strokeWidth": 2,
+      "boundElements": [{"type": "text", "id": "delivered-text"}],
       "seed": 6
     },
     {
@@ -104,6 +107,7 @@
       "backgroundColor": "#d0bfff",
       "fillStyle": "solid",
       "strokeWidth": 2,
+      "boundElements": [{"type": "text", "id": "read-text"}],
       "seed": 8
     },
     {
@@ -130,6 +134,7 @@
       "backgroundColor": "#ffc9c9",
       "fillStyle": "solid",
       "strokeWidth": 2,
+      "boundElements": [{"type": "text", "id": "failed-text"}],
       "seed": 10
     },
     {

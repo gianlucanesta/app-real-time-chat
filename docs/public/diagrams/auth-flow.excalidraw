@@ -29,6 +29,7 @@
       "roundness": {
         "type": 3
       },
+      "boundElements": [{"type": "text", "id": "client-text"}],
       "seed": 2
     },
     {
@@ -58,6 +59,7 @@
       "roundness": {
         "type": 3
       },
+      "boundElements": [{"type": "text", "id": "api-text"}],
       "seed": 4
     },
     {
@@ -87,6 +89,7 @@
       "roundness": {
         "type": 3
       },
+      "boundElements": [{"type": "text", "id": "pg-text"}],
       "seed": 6
     },
     {
@@ -474,6 +477,7 @@
       "roundness": {
         "type": 3
       },
+      "boundElements": [{"type": "text", "id": "google-text"}],
       "seed": 30
     },
     {
