@@ -48,18 +48,13 @@ export async function register(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const {
-      email,
-      password,
-      displayName,
-      phone = "",
-    } = req.body as RegisterBody;
+    const { email, password, displayName, phone } = req.body as RegisterBody;
 
     // Input validation
-    if (!email || !password || !displayName) {
+    if (!email || !password || !displayName || !phone) {
       res
         .status(422)
-        .json({ error: "email, password and displayName are required" });
+        .json({ error: "email, password, displayName and phone are required" });
       return;
     }
     if (
@@ -494,6 +489,8 @@ export async function googleCallback(
       sub: string;
       email: string;
       name?: string;
+      given_name?: string;
+      family_name?: string;
       picture?: string;
     };
 
@@ -507,6 +504,8 @@ export async function googleCallback(
       googleId: profile.sub,
       email: profile.email,
       displayName: profile.name || profile.email.split("@")[0],
+      firstName: profile.given_name,
+      lastName: profile.family_name,
       avatarUrl: profile.picture,
     });
 
@@ -597,7 +596,7 @@ export async function facebookCallback(
 
     // 2. Fetch user profile (id, name, email, picture)
     const userParams = new URLSearchParams({
-      fields: "id,name,email,picture.type(large)",
+      fields: "id,name,first_name,last_name,email,picture.type(large)",
       access_token: tokenData.access_token,
     });
 
@@ -614,6 +613,8 @@ export async function facebookCallback(
     const profile = (await userInfoRes.json()) as {
       id: string;
       name?: string;
+      first_name?: string;
+      last_name?: string;
       email?: string;
       picture?: { data?: { url?: string } };
     };
@@ -632,6 +633,8 @@ export async function facebookCallback(
       facebookId: profile.id,
       email,
       displayName: profile.name || email.split("@")[0],
+      firstName: profile.first_name,
+      lastName: profile.last_name,
       avatarUrl: profile.picture?.data?.url,
     });
 

@@ -156,7 +156,9 @@ function SignupPage() {
             {/* Display Name */}
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-center">
-                <Label htmlFor="displayName">FULL NAME</Label>
+                <Label htmlFor="displayName">
+                  FULL NAME <span className="text-danger">*</span>
+                </Label>
               </div>
               <Input
                 id="displayName"
@@ -172,7 +174,9 @@ function SignupPage() {
             {/* Email */}
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-center">
-                <Label htmlFor="email">EMAIL</Label>
+                <Label htmlFor="email">
+                  EMAIL <span className="text-danger">*</span>
+                </Label>
               </div>
               <div className={emailShake ? "field-shake" : ""}>
                 <Input
@@ -272,7 +276,9 @@ function SignupPage() {
             {/* Password */}
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-center">
-                <Label htmlFor="password">PASSWORD</Label>
+                <Label htmlFor="password">
+                  PASSWORD <span className="text-danger">*</span>
+                </Label>
               </div>
               <Input
                 id="password"

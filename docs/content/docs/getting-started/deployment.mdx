@@ -43,14 +43,14 @@ The `render.yaml` at the project root defines both services:
 
 The server requires environment variables configured in the Render dashboard:
 
-| Variable | Required | Description |
-|---|---|---|
-| `MONGO_URI` | Yes | MongoDB connection string |
-| `PG_*` | Yes | PostgreSQL credentials |
-| `JWT_SECRET` | Yes | Secret for signing tokens |
-| `CLOUDINARY_*` | Yes | Cloudinary API keys |
-| `MAILJET_*` | No | Email service (verification, password reset) |
-| `CLIENT_URL` | Yes | Frontend URL for CORS |
+| Variable       | Required | Description                                  |
+| -------------- | -------- | -------------------------------------------- |
+| `MONGO_URI`    | Yes      | MongoDB connection string                    |
+| `PG_*`         | Yes      | PostgreSQL credentials                       |
+| `JWT_SECRET`   | Yes      | Secret for signing tokens                    |
+| `CLOUDINARY_*` | Yes      | Cloudinary API keys                          |
+| `MAILJET_*`    | No       | Email service (verification, password reset) |
+| `CLIENT_URL`   | Yes      | Frontend URL for CORS                        |
 
 See the [Environment Variables](/docs/getting-started/environment) page for the full reference.
 

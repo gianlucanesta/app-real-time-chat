@@ -265,11 +265,15 @@ export async function upsertGoogleUser({
   googleId,
   email,
   displayName,
+  firstName,
+  lastName,
   avatarUrl,
 }: {
   googleId: string;
   email: string;
   displayName: string;
+  firstName?: string;
+  lastName?: string;
   avatarUrl?: string;
 }): Promise<IUser> {
   const initials = displayName
@@ -281,16 +285,20 @@ export async function upsertGoogleUser({
     .slice(0, 2);
 
   const { rows } = await pool.query<IUser>(
-    `INSERT INTO users (email, password_hash, display_name, initials, avatar_url, google_id, email_verified)
-     VALUES ($1, '', $2, $3, $4, $5, true)
+    `INSERT INTO users (email, password_hash, display_name, first_name, last_name, initials, avatar_url, google_id, email_verified)
+     VALUES ($1, '', $2, $3, $4, $5, $6, $7, true)
      ON CONFLICT (email) DO UPDATE
        SET google_id      = EXCLUDED.google_id,
            email_verified = true,
+           first_name     = COALESCE(NULLIF(users.first_name, ''), EXCLUDED.first_name),
+           last_name      = COALESCE(NULLIF(users.last_name, ''), EXCLUDED.last_name),
            avatar_url     = COALESCE(users.avatar_url, EXCLUDED.avatar_url)
      RETURNING ${SAFE_COLUMNS}`,
     [
       email.toLowerCase().trim(),
       displayName.trim(),
+      firstName ?? null,
+      lastName ?? null,
       initials,
       avatarUrl ?? null,
       googleId,
@@ -311,11 +319,15 @@ export async function upsertFacebookUser({
   facebookId,
   email,
   displayName,
+  firstName,
+  lastName,
   avatarUrl,
 }: {
   facebookId: string;
   email: string;
   displayName: string;
+  firstName?: string;
+  lastName?: string;
   avatarUrl?: string;
 }): Promise<IUser> {
   const initials = displayName
@@ -327,16 +339,20 @@ export async function upsertFacebookUser({
     .slice(0, 2);
 
   const { rows } = await pool.query<IUser>(
-    `INSERT INTO users (email, password_hash, display_name, initials, avatar_url, facebook_id, email_verified)
-     VALUES ($1, '', $2, $3, $4, $5, true)
+    `INSERT INTO users (email, password_hash, display_name, first_name, last_name, initials, avatar_url, facebook_id, email_verified)
+     VALUES ($1, '', $2, $3, $4, $5, $6, $7, true)
      ON CONFLICT (email) DO UPDATE
        SET facebook_id    = EXCLUDED.facebook_id,
            email_verified = true,
+           first_name     = COALESCE(NULLIF(users.first_name, ''), EXCLUDED.first_name),
+           last_name      = COALESCE(NULLIF(users.last_name, ''), EXCLUDED.last_name),
            avatar_url     = COALESCE(users.avatar_url, EXCLUDED.avatar_url)
      RETURNING ${SAFE_COLUMNS}`,
     [
       email.toLowerCase().trim(),
       displayName.trim(),
+      firstName ?? null,
+      lastName ?? null,
       initials,
       avatarUrl ?? null,
       facebookId,
@@ -384,7 +400,13 @@ export async function blockUser(
   if (!rows[0]) return null;
   // Fetch display info for blocked user
   const info = await findById(blockedId);
-  return { ...rows[0], display_name: info?.display_name ?? "", initials: info?.initials ?? "", avatar_url: info?.avatar_url ?? null, avatar_gradient: info?.avatar_gradient ?? "" };
+  return {
+    ...rows[0],
+    display_name: info?.display_name ?? "",
+    initials: info?.initials ?? "",
+    avatar_url: info?.avatar_url ?? null,
+    avatar_gradient: info?.avatar_gradient ?? "",
+  };
 }
 
 /** Unblock a user. Returns true if a row was deleted. */
@@ -401,10 +423,9 @@ export async function unblockUser(
 
 /** Delete a user account and all associated data (FK CASCADE handles related tables). */
 export async function deleteAccount(userId: string): Promise<boolean> {
-  const { rowCount } = await pool.query(
-    `DELETE FROM users WHERE id = $1`,
-    [userId],
-  );
+  const { rowCount } = await pool.query(`DELETE FROM users WHERE id = $1`, [
+    userId,
+  ]);
   return (rowCount ?? 0) > 0;
 }
 

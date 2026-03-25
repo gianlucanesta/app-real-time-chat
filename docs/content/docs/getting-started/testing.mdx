@@ -8,12 +8,12 @@ Ephemeral uses **Vitest** for both client and server unit tests, with plans for 
 
 ## Test Stack
 
-| Tool | Usage |
-|---|---|
-| **Vitest** | Test runner (client v4, server v2) |
-| **@testing-library/react** | Component rendering + assertions |
-| **jsdom** | Browser environment simulation |
-| **supertest** | HTTP endpoint testing (server) |
+| Tool                       | Usage                              |
+| -------------------------- | ---------------------------------- |
+| **Vitest**                 | Test runner (client v4, server v2) |
+| **@testing-library/react** | Component rendering + assertions   |
+| **jsdom**                  | Browser environment simulation     |
+| **supertest**              | HTTP endpoint testing (server)     |
 
 ## Running Tests
 
@@ -44,21 +44,21 @@ cd client && npm test && cd ../server && npm test
 
 ### Client (23 tests)
 
-| File | Tests | Coverage |
-|---|---|---|
-| `validation.test.ts` | 11 | Email, phone, password strength validation |
-| `utils.test.ts` | 5 | Tailwind `cn()` merge utility |
-| `debounce.test.ts` | 4 | Debounce timing and cancellation |
-| `ErrorBoundary.test.tsx` | 3 | Error fallback UI and reload behavior |
+| File                     | Tests | Coverage                                   |
+| ------------------------ | ----- | ------------------------------------------ |
+| `validation.test.ts`     | 11    | Email, phone, password strength validation |
+| `utils.test.ts`          | 5     | Tailwind `cn()` merge utility              |
+| `debounce.test.ts`       | 4     | Debounce timing and cancellation           |
+| `ErrorBoundary.test.tsx` | 3     | Error fallback UI and reload behavior      |
 
 ### Server (17 tests)
 
-| File | Tests | Coverage |
-|---|---|---|
-| `token.service.test.ts` | 6 | JWT sign/verify, expiry, invalid tokens |
-| `auth.middleware.test.ts` | 5 | Auth guard: missing/malformed/expired/valid tokens |
-| `password.service.test.ts` | 3 | Bcrypt hash, compare, salt rounds |
-| `rate-limiter.test.ts` | 3 | Rate limiting, 429 response, IP isolation |
+| File                       | Tests | Coverage                                           |
+| -------------------------- | ----- | -------------------------------------------------- |
+| `token.service.test.ts`    | 6     | JWT sign/verify, expiry, invalid tokens            |
+| `auth.middleware.test.ts`  | 5     | Auth guard: missing/malformed/expired/valid tokens |
+| `password.service.test.ts` | 3     | Bcrypt hash, compare, salt rounds                  |
+| `rate-limiter.test.ts`     | 3     | Rate limiting, 429 response, IP isolation          |
 
 ## CI/CD
 

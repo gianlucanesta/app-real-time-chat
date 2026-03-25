@@ -8,7 +8,7 @@ export interface RegisterBody {
   email: string;
   password: string;
   displayName: string;
-  phone?: string;
+  phone: string;
 }
 
 export interface LoginBody {
