@@ -44,7 +44,7 @@ function ChatIndex() {
         />
       </div>
       <div
-        className={`${mobileShowChat ? "flex" : "hidden"} md:flex flex-1 min-w-0`}
+        className={`${mobileShowChat ? "flex" : "hidden"} md:flex flex-1 min-w-0 h-full overflow-hidden`}
       >
         <ChatArea
           onMobileBack={() => {

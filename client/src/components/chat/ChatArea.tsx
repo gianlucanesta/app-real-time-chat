@@ -567,7 +567,7 @@ export function ChatArea({
 
   if (!activeConversation) {
     return (
-      <main className="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden bg-bg">
+      <main className="flex-1 flex flex-col min-w-0 h-dvh md:h-full relative overflow-hidden bg-bg">
         {/* Empty State — hidden on mobile */}
         <div
           className="chat-empty-state w-full hidden md:flex"
@@ -666,7 +666,7 @@ export function ChatArea({
   }
 
   return (
-    <main className="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden bg-bg">
+    <main className="flex-1 flex flex-col min-w-0 h-dvh md:h-full relative overflow-hidden bg-bg">
       {/* Right Side Panels */}
       <ContactProfilePanel
         isOpen={isContactInfoOpen}

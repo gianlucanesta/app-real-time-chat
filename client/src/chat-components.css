@@ -49,6 +49,10 @@
     gap: 8px;
     height: auto;
     min-height: 56px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 75;
+    background-color: var(--color-card);
   }
 }
 
