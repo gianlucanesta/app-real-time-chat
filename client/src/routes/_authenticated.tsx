@@ -57,10 +57,10 @@ function LayoutContent() {
   const myAvatarUrl = user?.avatarUrl ?? null;
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-bg">
+    <div className="flex h-full w-full overflow-hidden bg-bg">
       <VerticalNav />
       <main
-        className={`flex-1 h-full relative md:pl-[60px] md:pb-0 ${mobileInChat ? "" : "pb-[64px]"}`}
+        className={`flex-1 h-full relative overflow-hidden md:pl-[60px] md:pb-0 ${mobileInChat ? "" : "pb-[64px]"}`}
       >
         <Outlet />
       </main>

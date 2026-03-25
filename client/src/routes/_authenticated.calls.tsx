@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { CallsSidebar } from "../components/chat/CallsSidebar";
 import { CallInfoPanel } from "../components/chat/CallInfoPanel";
@@ -12,7 +12,14 @@ export const Route = createFileRoute("/_authenticated/calls")({
 /* ── Build demo call records from real conversations ───── */
 
 function buildCallGroupsFromConversations(
-  conversations: { id: string; name: string; avatar?: string; gradient: string; initials: string; participants: string[] }[],
+  conversations: {
+    id: string;
+    name: string;
+    avatar?: string;
+    gradient: string;
+    initials: string;
+    participants: string[];
+  }[],
 ): CallGroup[] {
   const now = Date.now();
   const day = 86_400_000;
@@ -25,22 +32,126 @@ function buildCallGroupsFromConversations(
     minute: number;
     direction: "incoming" | "outgoing";
     callType: "voice" | "video";
-    result: "accepted" | "missed" | "declined" | "no_answer" | "accepted_elsewhere";
+    result:
+      | "accepted"
+      | "missed"
+      | "declined"
+      | "no_answer"
+      | "accepted_elsewhere";
     duration?: number;
   }[] = [
-    { dayOffset: 0, hour: 14, minute: 32, direction: "incoming", callType: "voice", result: "accepted", duration: 245 },
-    { dayOffset: 0, hour: 10, minute: 15, direction: "outgoing", callType: "video", result: "accepted", duration: 892 },
-    { dayOffset: 1, hour: 18, minute: 41, direction: "incoming", callType: "voice", result: "accepted_elsewhere" },
-    { dayOffset: 1, hour: 9, minute: 5, direction: "outgoing", callType: "voice", result: "no_answer" },
-    { dayOffset: 2, hour: 20, minute: 12, direction: "outgoing", callType: "video", result: "accepted", duration: 1520 },
-    { dayOffset: 2, hour: 16, minute: 30, direction: "incoming", callType: "voice", result: "missed" },
-    { dayOffset: 3, hour: 11, minute: 22, direction: "incoming", callType: "voice", result: "accepted", duration: 67 },
-    { dayOffset: 4, hour: 15, minute: 45, direction: "outgoing", callType: "video", result: "declined" },
-    { dayOffset: 5, hour: 13, minute: 8, direction: "incoming", callType: "voice", result: "accepted", duration: 412 },
-    { dayOffset: 6, hour: 17, minute: 55, direction: "outgoing", callType: "voice", result: "accepted", duration: 180 },
-    { dayOffset: 7, hour: 8, minute: 30, direction: "incoming", callType: "video", result: "missed" },
-    { dayOffset: 10, hour: 19, minute: 15, direction: "outgoing", callType: "voice", result: "accepted", duration: 95 },
-    { dayOffset: 12, hour: 12, minute: 0, direction: "incoming", callType: "voice", result: "accepted", duration: 320 },
+    {
+      dayOffset: 0,
+      hour: 14,
+      minute: 32,
+      direction: "incoming",
+      callType: "voice",
+      result: "accepted",
+      duration: 245,
+    },
+    {
+      dayOffset: 0,
+      hour: 10,
+      minute: 15,
+      direction: "outgoing",
+      callType: "video",
+      result: "accepted",
+      duration: 892,
+    },
+    {
+      dayOffset: 1,
+      hour: 18,
+      minute: 41,
+      direction: "incoming",
+      callType: "voice",
+      result: "accepted_elsewhere",
+    },
+    {
+      dayOffset: 1,
+      hour: 9,
+      minute: 5,
+      direction: "outgoing",
+      callType: "voice",
+      result: "no_answer",
+    },
+    {
+      dayOffset: 2,
+      hour: 20,
+      minute: 12,
+      direction: "outgoing",
+      callType: "video",
+      result: "accepted",
+      duration: 1520,
+    },
+    {
+      dayOffset: 2,
+      hour: 16,
+      minute: 30,
+      direction: "incoming",
+      callType: "voice",
+      result: "missed",
+    },
+    {
+      dayOffset: 3,
+      hour: 11,
+      minute: 22,
+      direction: "incoming",
+      callType: "voice",
+      result: "accepted",
+      duration: 67,
+    },
+    {
+      dayOffset: 4,
+      hour: 15,
+      minute: 45,
+      direction: "outgoing",
+      callType: "video",
+      result: "declined",
+    },
+    {
+      dayOffset: 5,
+      hour: 13,
+      minute: 8,
+      direction: "incoming",
+      callType: "voice",
+      result: "accepted",
+      duration: 412,
+    },
+    {
+      dayOffset: 6,
+      hour: 17,
+      minute: 55,
+      direction: "outgoing",
+      callType: "voice",
+      result: "accepted",
+      duration: 180,
+    },
+    {
+      dayOffset: 7,
+      hour: 8,
+      minute: 30,
+      direction: "incoming",
+      callType: "video",
+      result: "missed",
+    },
+    {
+      dayOffset: 10,
+      hour: 19,
+      minute: 15,
+      direction: "outgoing",
+      callType: "voice",
+      result: "accepted",
+      duration: 95,
+    },
+    {
+      dayOffset: 12,
+      hour: 12,
+      minute: 0,
+      direction: "incoming",
+      callType: "voice",
+      result: "accepted",
+      duration: 320,
+    },
   ];
 
   // Take up to 6 conversations for demo data
@@ -73,7 +184,10 @@ function buildCallGroupsFromConversations(
 
     if (calls.length > 0) {
       // Sort calls by timestamp descending
-      calls.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      calls.sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      );
 
       groups.push({
         contactId: conv.participants[0] || conv.id,

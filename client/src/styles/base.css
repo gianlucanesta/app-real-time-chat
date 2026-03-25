@@ -16,6 +16,24 @@ body {
   color: var(--color-text-main);
 }
 
+/* Lock the viewport — prevent any page-level scroll on mobile */
+html,
+body,
+#root {
+  height: 100dvh;
+  height: 100vh; /* fallback for older browsers */
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+@supports (height: 100dvh) {
+  html,
+  body,
+  #root {
+    height: 100dvh;
+  }
+}
+
 /* ── Scrollbar ─────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;

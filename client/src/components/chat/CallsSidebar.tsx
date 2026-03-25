@@ -5,7 +5,6 @@ import {
   PhoneOutgoing,
   PhoneMissed,
   Video,
-  Star,
   UserPlus,
 } from "lucide-react";
 import { useState, useMemo } from "react";
@@ -20,12 +19,25 @@ function formatCallDate(iso: string): string {
   const oneDay = 86_400_000;
 
   if (diff < oneDay && now.getDate() === d.getDate()) return "Today";
-  if (diff < 2 * oneDay && now.getDate() - d.getDate() === 1) return "Yesterday";
+  if (diff < 2 * oneDay && now.getDate() - d.getDate() === 1)
+    return "Yesterday";
 
-  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const dayNames = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
   if (diff < 7 * oneDay) return dayNames[d.getDay()];
 
-  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return d.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 }
 
 function CallDirectionIcon({
@@ -162,11 +174,7 @@ export function CallsSidebar({
         {filteredGroups.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-text-secondary text-[13px] gap-2">
             <Phone className="w-5 h-5" />
-            <p>
-              {searchQuery.trim()
-                ? "No calls found"
-                : "No recent calls"}
-            </p>
+            <p>{searchQuery.trim() ? "No calls found" : "No recent calls"}</p>
           </div>
         )}
 

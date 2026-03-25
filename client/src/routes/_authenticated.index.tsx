@@ -29,7 +29,7 @@ function ChatIndex() {
   }, [mobileShowChat, setMobileInChat]);
 
   return (
-    <div className="h-screen max-h-screen flex overflow-hidden font-sans bg-bg text-text-main">
+    <div className="h-full flex overflow-hidden font-sans bg-bg text-text-main">
       <div
         className={`${mobileShowChat ? "hidden" : "flex"} md:flex w-full md:w-auto`}
       >
