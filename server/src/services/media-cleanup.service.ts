@@ -1,6 +1,10 @@
 import type { Server } from "socket.io";
 import { Message } from "../models/message.model.js";
-import { deleteCloudinaryAssetsForMessages } from "./cloudinary.service.js";
+import { Status } from "../models/status.model.js";
+import {
+  deleteCloudinaryAssetsForMessages,
+  deleteCloudinaryAsset,
+} from "./cloudinary.service.js";
 
 const INTERVAL_MS = 5 * 60 * 1000; // every 5 minutes
 const LOOKAHEAD_MS = 6 * 60 * 1000; // pre-clean Cloudinary before expiry
@@ -57,6 +61,29 @@ export function startMediaCleanupJob(io: Server): void {
           );
         }
         console.log(`[media-cleanup] expired ${expired.length} message(s)`);
+      }
+      // ── 3. Expired status sweep (Cloudinary cleanup) ──────────────────
+      const expiredStatuses = await Status.find(
+        { expires_at: { $lte: now } },
+        { items: 1, _id: 1 },
+      ).lean();
+
+      if (expiredStatuses.length > 0) {
+        for (const status of expiredStatuses) {
+          for (const item of (status as any).items || []) {
+            if (item.mediaUrl && item.mediaType && item.mediaType !== "text") {
+              deleteCloudinaryAsset(item.mediaUrl, item.mediaType).catch(
+                () => {},
+              );
+            }
+          }
+        }
+        await Status.deleteMany({
+          _id: { $in: expiredStatuses.map((s) => s._id) },
+        });
+        console.log(
+          `[media-cleanup] expired ${expiredStatuses.length} status(es)`,
+        );
       }
     } catch (err) {
       console.warn("[media-cleanup] sweep error:", (err as Error).message);

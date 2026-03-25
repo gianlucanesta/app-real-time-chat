@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   ArrowLeft,
   Send,
@@ -6,7 +6,11 @@ import {
   Type,
   Palette,
   X,
+  Loader2,
 } from "lucide-react";
+import { getAccessToken } from "../../../src/lib/api";
+
+const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api";
 
 type CreatorMode = "choose" | "text" | "media";
 
@@ -49,13 +53,23 @@ export function StatusCreator({
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<"image" | "video">("image");
   const [caption, setCaption] = useState("");
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync mode when the creator opens or initialMode changes
+  useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode || "choose");
+    }
+  }, [isOpen, initialMode]);
 
   const handleClose = () => {
     setMode(initialMode || "choose");
     setText("");
     setGradientIdx(0);
     setMediaPreview(null);
+    setMediaFile(null);
     setCaption("");
     onClose();
   };
@@ -66,6 +80,7 @@ export function StatusCreator({
 
     const isVideo = file.type.startsWith("video/");
     setMediaType(isVideo ? "video" : "image");
+    setMediaFile(file);
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -88,14 +103,36 @@ export function StatusCreator({
     handleClose();
   };
 
-  const handlePublishMedia = () => {
-    if (!mediaPreview) return;
-    onPublish({
-      mediaType,
-      mediaUrl: mediaPreview,
-      caption: caption.trim() || undefined,
-    });
-    handleClose();
+  const handlePublishMedia = async () => {
+    if (!mediaFile) return;
+    setIsUploading(true);
+    try {
+      // Upload file to Cloudinary via server
+      const formData = new FormData();
+      formData.append("file", mediaFile);
+
+      const token = getAccessToken();
+      const uploadRes = await fetch(`${API_BASE}/upload`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!uploadRes.ok) throw new Error("Upload failed");
+      const { url } = await uploadRes.json();
+
+      onPublish({
+        mediaType,
+        mediaUrl: url,
+        caption: caption.trim() || undefined,
+      });
+      handleClose();
+    } catch (err) {
+      console.error("[StatusCreator] upload error:", err);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -188,21 +225,27 @@ export function StatusCreator({
             </div>
 
             {/* Bottom bar */}
-            <div className="flex items-center justify-between p-4 border-t border-border bg-card">
-              {/* Gradient picker */}
-              <div className="flex items-center gap-2">
-                <Palette className="w-4 h-4 text-text-secondary mr-1" />
-                {TEXT_GRADIENTS.map((g, i) => (
-                  <button
-                    key={i}
-                    className={`w-6 h-6 rounded-full shrink-0 transition-all ${i === gradientIdx ? "ring-2 ring-accent ring-offset-2 ring-offset-card scale-110" : "hover:scale-105"}`}
-                    style={{ background: g }}
-                    onClick={() => setGradientIdx(i)}
-                  />
-                ))}
+            <div className="flex items-center gap-2 p-4 border-t border-border bg-card">
+              {/* Palette icon – fixed left */}
+              <Palette className="w-5 h-5 text-text-secondary shrink-0" />
+
+              {/* Gradient circles – scrollable */}
+              <div className="flex-1 min-w-0 overflow-x-auto scrollbar-hide">
+                <div className="flex items-center gap-2 w-max">
+                  {TEXT_GRADIENTS.map((g, i) => (
+                    <button
+                      key={i}
+                      className={`w-7 h-7 rounded-full shrink-0 transition-all ${i === gradientIdx ? "ring-2 ring-accent ring-offset-2 ring-offset-card scale-110" : "hover:scale-105"}`}
+                      style={{ background: g }}
+                      onClick={() => setGradientIdx(i)}
+                    />
+                  ))}
+                </div>
               </div>
+
+              {/* Send button – fixed right */}
               <button
-                className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-white hover:bg-accent/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-white hover:bg-accent/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                 disabled={!text.trim()}
                 onClick={handlePublishText}
               >
@@ -280,10 +323,15 @@ export function StatusCreator({
                   maxLength={500}
                 />
                 <button
-                  className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-white hover:bg-accent/90 transition-colors"
+                  className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-white hover:bg-accent/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   onClick={handlePublishMedia}
+                  disabled={isUploading}
                 >
-                  <Send className="w-4 h-4" />
+                  {isUploading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
                 </button>
               </div>
             )}

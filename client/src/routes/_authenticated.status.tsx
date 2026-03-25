@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { CircleDashed, Lock } from "lucide-react";
 import { StatusSidebar } from "../components/chat/StatusSidebar";
@@ -8,6 +8,7 @@ import type { PrivacyContact } from "../components/chat/StatusPrivacyPanel";
 import { StatusCreator } from "../components/chat/StatusCreator";
 import { useAuth } from "../contexts/AuthContext";
 import { useChat } from "../contexts/ChatContext";
+import { apiFetch } from "../lib/api";
 import type {
   ContactStatus,
   MyStatus,
@@ -18,85 +19,6 @@ import type {
 export const Route = createFileRoute("/_authenticated/status")({
   component: StatusPage,
 });
-
-/* ── Build demo status data from conversations (only < 24h old) ── */
-
-function buildDemoStatuses(
-  conversations: {
-    id: string;
-    name: string;
-    avatar?: string;
-    gradient: string;
-    initials: string;
-    participants: string[];
-  }[],
-): ContactStatus[] {
-  const now = Date.now();
-  const hour = 3_600_000;
-  const maxAge = 24 * hour; // 24-hour window
-
-  const statusTexts = [
-    "Enjoying the weekend! 🌟",
-    "Working from home today 💻",
-    "Beautiful sunset 🌅",
-    "Coffee time ☕",
-    "Gym done! 💪",
-  ];
-
-  const textGradients = [
-    "linear-gradient(135deg, #667eea, #764ba2)",
-    "linear-gradient(135deg, #f093fb, #f5576c)",
-    "linear-gradient(135deg, #4facfe, #00f2fe)",
-    "linear-gradient(135deg, #43e97b, #38f9d7)",
-    "linear-gradient(135deg, #fa709a, #fee140)",
-  ];
-
-  const subset = conversations
-    .filter((c) => c.name)
-    .slice(0, Math.min(5, conversations.length));
-
-  const results: ContactStatus[] = [];
-
-  for (const [idx, conv] of subset.entries()) {
-    const itemCount = idx === 0 ? 3 : idx < 3 ? 2 : 1;
-    const items: StatusItem[] = [];
-
-    for (let i = 0; i < itemCount; i++) {
-      const ts = new Date(now - (idx * 3 + i) * hour);
-      // Skip items older than 24h
-      if (now - ts.getTime() > maxAge) continue;
-      items.push({
-        id: `status-${conv.id}-${i}`,
-        mediaType: "text",
-        text: statusTexts[(idx + i) % statusTexts.length],
-        textBgGradient: textGradients[(idx + i) % textGradients.length],
-        timestamp: ts.toISOString(),
-        viewed: idx > 2,
-      });
-    }
-
-    if (items.length === 0) continue; // all expired
-
-    items.sort(
-      (a, b) =>
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-    );
-    const allViewed = items.every((it) => it.viewed);
-
-    results.push({
-      contactId: conv.participants[0] || conv.id,
-      contactName: conv.name,
-      contactAvatar: conv.avatar || null,
-      contactGradient: conv.gradient,
-      contactInitials: conv.initials,
-      items,
-      lastUpdated: items[items.length - 1].timestamp,
-      allViewed,
-    });
-  }
-
-  return results;
-}
 
 /* ── Build contact list for privacy picker ───────────────── */
 
@@ -146,20 +68,68 @@ function StatusPage() {
   );
   const [viewingMyStatus, setViewingMyStatus] = useState(false);
 
-  // My status
+  // Status data from API
   const [myStatus, setMyStatus] = useState<MyStatus>({ items: [] });
-
-  // Recent statuses from conversations (only active < 24h)
-  const recentStatuses = useMemo(
-    () => buildDemoStatuses(conversations),
-    [conversations],
-  );
+  const [feedStatuses, setFeedStatuses] = useState<ContactStatus[]>([]);
 
   // Contacts for privacy picker
   const privacyContacts = useMemo(
     () => buildPrivacyContacts(conversations),
     [conversations],
   );
+
+  // Fetch statuses from API on mount
+  useEffect(() => {
+    const fetchStatuses = async () => {
+      try {
+        // Fetch my status
+        const myData = await apiFetch<{
+          status: {
+            items: Array<{
+              _id: string;
+              mediaType: string;
+              mediaUrl?: string;
+              text?: string;
+              textBgGradient?: string;
+              caption?: string;
+              createdAt: string;
+            }>;
+            updatedAt?: string;
+          } | null;
+        }>("/status/me");
+
+        if (myData.status) {
+          setMyStatus({
+            items: myData.status.items.map((item) => ({
+              id: item._id,
+              mediaType: item.mediaType as "text" | "image" | "video",
+              mediaUrl: item.mediaUrl,
+              text: item.text || undefined,
+              textBgGradient: item.textBgGradient || undefined,
+              caption: item.caption || undefined,
+              timestamp: item.createdAt,
+              viewed: false,
+            })),
+            lastUpdated: myData.status.updatedAt,
+          });
+        }
+
+        // Fetch feed
+        const feedData = await apiFetch<{ statuses: ContactStatus[] }>(
+          "/status/feed",
+        );
+        setFeedStatuses(feedData.statuses);
+      } catch (err) {
+        console.warn("[status] failed to fetch statuses:", err);
+      }
+    };
+
+    fetchStatuses();
+
+    // Refresh every 60s to pick up new statuses and remove expired ones
+    const interval = setInterval(fetchStatuses, 60_000);
+    return () => clearInterval(interval);
+  }, []);
 
   // User info
   const userInitials =
@@ -186,27 +156,71 @@ function StatusPage() {
   }, []);
 
   const handlePublishStatus = useCallback(
-    (status: {
+    async (status: {
       mediaType: "text" | "image" | "video";
       text?: string;
       textBgGradient?: string;
       mediaUrl?: string;
       caption?: string;
     }) => {
-      const newItem: StatusItem = {
-        id: `my-status-${Date.now()}`,
-        mediaType: status.mediaType,
-        text: status.text,
-        textBgGradient: status.textBgGradient,
-        mediaUrl: status.mediaUrl,
-        caption: status.caption,
-        timestamp: new Date().toISOString(),
-        viewed: false,
-      };
-      setMyStatus((prev) => ({
-        items: [...prev.items, newItem],
-        lastUpdated: newItem.timestamp,
-      }));
+      try {
+        // POST to status API
+        const result = await apiFetch<{
+          status: {
+            items: Array<{
+              _id: string;
+              mediaType: string;
+              mediaUrl?: string;
+              text?: string;
+              textBgGradient?: string;
+              caption?: string;
+              createdAt: string;
+            }>;
+            updatedAt?: string;
+          };
+        }>("/status", {
+          method: "POST",
+          body: JSON.stringify({
+            mediaType: status.mediaType,
+            mediaUrl: status.mediaUrl,
+            text: status.text,
+            textBgGradient: status.textBgGradient,
+            caption: status.caption,
+          }),
+        });
+
+        // Update local state from API response
+        setMyStatus({
+          items: result.status.items.map((item) => ({
+            id: item._id,
+            mediaType: item.mediaType as "text" | "image" | "video",
+            mediaUrl: item.mediaUrl,
+            text: item.text || undefined,
+            textBgGradient: item.textBgGradient || undefined,
+            caption: item.caption || undefined,
+            timestamp: item.createdAt,
+            viewed: false,
+          })),
+          lastUpdated: result.status.updatedAt || new Date().toISOString(),
+        });
+      } catch (err) {
+        console.error("[status] failed to publish:", err);
+        // Optimistic fallback: add locally even if API fails
+        const newItem: StatusItem = {
+          id: `my-status-${Date.now()}`,
+          mediaType: status.mediaType,
+          text: status.text,
+          textBgGradient: status.textBgGradient,
+          mediaUrl: status.mediaUrl,
+          caption: status.caption,
+          timestamp: new Date().toISOString(),
+          viewed: false,
+        };
+        setMyStatus((prev) => ({
+          items: [...prev.items, newItem],
+          lastUpdated: newItem.timestamp,
+        }));
+      }
     },
     [],
   );
@@ -216,7 +230,7 @@ function StatusPage() {
       {/* Left: Status sidebar */}
       <StatusSidebar
         myStatus={myStatus}
-        recentStatuses={recentStatuses}
+        recentStatuses={feedStatuses}
         userAvatar={user?.avatarUrl}
         userGradient={
           user?.avatarGradient || "linear-gradient(135deg, #6366f1, #a855f7)"
