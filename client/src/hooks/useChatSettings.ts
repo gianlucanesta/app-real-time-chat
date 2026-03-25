@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 
 // ── Emoji shortcodes map ────────────────────────────────────────────────
 const EMOJI_MAP: Record<string, string> = {

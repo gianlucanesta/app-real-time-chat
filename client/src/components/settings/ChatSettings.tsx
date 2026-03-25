@@ -2,11 +2,8 @@ import { useState, useCallback } from "react";
 import {
   Sun,
   Moon,
-  Monitor,
   ChevronRight,
   ChevronLeft,
-  Image,
-  ImagePlus,
   Check,
   RotateCcw,
 } from "lucide-react";
