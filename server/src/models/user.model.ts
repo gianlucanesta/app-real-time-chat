@@ -355,3 +355,62 @@ export async function updatePassword(
     [newPasswordHash, userId],
   );
 }
+
+// ── Blocked users ───────────────────────────────────────────────────────────
+
+export interface BlockedUserRow {
+  id: string;
+  blocker_id: string;
+  blocked_id: string;
+  created_at: string;
+  display_name: string;
+  initials: string;
+  avatar_url: string | null;
+  avatar_gradient: string;
+}
+
+/** Block a user. Returns the blocked row or null if already blocked. */
+export async function blockUser(
+  blockerId: string,
+  blockedId: string,
+): Promise<BlockedUserRow | null> {
+  const { rows } = await pool.query<BlockedUserRow>(
+    `INSERT INTO blocked_users (blocker_id, blocked_id)
+     VALUES ($1, $2)
+     ON CONFLICT (blocker_id, blocked_id) DO NOTHING
+     RETURNING *`,
+    [blockerId, blockedId],
+  );
+  if (!rows[0]) return null;
+  // Fetch display info for blocked user
+  const info = await findById(blockedId);
+  return { ...rows[0], display_name: info?.display_name ?? "", initials: info?.initials ?? "", avatar_url: info?.avatar_url ?? null, avatar_gradient: info?.avatar_gradient ?? "" };
+}
+
+/** Unblock a user. Returns true if a row was deleted. */
+export async function unblockUser(
+  blockerId: string,
+  blockedId: string,
+): Promise<boolean> {
+  const { rowCount } = await pool.query(
+    `DELETE FROM blocked_users WHERE blocker_id = $1 AND blocked_id = $2`,
+    [blockerId, blockedId],
+  );
+  return (rowCount ?? 0) > 0;
+}
+
+/** List all blocked users with their profile info. */
+export async function listBlockedUsers(
+  blockerId: string,
+): Promise<BlockedUserRow[]> {
+  const { rows } = await pool.query<BlockedUserRow>(
+    `SELECT bu.id, bu.blocker_id, bu.blocked_id, bu.created_at,
+            u.display_name, u.initials, u.avatar_url, u.avatar_gradient
+     FROM blocked_users bu
+     JOIN users u ON u.id = bu.blocked_id
+     WHERE bu.blocker_id = $1
+     ORDER BY bu.created_at DESC`,
+    [blockerId],
+  );
+  return rows;
+}

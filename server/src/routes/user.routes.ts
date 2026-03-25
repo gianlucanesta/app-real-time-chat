@@ -59,6 +59,68 @@ userRouter.patch("/me/settings", authMiddleware, ctrl.updateSettings);
 
 /**
  * @openapi
+ * /api/users/blocked:
+ *   get:
+ *     tags: [Users]
+ *     summary: List blocked users
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of blocked users
+ */
+userRouter.get("/blocked", authMiddleware, ctrl.listBlocked);
+
+/**
+ * @openapi
+ * /api/users/block:
+ *   post:
+ *     tags: [Users]
+ *     summary: Block a user
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *             required: [userId]
+ *     responses:
+ *       201:
+ *         description: User blocked
+ *       422:
+ *         description: Validation error
+ */
+userRouter.post("/block", authMiddleware, ctrl.blockUser);
+
+/**
+ * @openapi
+ * /api/users/block/{userId}:
+ *   delete:
+ *     tags: [Users]
+ *     summary: Unblock a user
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: User unblocked
+ *       404:
+ *         description: Block entry not found
+ */
+userRouter.delete("/block/:userId", authMiddleware, ctrl.unblockUser);
+
+/**
+ * @openapi
  * /api/users/search:
  *   get:
  *     tags: [Users]

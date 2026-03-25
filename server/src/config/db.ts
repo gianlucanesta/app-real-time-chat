@@ -85,6 +85,15 @@ export async function initSchema(): Promise<void> {
 
     -- Idempotent migration: user settings (JSONB)
     ALTER TABLE users ADD COLUMN IF NOT EXISTS settings JSONB NOT NULL DEFAULT '{}';
+
+    -- Idempotent migration: blocked users
+    CREATE TABLE IF NOT EXISTS blocked_users (
+      id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+      blocker_id  UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      blocked_id  UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at  TIMESTAMPTZ DEFAULT now(),
+      UNIQUE (blocker_id, blocked_id)
+    );
   `);
   console.log("[pg] schema ready");
 }

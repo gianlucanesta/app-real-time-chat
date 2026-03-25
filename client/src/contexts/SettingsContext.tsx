@@ -35,6 +35,18 @@ export interface UserSettings {
   spellCheck: boolean;
   emojiReplace: boolean;
   enterToSend: boolean;
+  // Privacy
+  privacyLastSeen: string;
+  privacyOnline: string;
+  privacyProfilePhoto: string;
+  privacyInfo: string;
+  privacyStatus: string;
+  privacyReadReceipts: boolean;
+  privacyDisappearing: string;
+  privacyGroups: string;
+  privacyBlockUnknown: boolean;
+  privacyProtectIp: boolean;
+  privacyDisableLinkPreviews: boolean;
 }
 
 const DEFAULTS: UserSettings = {
@@ -61,6 +73,18 @@ const DEFAULTS: UserSettings = {
   spellCheck: true,
   emojiReplace: true,
   enterToSend: true,
+  // Privacy
+  privacyLastSeen: "everyone",
+  privacyOnline: "everyone",
+  privacyProfilePhoto: "contacts",
+  privacyInfo: "contacts",
+  privacyStatus: "contacts",
+  privacyReadReceipts: true,
+  privacyDisappearing: "off",
+  privacyGroups: "contacts_except",
+  privacyBlockUnknown: true,
+  privacyProtectIp: false,
+  privacyDisableLinkPreviews: false,
 };
 
 // ── localStorage ↔ settings key mapping ─────────────────────────────────
@@ -89,6 +113,18 @@ const LS_MAP: Record<keyof UserSettings, string> = {
   spellCheck: "ephemeral-spell-check",
   emojiReplace: "ephemeral-emoji-replace",
   enterToSend: "ephemeral-enter-to-send",
+  // Privacy
+  privacyLastSeen: "ephemeral-privacy-last-seen",
+  privacyOnline: "ephemeral-privacy-online",
+  privacyProfilePhoto: "ephemeral-privacy-profile-photo",
+  privacyInfo: "ephemeral-privacy-info",
+  privacyStatus: "ephemeral-privacy-status",
+  privacyReadReceipts: "ephemeral-privacy-read-receipts",
+  privacyDisappearing: "ephemeral-privacy-disappearing",
+  privacyGroups: "ephemeral-privacy-groups",
+  privacyBlockUnknown: "ephemeral-privacy-block-unknown",
+  privacyProtectIp: "ephemeral-privacy-protect-ip",
+  privacyDisableLinkPreviews: "ephemeral-privacy-disable-link-previews",
 };
 
 /** Read all settings from localStorage, falling back to defaults. */

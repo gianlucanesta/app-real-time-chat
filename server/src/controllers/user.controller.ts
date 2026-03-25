@@ -177,3 +177,72 @@ export async function updateSettings(
     next(err);
   }
 }
+
+/** GET /api/users/blocked */
+export async function listBlocked(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const blocked = await UserModel.listBlockedUsers(req.user!.sub);
+    res.status(200).json({ blocked });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** POST /api/users/block */
+export async function blockUser(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { userId } = req.body as { userId?: string };
+    if (!userId || typeof userId !== "string") {
+      res.status(422).json({ error: "userId is required" });
+      return;
+    }
+    if (userId === req.user!.sub) {
+      res.status(422).json({ error: "Cannot block yourself" });
+      return;
+    }
+    const target = await UserModel.findById(userId);
+    if (!target) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    const blocked = await UserModel.blockUser(req.user!.sub, userId);
+    if (!blocked) {
+      res.status(200).json({ message: "User already blocked" });
+      return;
+    }
+    res.status(201).json({ blocked });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** DELETE /api/users/block/:userId */
+export async function unblockUser(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const blockedId = req.params.userId;
+    if (!blockedId) {
+      res.status(400).json({ error: "userId param is required" });
+      return;
+    }
+    const removed = await UserModel.unblockUser(req.user!.sub, blockedId);
+    if (!removed) {
+      res.status(404).json({ error: "Block entry not found" });
+      return;
+    }
+    res.status(200).json({ unblocked: true });
+  } catch (err) {
+    next(err);
+  }
+}

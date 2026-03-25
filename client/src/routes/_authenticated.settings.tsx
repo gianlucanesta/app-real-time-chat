@@ -38,6 +38,7 @@ import { apiFetch, normalizeUser, getAccessToken } from "../lib/api";
 import { VideoVoiceSettings } from "../components/settings/VideoVoiceSettings";
 import { NotificationSettings } from "../components/settings/NotificationSettings";
 import { ChatSettings } from "../components/settings/ChatSettings";
+import { PrivacySettings } from "../components/settings/PrivacySettings";
 import type { User as UserType } from "../types";
 
 const LANGUAGE_OPTIONS = [
@@ -634,6 +635,7 @@ function SettingsPage() {
     if (id === "chat") return <ChatSettings />;
     if (id === "video") return <VideoVoiceSettings />;
     if (id === "notifications") return <NotificationSettings />;
+    if (id === "privacy") return <PrivacySettings />;
     const item = NAV_ITEMS.find((n) => n.id === id);
     return <StubSection label={item?.label || id} />;
   }
