@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 
 const Excalidraw = dynamic(
@@ -16,12 +16,53 @@ interface ExcalidrawDiagramProps {
   caption?: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildInitialData(scene: any, height: number) {
+  const elements: any[] = scene?.elements ?? [];
+  const baseState = {
+    viewModeEnabled: true,
+    zenModeEnabled: false,
+    gridModeEnabled: false,
+    theme: 'dark' as const,
+    viewBackgroundColor: BG,
+  };
+
+  if (!elements.length) {
+    return { elements, appState: baseState, files: scene?.files ?? {} };
+  }
+
+  // Compute element bounding box so the diagram is centred on first paint
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const el of elements) {
+    const x = el.x ?? 0, y = el.y ?? 0;
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x + (el.width ?? 0));
+    maxY = Math.max(maxY, y + (el.height ?? 0));
+  }
+
+  const elW = Math.max(maxX - minX, 1);
+  const elH = Math.max(maxY - minY, 1);
+  const pad = 48;
+  // Use a typical docs column width; close enough for initial positioning
+  const vpW = 860;
+  const vpH = height;
+
+  const zoom = Math.min((vpW - pad * 2) / elW, (vpH - pad * 2) / elH, 1.5);
+  const scrollX = (vpW - elW * zoom) / 2 - minX * zoom;
+  const scrollY = (vpH - elH * zoom) / 2 - minY * zoom;
+
+  return {
+    elements,
+    appState: { ...baseState, zoom: { value: zoom }, scrollX, scrollY },
+    files: scene?.files ?? {},
+  };
+}
+
 export function ExcalidrawDiagram({ name, height = 500, caption }: ExcalidrawDiagramProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [scene, setScene] = useState<any>(null);
   const [error, setError] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const apiRef = useRef<any>(null);
 
   useEffect(() => {
     fetch('/diagrams/' + name + '.excalidraw')
@@ -33,29 +74,14 @@ export function ExcalidrawDiagram({ name, height = 500, caption }: ExcalidrawDia
       .catch(() => setError(true));
   }, [name]);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const fitToContent = (api: any) => {
-    const els = api?.getSceneElements?.();
-    if (!els?.length) return;
-    setTimeout(() => {
-      api.scrollToContent(els, { fitToContent: true, animate: false });
-    }, 60);
-  };
-
-  // Called by Excalidraw with its imperative API — using a ref avoids a
-  // re-render cycle that would blank out the canvas.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleApi = (api: any) => {
-    apiRef.current = api;
-    fitToContent(api);
-  };
-
-  // Fallback: if the scene arrived after the API was already ready
-  useEffect(() => {
-    if (scene && apiRef.current) {
-      fitToContent(apiRef.current);
-    }
-  }, [scene]);
+  // Memoised so Excalidraw always receives the same object reference after the
+  // scene loads — a new reference would trigger internal re-initialisation and
+  // blank the canvas.
+  const initialData = useMemo(
+    () => (scene ? buildInitialData(scene, height) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [scene],
+  );
 
   if (error) {
     return (
@@ -65,7 +91,7 @@ export function ExcalidrawDiagram({ name, height = 500, caption }: ExcalidrawDia
     );
   }
 
-  if (!scene) {
+  if (!initialData) {
     return (
       <div
         className="rounded-lg border border-fd-border animate-pulse"
@@ -81,18 +107,7 @@ export function ExcalidrawDiagram({ name, height = 500, caption }: ExcalidrawDia
         style={{ height, background: BG }}
       >
         <Excalidraw
-          excalidrawAPI={handleApi}
-          initialData={{
-            elements: scene.elements,
-            appState: {
-              viewModeEnabled: true,
-              zenModeEnabled: false,
-              gridModeEnabled: false,
-              theme: 'dark',
-              viewBackgroundColor: BG,
-            },
-            files: scene.files ?? {},
-          }}
+          initialData={initialData}
           viewModeEnabled
           zenModeEnabled={false}
           gridModeEnabled={false}
