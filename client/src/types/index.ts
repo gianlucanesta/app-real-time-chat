@@ -54,3 +54,34 @@ export interface AuthResponse {
 export interface ApiError {
   error: string;
 }
+
+// ── Call History Types ──
+
+export type CallDirection = "incoming" | "outgoing";
+export type CallType = "voice" | "video";
+export type CallResult = "accepted" | "missed" | "declined" | "no_answer" | "accepted_elsewhere";
+
+export interface CallRecord {
+  id: string;
+  contactId: string;
+  contactName: string;
+  contactAvatar?: string | null;
+  contactGradient?: string;
+  contactInitials: string;
+  direction: CallDirection;
+  callType: CallType;
+  result: CallResult;
+  timestamp: string; // ISO string
+  duration?: number; // seconds
+}
+
+export interface CallGroup {
+  contactId: string;
+  contactName: string;
+  contactAvatar?: string | null;
+  contactGradient?: string;
+  contactInitials: string;
+  calls: CallRecord[];
+  lastCall: CallRecord;
+  count: number;
+}
