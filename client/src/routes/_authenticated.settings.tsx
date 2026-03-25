@@ -996,9 +996,6 @@ function SettingsPageDesktop() {
                     {item.description}
                   </span>
                 </div>
-                {item.badge && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-danger" />
-                )}
                 <ChevronRight className="w-3.5 h-3.5 opacity-50" />
               </button>
             );
