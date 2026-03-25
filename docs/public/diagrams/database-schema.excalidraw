@@ -314,25 +314,25 @@
       "id": "ttl-arrow",
       "type": "arrow",
       "x": 660,
-      "y": 210,
+      "y": 575,
       "width": 120,
-      "height": 380,
+      "height": 425,
       "points": [
         [
           0,
-          380
-        ],
-        [
-          60,
-          380
-        ],
-        [
-          60,
           0
+        ],
+        [
+          70,
+          0
+        ],
+        [
+          70,
+          -425
         ],
         [
           120,
-          0
+          -425
         ]
       ],
       "strokeColor": "#ff6b6b",
@@ -341,10 +341,40 @@
       "seed": 23
     },
     {
+      "id": "ttl-arrow-2",
+      "type": "arrow",
+      "x": 660,
+      "y": 600,
+      "width": 120,
+      "height": 120,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          50,
+          0
+        ],
+        [
+          50,
+          -120
+        ],
+        [
+          120,
+          -120
+        ]
+      ],
+      "strokeColor": "#ff6b6b",
+      "strokeWidth": 2,
+      "strokeStyle": "dashed",
+      "seed": 25
+    },
+    {
       "id": "ttl-label",
       "type": "text",
-      "x": 460,
-      "y": 465,
+      "x": 440,
+      "y": 640,
       "width": 120,
       "height": 20,
       "text": "TTL expiry",
