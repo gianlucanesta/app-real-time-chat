@@ -14,8 +14,15 @@
       "backgroundColor": "#a5d8ff",
       "fillStyle": "solid",
       "strokeWidth": 2,
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "client-text", "type": "text" }],
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "client-text",
+          "type": "text"
+        }
+      ],
       "seed": 1
     },
     {
@@ -31,7 +38,7 @@
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "client-box",
-      "strokeColor": "#c1c2c5",
+      "strokeColor": "#ffffff",
       "seed": 2
     },
     {
@@ -45,8 +52,15 @@
       "backgroundColor": "#b2f2bb",
       "fillStyle": "solid",
       "strokeWidth": 2,
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "server-text", "type": "text" }],
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "server-text",
+          "type": "text"
+        }
+      ],
       "seed": 3
     },
     {
@@ -62,7 +76,7 @@
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "server-box",
-      "strokeColor": "#c1c2c5",
+      "strokeColor": "#ffffff",
       "seed": 4
     },
     {
@@ -72,11 +86,12 @@
       "y": 50,
       "width": 180,
       "height": 80,
-      "strokeColor": "#ffd8a8",
       "backgroundColor": "#ffd8a8",
       "fillStyle": "solid",
       "strokeWidth": 2,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "strokeColor": "#c1c2c5",
       "seed": 5
     },
@@ -93,7 +108,7 @@
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "pg-box",
-      "strokeColor": "#c1c2c5",
+      "strokeColor": "#ffffff",
       "seed": 6
     },
     {
@@ -103,11 +118,12 @@
       "y": 180,
       "width": 180,
       "height": 80,
-      "strokeColor": "#d0bfff",
       "backgroundColor": "#d0bfff",
       "fillStyle": "solid",
       "strokeWidth": 2,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "strokeColor": "#c1c2c5",
       "seed": 7
     },
@@ -124,7 +140,7 @@
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "mongo-box",
-      "strokeColor": "#c1c2c5",
+      "strokeColor": "#ffffff",
       "seed": 8
     },
     {
@@ -134,11 +150,12 @@
       "y": 310,
       "width": 180,
       "height": 80,
-      "strokeColor": "#ffc9c9",
       "backgroundColor": "#ffc9c9",
       "fillStyle": "solid",
       "strokeWidth": 2,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "strokeColor": "#c1c2c5",
       "seed": 9
     },
@@ -155,7 +172,7 @@
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "redis-box",
-      "strokeColor": "#c1c2c5",
+      "strokeColor": "#ffffff",
       "seed": 10
     },
     {
@@ -165,11 +182,12 @@
       "y": 400,
       "width": 180,
       "height": 70,
-      "strokeColor": "#ffec99",
       "backgroundColor": "#ffec99",
       "fillStyle": "solid",
       "strokeWidth": 2,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "strokeColor": "#c1c2c5",
       "seed": 11
     },
@@ -186,7 +204,7 @@
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "cloudinary-box",
-      "strokeColor": "#c1c2c5",
+      "strokeColor": "#ffffff",
       "seed": 12
     },
     {
@@ -196,7 +214,16 @@
       "y": 240,
       "width": 190,
       "height": 0,
-      "points": [[0, 0], [190, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          190,
+          0
+        ]
+      ],
       "strokeColor": "#a5d8ff",
       "strokeWidth": 2,
       "seed": 13
@@ -222,7 +249,16 @@
       "y": 280,
       "width": 190,
       "height": 0,
-      "points": [[0, 0], [190, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          190,
+          0
+        ]
+      ],
       "strokeColor": "#2f9e44",
       "strokeWidth": 2,
       "seed": 15
@@ -248,7 +284,16 @@
       "y": 200,
       "width": 120,
       "height": 110,
-      "points": [[0, 0], [120, -110]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          120,
+          -110
+        ]
+      ],
       "strokeColor": "#ffd8a8",
       "strokeWidth": 2,
       "seed": 17
@@ -260,7 +305,16 @@
       "y": 240,
       "width": 120,
       "height": 20,
-      "points": [[0, 0], [120, -20]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          120,
+          -20
+        ]
+      ],
       "strokeColor": "#d0bfff",
       "strokeWidth": 2,
       "seed": 18
@@ -272,7 +326,16 @@
       "y": 290,
       "width": 120,
       "height": 60,
-      "points": [[0, 0], [120, 60]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          120,
+          60
+        ]
+      ],
       "strokeColor": "#ffc9c9",
       "strokeWidth": 2,
       "seed": 19
@@ -284,7 +347,16 @@
       "y": 335,
       "width": 0,
       "height": 60,
-      "points": [[0, 0], [0, 60]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          60
+        ]
+      ],
       "strokeColor": "#ffec99",
       "strokeWidth": 2,
       "seed": 20
@@ -314,8 +386,15 @@
       "backgroundColor": "#a5d8ff",
       "fillStyle": "solid",
       "strokeWidth": 2,
-      "roundness": { "type": 3 },
-      "boundElements": [{ "id": "peer-text", "type": "text" }],
+      "roundness": {
+        "type": 3
+      },
+      "boundElements": [
+        {
+          "id": "peer-text",
+          "type": "text"
+        }
+      ],
       "seed": 23
     },
     {
@@ -340,7 +419,16 @@
       "y": 105,
       "width": 0,
       "height": 90,
-      "points": [[0, 0], [0, 90]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          90
+        ]
+      ],
       "strokeColor": "#e03131",
       "strokeWidth": 2,
       "strokeStyle": "dashed",

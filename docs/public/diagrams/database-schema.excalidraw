@@ -13,7 +13,7 @@
       "text": "PostgreSQL",
       "fontSize": 24,
       "fontFamily": 1,
-      "strokeColor": "#c1c2c5",
+      "strokeColor": "#ffffff",
       "seed": 1
     },
     {
@@ -27,7 +27,9 @@
       "backgroundColor": "#a5d8ff",
       "fillStyle": "solid",
       "strokeWidth": 2,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 2
     },
     {
@@ -40,7 +42,7 @@
       "text": "users",
       "fontSize": 20,
       "fontFamily": 1,
-      "strokeColor": "#c1c2c5",
+      "strokeColor": "#ffffff",
       "seed": 3
     },
     {
@@ -53,7 +55,7 @@
       "text": "🔑 id (UUID PK)\nemail (UNIQUE)\npassword_hash\ndisplay_name\nfirst_name / last_name\nphone\nrole\navatar_url\ninitials\navatar_gradient\nemail_verified\nverification_token\nsettings (JSONB)\ncreated_at",
       "fontSize": 13,
       "fontFamily": 3,
-      "strokeColor": "#909296",
+      "strokeColor": "#d1d1d6",
       "seed": 4
     },
     {
@@ -67,7 +69,9 @@
       "backgroundColor": "#b2f2bb",
       "fillStyle": "solid",
       "strokeWidth": 2,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 5
     },
     {
@@ -80,7 +84,7 @@
       "text": "contacts",
       "fontSize": 20,
       "fontFamily": 1,
-      "strokeColor": "#c1c2c5",
+      "strokeColor": "#ffffff",
       "seed": 6
     },
     {
@@ -93,7 +97,7 @@
       "text": "🔑 id (SERIAL PK)\n🔗 owner_id → users.id\ndisplay_name\nphone\ninitials / gradient\n🔗 linked_user_id → users.id\ncreated_at\nUQ(owner_id, phone)",
       "fontSize": 13,
       "fontFamily": 3,
-      "strokeColor": "#909296",
+      "strokeColor": "#d1d1d6",
       "seed": 7
     },
     {
@@ -107,7 +111,9 @@
       "backgroundColor": "#ffd8a8",
       "fillStyle": "solid",
       "strokeWidth": 2,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 8
     },
     {
@@ -120,7 +126,7 @@
       "text": "refresh_tokens",
       "fontSize": 20,
       "fontFamily": 1,
-      "strokeColor": "#c1c2c5",
+      "strokeColor": "#ffffff",
       "seed": 9
     },
     {
@@ -133,7 +139,7 @@
       "text": "🔑 id (SERIAL PK)\n🔗 user_id → users.id\ntoken_hash\nexpires_at",
       "fontSize": 13,
       "fontFamily": 3,
-      "strokeColor": "#909296",
+      "strokeColor": "#d1d1d6",
       "seed": 10
     },
     {
@@ -143,7 +149,16 @@
       "y": 170,
       "width": 60,
       "height": 0,
-      "points": [[0, 0], [60, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          60,
+          0
+        ]
+      ],
       "strokeColor": "#c1c2c5",
       "strokeWidth": 2,
       "seed": 11
@@ -155,7 +170,16 @@
       "y": 300,
       "width": 60,
       "height": 90,
-      "points": [[0, 0], [60, 90]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          60,
+          90
+        ]
+      ],
       "strokeColor": "#c1c2c5",
       "strokeWidth": 2,
       "seed": 12
@@ -170,7 +194,7 @@
       "text": "MongoDB",
       "fontSize": 24,
       "fontFamily": 1,
-      "strokeColor": "#c1c2c5",
+      "strokeColor": "#ffffff",
       "seed": 13
     },
     {
@@ -184,7 +208,9 @@
       "backgroundColor": "#d0bfff",
       "fillStyle": "solid",
       "strokeWidth": 2,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 14
     },
     {
@@ -197,7 +223,7 @@
       "text": "Message",
       "fontSize": 20,
       "fontFamily": 1,
-      "strokeColor": "#c1c2c5",
+      "strokeColor": "#ffffff",
       "seed": 15
     },
     {
@@ -210,7 +236,7 @@
       "text": "conversationId (indexed)\nsender (UUID)\ntext\nmediaUrl / mediaType\nmediaDuration\nviewOnce / viewedAt\nstatus (sent→delivered→read)\nreactions [{emoji, userId}]\nlinkPreview {url, title...}\n⏰ expires_at (TTL 24h)\ncreatedAt",
       "fontSize": 13,
       "fontFamily": 3,
-      "strokeColor": "#909296",
+      "strokeColor": "#d1d1d6",
       "seed": 16
     },
     {
@@ -224,7 +250,9 @@
       "backgroundColor": "#ffc9c9",
       "fillStyle": "solid",
       "strokeWidth": 2,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 17
     },
     {
@@ -237,7 +265,7 @@
       "text": "Status (Stories)",
       "fontSize": 20,
       "fontFamily": 1,
-      "strokeColor": "#c1c2c5",
+      "strokeColor": "#ffffff",
       "seed": 18
     },
     {
@@ -250,7 +278,7 @@
       "text": "userId\nitems [{mediaType, text,\n  viewedBy[], createdAt}]\nprivacy (enum)\nexceptIds / onlyShareIds\n⏰ expires_at (TTL 24h)\nupdatedAt",
       "fontSize": 13,
       "fontFamily": 3,
-      "strokeColor": "#909296",
+      "strokeColor": "#d1d1d6",
       "seed": 19
     },
     {
@@ -277,7 +305,9 @@
       "backgroundColor": "#ffc9c9",
       "fillStyle": "solid",
       "strokeWidth": 2,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 21
     },
     {
@@ -290,7 +320,7 @@
       "text": "msg:{id} → TTL keys\nKeyspace expiry notifications",
       "fontSize": 13,
       "fontFamily": 3,
-      "strokeColor": "#909296",
+      "strokeColor": "#d1d1d6",
       "seed": 22
     },
     {
@@ -300,7 +330,24 @@
       "y": 590,
       "width": 115,
       "height": 370,
-      "points": [[0, 0], [110, 0], [110, -200], [115, -370]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          110,
+          0
+        ],
+        [
+          110,
+          -200
+        ],
+        [
+          115,
+          -370
+        ]
+      ],
       "strokeColor": "#e03131",
       "strokeWidth": 2,
       "strokeStyle": "dashed",

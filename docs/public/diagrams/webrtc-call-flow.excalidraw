@@ -14,7 +14,7 @@
       "fontSize": 24,
       "fontFamily": 1,
       "textAlign": "center",
-      "strokeColor": "#c1c2c5",
+      "strokeColor": "#ffffff",
       "seed": 1
     },
     {
@@ -24,11 +24,13 @@
       "y": 60,
       "width": 150,
       "height": 55,
-      "strokeColor": "#c1c2c5",
+      "strokeColor": "#ffffff",
       "backgroundColor": "#a5d8ff",
       "fillStyle": "solid",
       "strokeWidth": 2,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 2
     },
     {
@@ -52,11 +54,13 @@
       "y": 60,
       "width": 150,
       "height": 55,
-      "strokeColor": "#c1c2c5",
+      "strokeColor": "#ffffff",
       "backgroundColor": "#b2f2bb",
       "fillStyle": "solid",
       "strokeWidth": 2,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 4
     },
     {
@@ -80,11 +84,13 @@
       "y": 60,
       "width": 150,
       "height": 55,
-      "strokeColor": "#c1c2c5",
+      "strokeColor": "#ffffff",
       "backgroundColor": "#ffc9c9",
       "fillStyle": "solid",
       "strokeWidth": 2,
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 6
     },
     {
@@ -108,7 +114,16 @@
       "y": 120,
       "width": 0,
       "height": 500,
-      "points": [[0, 0], [0, 500]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          500
+        ]
+      ],
       "strokeColor": "#868e96",
       "strokeWidth": 1,
       "strokeStyle": "dashed",
@@ -121,7 +136,16 @@
       "y": 120,
       "width": 0,
       "height": 500,
-      "points": [[0, 0], [0, 500]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          500
+        ]
+      ],
       "strokeColor": "#868e96",
       "strokeWidth": 1,
       "strokeStyle": "dashed",
@@ -134,7 +158,16 @@
       "y": 120,
       "width": 0,
       "height": 500,
-      "points": [[0, 0], [0, 500]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          500
+        ]
+      ],
       "strokeColor": "#868e96",
       "strokeWidth": 1,
       "strokeStyle": "dashed",
@@ -147,7 +180,16 @@
       "y": 150,
       "width": 290,
       "height": 0,
-      "points": [[0, 0], [290, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          290,
+          0
+        ]
+      ],
       "strokeColor": "#2f9e44",
       "strokeWidth": 2,
       "seed": 11
@@ -172,7 +214,16 @@
       "y": 190,
       "width": 290,
       "height": 0,
-      "points": [[0, 0], [290, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          290,
+          0
+        ]
+      ],
       "strokeColor": "#2f9e44",
       "strokeWidth": 2,
       "seed": 13
@@ -197,7 +248,16 @@
       "y": 230,
       "width": 290,
       "height": 0,
-      "points": [[0, 0], [-290, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          -290,
+          0
+        ]
+      ],
       "strokeColor": "#1971c2",
       "strokeWidth": 2,
       "seed": 15
@@ -222,7 +282,16 @@
       "y": 270,
       "width": 290,
       "height": 0,
-      "points": [[0, 0], [-290, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          -290,
+          0
+        ]
+      ],
       "strokeColor": "#1971c2",
       "strokeWidth": 2,
       "seed": 17
@@ -247,7 +316,16 @@
       "y": 315,
       "width": 290,
       "height": 0,
-      "points": [[0, 0], [290, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          290,
+          0
+        ]
+      ],
       "strokeColor": "#e8590c",
       "strokeWidth": 2,
       "seed": 19
@@ -272,7 +350,16 @@
       "y": 355,
       "width": 290,
       "height": 0,
-      "points": [[0, 0], [290, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          290,
+          0
+        ]
+      ],
       "strokeColor": "#e8590c",
       "strokeWidth": 2,
       "seed": 21
@@ -297,7 +384,16 @@
       "y": 395,
       "width": 290,
       "height": 0,
-      "points": [[0, 0], [-290, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          -290,
+          0
+        ]
+      ],
       "strokeColor": "#c2255c",
       "strokeWidth": 2,
       "seed": 23
@@ -322,7 +418,16 @@
       "y": 435,
       "width": 290,
       "height": 0,
-      "points": [[0, 0], [-290, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          -290,
+          0
+        ]
+      ],
       "strokeColor": "#c2255c",
       "strokeWidth": 2,
       "seed": 25
@@ -352,7 +457,9 @@
       "fillStyle": "solid",
       "strokeWidth": 1,
       "strokeStyle": "dashed",
-      "roundness": { "type": 3 },
+      "roundness": {
+        "type": 3
+      },
       "seed": 27
     },
     {
@@ -377,7 +484,16 @@
       "y": 560,
       "width": 590,
       "height": 0,
-      "points": [[0, 0], [590, 0]],
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          590,
+          0
+        ]
+      ],
       "strokeColor": "#2f9e44",
       "strokeWidth": 3,
       "seed": 29
