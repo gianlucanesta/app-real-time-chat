@@ -1,4 +1,4 @@
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Lock } from "lucide-react";
 import type { StatusPrivacy } from "../../types";
 
 interface StatusPrivacyPanelProps {
@@ -30,17 +30,13 @@ const PRIVACY_OPTIONS: {
   },
 ];
 
-export function StatusPrivacyPanel({
-  isOpen,
+function PrivacyContent({
   onClose,
   privacy,
   onChangePrivacy,
-}: StatusPrivacyPanelProps) {
+}: Omit<StatusPrivacyPanelProps, "isOpen">) {
   return (
-    <div
-      className={`absolute inset-0 z-20 bg-card flex flex-col transition-transform duration-200 ease-in-out ${isOpen ? "translate-x-0" : "translate-x-full"}`}
-      aria-hidden={!isOpen}
-    >
+    <>
       {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-border shrink-0 h-[64px]">
         <button
@@ -57,19 +53,16 @@ export function StatusPrivacyPanel({
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border px-4 py-5">
-        {/* Description */}
         <p className="text-[13.5px] text-accent font-medium mb-6 leading-snug">
           Who can see my status updates
         </p>
 
-        {/* Radio Options */}
         <div className="flex flex-col gap-1">
           {PRIVACY_OPTIONS.map((opt) => (
             <label
               key={opt.value}
               className="flex items-start gap-3 px-2 py-3.5 rounded-lg cursor-pointer hover:bg-input/50 transition-colors"
             >
-              {/* Custom radio */}
               <div className="mt-0.5 shrink-0">
                 <div
                   className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
@@ -83,10 +76,7 @@ export function StatusPrivacyPanel({
                   )}
                 </div>
               </div>
-              <div
-                className="min-w-0"
-                onClick={() => onChangePrivacy(opt.value)}
-              >
+              <div className="min-w-0">
                 <p className="text-[14px] font-medium text-text-main">
                   {opt.label}
                 </p>
@@ -106,6 +96,42 @@ export function StatusPrivacyPanel({
           ))}
         </div>
       </div>
-    </div>
+    </>
+  );
+}
+
+export function StatusPrivacyPanel({
+  isOpen,
+  onClose,
+  privacy,
+  onChangePrivacy,
+}: StatusPrivacyPanelProps) {
+  if (!isOpen) return null;
+
+  return (
+    <>
+      {/* ── Desktop: centered modal with backdrop ── */}
+      <div className="hidden md:flex fixed inset-0 z-50 items-center justify-center">
+        {/* Backdrop */}
+        <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+        {/* Modal */}
+        <div className="relative z-10 w-full max-w-md bg-card rounded-2xl shadow-2xl border border-border flex flex-col max-h-[80vh] animate-in fade-in zoom-in-95">
+          <PrivacyContent
+            onClose={onClose}
+            privacy={privacy}
+            onChangePrivacy={onChangePrivacy}
+          />
+        </div>
+      </div>
+
+      {/* ── Mobile: full-screen replacement column ── */}
+      <div className="flex md:hidden fixed inset-0 z-50 bg-card flex-col">
+        <PrivacyContent
+          onClose={onClose}
+          privacy={privacy}
+          onChangePrivacy={onChangePrivacy}
+        />
+      </div>
+    </>
   );
 }

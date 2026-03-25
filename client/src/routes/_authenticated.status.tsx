@@ -100,7 +100,6 @@ function StatusPage() {
   const [viewingMyStatus, setViewingMyStatus] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [privacy, setPrivacy] = useState<StatusPrivacy>("contacts");
-  const [mobileShowViewer, setMobileShowViewer] = useState(false);
 
   // My status (demo: empty by default)
   const [myStatus] = useState<MyStatus>({ items: [] });
@@ -120,80 +119,40 @@ function StatusPage() {
       .substring(0, 2)
       .toUpperCase() || "U";
 
-  const handleOpenMyStatus = () => {
-    if (myStatus.items.length > 0) {
-      const cs: ContactStatus = {
-        contactId: user?.id || "me",
-        contactName: user?.displayName || "My status",
-        contactAvatar: user?.avatarUrl,
-        contactGradient:
-          user?.avatarGradient || "linear-gradient(135deg, #6366f1, #a855f7)",
-        contactInitials: userInitials,
-        items: myStatus.items,
-        lastUpdated: myStatus.lastUpdated || new Date().toISOString(),
-        allViewed: true,
-      };
-      setViewingStatus(cs);
-      setViewingMyStatus(true);
-    }
-    // If no status yet, the "+" dropdowns handle creation
-  };
-
   const handleViewContactStatus = (cs: ContactStatus) => {
     setViewingStatus(cs);
     setViewingMyStatus(false);
-    setMobileShowViewer(true);
   };
 
   const handleCloseViewer = () => {
     setViewingStatus(null);
     setViewingMyStatus(false);
-    setMobileShowViewer(false);
   };
 
   return (
     <div className="h-screen max-h-screen flex overflow-hidden font-sans bg-bg text-text-main">
       {/* Left: Status sidebar */}
-      <div
-        className={`${mobileShowViewer ? "hidden" : "flex"} md:flex w-full md:w-auto`}
-      >
-        <StatusSidebar
-          myStatus={myStatus}
-          recentStatuses={recentStatuses}
-          userAvatar={user?.avatarUrl}
-          userGradient={
-            user?.avatarGradient || "linear-gradient(135deg, #6366f1, #a855f7)"
-          }
-          userInitials={userInitials}
-          onOpenMyStatus={handleOpenMyStatus}
-          onOpenNewStatusPhoto={() => {
-            /* TODO: open photo picker */
-          }}
-          onOpenNewStatusText={() => {
-            /* TODO: open text status creator */
-          }}
-          onViewContactStatus={handleViewContactStatus}
-          onOpenPrivacy={() => setIsPrivacyOpen(true)}
-        />
+      <StatusSidebar
+        myStatus={myStatus}
+        recentStatuses={recentStatuses}
+        userAvatar={user?.avatarUrl}
+        userGradient={
+          user?.avatarGradient || "linear-gradient(135deg, #6366f1, #a855f7)"
+        }
+        userInitials={userInitials}
+        onOpenNewStatusPhoto={() => {
+          /* TODO: open photo picker */
+        }}
+        onOpenNewStatusText={() => {
+          /* TODO: open text status creator */
+        }}
+        onViewContactStatus={handleViewContactStatus}
+        onOpenPrivacy={() => setIsPrivacyOpen(true)}
+      />
 
-        {/* Privacy Panel — slides over the sidebar */}
-        <div className="absolute inset-0 z-30 pointer-events-none md:w-[var(--width-sidebar)]">
-          <div className="pointer-events-auto h-full">
-            <StatusPrivacyPanel
-              isOpen={isPrivacyOpen}
-              onClose={() => setIsPrivacyOpen(false)}
-              privacy={privacy}
-              onChangePrivacy={setPrivacy}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Right: Empty state or nothing (viewer is a full-screen overlay) */}
-      <div
-        className={`${mobileShowViewer ? "flex" : "hidden"} md:flex flex-1 min-w-0 h-full overflow-hidden`}
-      >
-        <div className="flex-1 flex flex-col items-center justify-center bg-bg min-h-0">
+      {/* Right: Empty state */}
+      <div className="hidden md:flex flex-1 min-w-0 h-full overflow-hidden">
+        <div className="flex-1 flex flex-col items-center justify-center bg-bg min-h-0 relative">
           <div className="flex flex-col items-center gap-4 text-text-secondary px-6">
             <CircleDashed className="w-16 h-16 opacity-20" strokeWidth={1.5} />
             <h2 className="text-[20px] font-semibold text-text-main">
@@ -213,6 +172,14 @@ function StatusPage() {
           </div>
         </div>
       </div>
+
+      {/* Status privacy — desktop: centered modal / mobile: full-screen */}
+      <StatusPrivacyPanel
+        isOpen={isPrivacyOpen}
+        onClose={() => setIsPrivacyOpen(false)}
+        privacy={privacy}
+        onChangePrivacy={setPrivacy}
+      />
 
       {/* Full-screen status viewer overlay */}
       {viewingStatus && (
