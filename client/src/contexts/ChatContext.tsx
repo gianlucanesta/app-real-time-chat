@@ -85,6 +85,7 @@ export interface Conversation {
 
 interface ChatContextType {
   conversations: Conversation[];
+  conversationsLoading: boolean;
   activeConversation: Conversation | null;
   activeMessages: Message[];
   typingUsers: Record<string, { displayName: string }>;
@@ -162,6 +163,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const webrtc = useWebRTC(socket);
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversationsLoading, setConversationsLoading] = useState(true);
   const [activeConversation, setActiveConversation] =
     useState<Conversation | null>(null);
   const [activeMessages, setActiveMessages] = useState<Message[]>([]);
@@ -203,6 +205,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   // ── Load conversation list from server ──────────────────────────────────
   const loadConversations = useCallback(async () => {
     try {
+      setConversationsLoading(true);
       const data = await apiFetch<{ conversations: Conversation[] }>(
         "/conversations",
       );
@@ -222,6 +225,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         "[chat] failed to load conversations:",
         (err as Error).message,
       );
+    } finally {
+      setConversationsLoading(false);
     }
   }, []);
 
@@ -1358,6 +1363,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     <ChatContext.Provider
       value={{
         conversations,
+        conversationsLoading,
         activeConversation,
         activeMessages: activeMessages.filter(
           (m) => !hiddenMessageIds.has(m.id),

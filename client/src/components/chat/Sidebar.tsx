@@ -20,6 +20,7 @@ import {
 import { useState, useMemo } from "react";
 import { useClickOutside } from "../../hooks/useClickOutside";
 import { useChat } from "../../contexts/ChatContext";
+import { SidebarSkeleton } from "../ui/Skeleton";
 import { NewChatPanel } from "./NewChatPanel";
 import { NewContactPanel } from "./NewContactPanel";
 import { NewGroupPanel } from "./NewGroupPanel";
@@ -142,6 +143,7 @@ export function Sidebar({
 
   const {
     conversations,
+    conversationsLoading,
     activeConversation,
     setActiveConversation,
     addOrUpdateConversation,
@@ -324,7 +326,10 @@ export function Sidebar({
 
       {/* Conversation List */}
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-toggle-off">
-        {filteredConversations.length === 0 && (
+        {conversationsLoading && conversations.length === 0 && (
+          <SidebarSkeleton />
+        )}
+        {!conversationsLoading && filteredConversations.length === 0 && (
           <div className="flex flex-col items-center justify-center py-12 text-text-secondary text-[13px] gap-2">
             <Search className="w-5 h-5" />
             <p>
