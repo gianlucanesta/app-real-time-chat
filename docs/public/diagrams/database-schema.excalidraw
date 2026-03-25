@@ -314,25 +314,25 @@
       "id": "ttl-arrow",
       "type": "arrow",
       "x": 660,
-      "y": 590,
+      "y": 210,
       "width": 120,
-      "height": 225,
+      "height": 380,
       "points": [
         [
           0,
-          0
+          380
+        ],
+        [
+          60,
+          380
         ],
         [
           60,
           0
-        ],
-        [
-          60,
-          -225
         ],
         [
           120,
-          -225
+          0
         ]
       ],
       "strokeColor": "#ff6b6b",
@@ -343,11 +343,11 @@
     {
       "id": "ttl-label",
       "type": "text",
-      "x": 725,
-      "y": 455,
+      "x": 460,
+      "y": 465,
       "width": 120,
       "height": 20,
-      "text": "TTL expiry trigger",
+      "text": "TTL expiry",
       "fontSize": 13,
       "fontFamily": 1,
       "strokeColor": "#ff6b6b",
