@@ -52,6 +52,8 @@ export function CallScreen({
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const remoteStreamRef = useRef<MediaStream | null>(null);
   remoteStreamRef.current = remoteStream;
+  const localStreamRef = useRef<MediaStream | null>(null);
+  localStreamRef.current = localStream;
   const [timer, setTimer] = useState(0);
 
   // ── Draggable PiP state ───────────────────────────────────────────────
@@ -92,12 +94,20 @@ export function CallScreen({
     }
   }, [status]);
 
-  // Attach local stream
+  // Callback ref for local video: attaches stream the instant the element mounts
+  const localVideoCallback = useCallback((el: HTMLVideoElement | null) => {
+    localVideoRef.current = el;
+    if (el && localStreamRef.current) {
+      el.srcObject = localStreamRef.current;
+    }
+  }, []);
+
+  // Also react to localStream changes after mount
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
     }
-  }, [localStream]);
+  }, [localStream, status]);
 
   /** Attach stream to a <video> element and start playback. */
   const attachStream = useCallback(
@@ -133,7 +143,10 @@ export function CallScreen({
     (el: HTMLVideoElement | null) => {
       remoteVideoRef.current = el;
       if (el) {
-        console.log("[call-screen] remoteVideo ref attached, remoteStream:", !!remoteStreamRef.current);
+        console.log(
+          "[call-screen] remoteVideo ref attached, remoteStream:",
+          !!remoteStreamRef.current,
+        );
         attachStream(el, remoteStreamRef.current);
       }
     },
@@ -279,7 +292,7 @@ export function CallScreen({
             onDoubleClick={handlePipDoubleClick}
           >
             <video
-              ref={localVideoRef}
+              ref={localVideoCallback}
               autoPlay
               playsInline
               muted
