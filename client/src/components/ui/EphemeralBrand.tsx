@@ -6,11 +6,11 @@ const LETTER_DELAY = 110; // gap between each letter appearing
 const ICON_APPEAR_AFTER = 250; // pause after last letter before icon shows
 const HOLD_DURATION = 2800; // how long everything stays visible
 const RESTART_PAUSE = 1000; // pause after disintegration before loop
-const ELEMENT_STAGGER = 0; // gap between each element disintegrating
+const DISINTEGRATE_OVERLAP = 710; // ms overlap between consecutive disintegrations
 
 /* ── Per-element disintegration ──────────────────────────── */
 const PARTICLE_COUNT = 55; // per element (letter or icon)
-const DISINTEGRATE_MS = 100; // how long the particle animation lasts (longer = bigger spread)
+const DISINTEGRATE_MS = 780; // how long the particle animation lasts (longer = bigger spread)
 
 function rand(min: number, max: number) {
   return min + Math.random() * (max - min);
@@ -234,21 +234,28 @@ export default function EphemeralBrand() {
         "#64748b",
       ];
 
-      // 4a — Disintegrate icon first
-      await disintegrateElement(icon, accentPalette);
-      if (!aliveRef.current) return;
-
-      await sleep(ELEMENT_STAGGER);
-
-      // 4b — Disintegrate letters right → left
+      // 4 — Disintegrate icon first, then letters R→L, with overlap
+      const stagger = Math.max(0, DISINTEGRATE_MS - DISINTEGRATE_OVERLAP);
       const reversed = [...letters]
         .filter(Boolean)
         .reverse() as HTMLSpanElement[];
-      for (const l of reversed) {
-        if (!aliveRef.current) return;
-        await disintegrateElement(l, textPalette);
-        await sleep(ELEMENT_STAGGER);
+      const elements: { el: HTMLElement; palette: string[] }[] = [
+        { el: icon, palette: accentPalette },
+        ...reversed.map((l) => ({
+          el: l as HTMLElement,
+          palette: textPalette,
+        })),
+      ];
+
+      const promises: Promise<void>[] = [];
+      for (let i = 0; i < elements.length; i++) {
+        if (i > 0) {
+          await sleep(stagger);
+          if (!aliveRef.current) return;
+        }
+        promises.push(disintegrateElement(elements[i].el, elements[i].palette));
       }
+      await Promise.all(promises);
 
       // 5 — Restart loop
       if (aliveRef.current) {
