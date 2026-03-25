@@ -1,0 +1,5 @@
+{
+  "title": "Features",
+  "icon": "Zap",
+  "pages": ["messaging", "media", "calls"]
+}

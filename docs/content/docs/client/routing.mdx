@@ -1,0 +1,59 @@
+---
+title: Routing
+description: TanStack Router file-based routing setup.
+icon: Route
+---
+
+Ephemeral uses **TanStack Router** with file-based route generation via the Vite plugin.
+
+## Route Structure
+
+```
+routes/
+├── __root.tsx              # Root layout (providers, theme)
+├── _authenticated.tsx      # Auth guard layout
+├── _authenticated.index.tsx    # Main chat view
+├── _authenticated.calls.tsx    # Call history
+├── _authenticated.settings.tsx # Settings page
+├── _authenticated.status.tsx   # Status/stories
+├── login.tsx               # Login page
+├── signup.tsx              # Registration page
+├── forgot-password.tsx     # Password reset request
+├── reset-password.tsx      # Password reset form
+├── verify-email.tsx        # Email verification
+└── oauth-callback.tsx      # OAuth2 redirect handler
+```
+
+## Authentication Guard
+
+The `_authenticated.tsx` layout acts as a route guard. It checks if the user is authenticated via `AuthContext` and redirects to `/login` if not:
+
+```tsx
+// Simplified _authenticated.tsx
+export function Component() {
+  const { user, loading } = useAuth();
+
+  if (loading) return <LoadingSpinner />;
+  if (!user) return <Navigate to="/login" />;
+
+  return <Outlet />;
+}
+```
+
+All routes prefixed with `_authenticated.` are children of this layout and automatically protected.
+
+## Route Convention
+
+TanStack Router uses dot notation for nested routes:
+
+| File | URL | Layout |
+|---|---|---|
+| `login.tsx` | `/login` | Root |
+| `_authenticated.index.tsx` | `/` | Authenticated |
+| `_authenticated.settings.tsx` | `/settings` | Authenticated |
+| `_authenticated.calls.tsx` | `/calls` | Authenticated |
+| `_authenticated.status.tsx` | `/status` | Authenticated |
+
+## Navigation
+
+The app uses a sidebar on desktop and a bottom tab bar on mobile for navigation between the four main authenticated views (Chat, Status, Calls, Settings).

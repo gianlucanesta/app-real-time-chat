@@ -1,0 +1,73 @@
+---
+title: Environment Variables
+description: Configuration reference for the backend .env file.
+icon: Settings
+---
+
+Copy `server/.env.example` to `server/.env` and fill in the values below.
+
+## Server
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `3001` | HTTP server port |
+
+## Security
+
+| Variable | Default | Description |
+|---|---|---|
+| `JWT_SECRET` | — | Secret for signing access tokens. Generate with: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"` |
+| `JWT_EXPIRES_IN` | `15m` | Access token lifetime |
+| `REFRESH_EXPIRES_IN` | `7d` | Refresh token lifetime |
+
+## CORS
+
+| Variable | Default | Description |
+|---|---|---|
+| `ALLOWED_ORIGIN` | `http://localhost:5500` | Comma-separated list of allowed CORS origins |
+
+## Databases
+
+| Variable | Format | Description |
+|---|---|---|
+| `DATABASE_URL` | `postgresql://USER:PASS@HOST:PORT/DB` | PostgreSQL connection string (users & contacts) |
+| `MONGO_URI` | `mongodb://HOST:PORT/DB` or `mongodb+srv://...` | MongoDB connection string (messages with TTL) |
+| `REDIS_URL` | `redis://HOST:PORT` | Redis connection string — optional, gracefully skipped if unavailable |
+
+## External Services
+
+| Variable | Description |
+|---|---|
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name for media uploads |
+| `CLOUDINARY_API_KEY` | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret |
+
+## OAuth2
+
+| Variable | Description |
+|---|---|
+| `GOOGLE_CLIENT_ID` | Google OAuth2 client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth2 client secret |
+| `FACEBOOK_APP_ID` | Facebook OAuth2 app ID |
+| `FACEBOOK_APP_SECRET` | Facebook OAuth2 app secret |
+
+## Email
+
+| Variable | Description |
+|---|---|
+| `MAILJET_API_KEY` | Mailjet API key for transactional emails |
+| `MAILJET_API_SECRET` | Mailjet API secret |
+| `EMAIL_FROM` | Sender email address |
+
+## Example `.env`
+
+```ini title="server/.env"
+PORT=3001
+JWT_SECRET=change_me_generate_a_real_64_char_hex_string
+JWT_EXPIRES_IN=15m
+REFRESH_EXPIRES_IN=7d
+ALLOWED_ORIGIN=http://localhost:5173
+DATABASE_URL=postgresql://postgres:password@localhost:5432/ephemeral
+MONGO_URI=mongodb://localhost:27017/ephemeral
+REDIS_URL=redis://localhost:6379
+```

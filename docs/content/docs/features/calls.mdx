@@ -1,0 +1,91 @@
+---
+title: Voice & Video Calls
+description: WebRTC peer-to-peer calling with screen sharing.
+icon: Phone
+---
+
+Ephemeral supports real-time voice and video calls using **WebRTC** for peer-to-peer media streaming, with **Socket.io** handling signaling.
+
+<ExcalidrawDiagram name="webrtc-call-flow" height={500} caption="Fig. 6 — WebRTC call signaling flow" />
+
+## Call Flow
+
+### 1. Initiation
+
+```
+Caller                    Server                    Callee
+  │                         │                         │
+  ├── call:offer ──────────>│                         │
+  │   (SDP offer, withVideo)│── call:incoming ───────>│
+  │                         │                         │
+```
+
+### 2. Answer
+
+```
+  │                         │<── call:answer ─────────┤
+  │<── call:answer ─────────│   (SDP answer)          │
+  │                         │                         │
+```
+
+### 3. ICE Exchange
+
+```
+  │── call:ice ────────────>│── call:ice ────────────>│
+  │<── call:ice ────────────│<── call:ice ────────────│
+  │                         │                         │
+```
+
+### 4. Connected (P2P)
+
+```
+  │<════════════ Media Stream (DTLS/SRTP) ═══════════>│
+```
+
+## Features
+
+| Feature | Description |
+|---|---|
+| **Voice call** | Audio-only peer-to-peer call |
+| **Video call** | Audio + video P2P call |
+| **Screen sharing** | Replace video track with screen capture |
+| **Mute/unmute** | Toggle microphone |
+| **Camera toggle** | Toggle camera on/off |
+| **ICE restart** | Automatic reconnection on network change |
+| **Busy detection** | Auto-reject if user is already in a call |
+
+## STUN Configuration
+
+The app uses Google's public STUN server for NAT traversal:
+
+```typescript
+const rtcConfig: RTCConfiguration = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+  ],
+};
+```
+
+<Callout type="info">
+  TURN servers are not configured. Calls may fail if both peers are behind
+  symmetric NATs. For production, consider adding a TURN server.
+</Callout>
+
+## Implementation
+
+The `useWebRTC` hook manages the entire call lifecycle:
+
+```typescript
+const {
+  callState,        // 'idle' | 'ringing' | 'connected' | 'ended'
+  localStream,      // MediaStream for local audio/video
+  remoteStream,     // MediaStream from peer
+  startCall,        // Initiate a call
+  answerCall,       // Accept incoming call
+  endCall,          // Hang up
+  toggleMute,       // Toggle microphone
+  toggleCamera,     // Toggle camera
+  toggleScreenShare,// Toggle screen sharing
+} = useWebRTC(socket);
+```

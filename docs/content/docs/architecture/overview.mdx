@@ -1,0 +1,39 @@
+---
+title: Architecture Overview
+description: High-level architecture of the Ephemeral chat application.
+icon: Layers
+---
+
+Ephemeral follows a classic **client-server** architecture with real-time communication via Socket.io and peer-to-peer calling via WebRTC.
+
+<ExcalidrawDiagram name="architecture-overview" height={550} caption="Fig. 1 — Ephemeral high-level architecture" />
+
+## Design Principles
+
+1. **Polyglot persistence** — each database is used for what it does best:
+   - **PostgreSQL** for relational data (users, contacts, tokens)
+   - **MongoDB** for ephemeral documents with TTL indexes (messages, stories)
+   - **Redis** for sub-minute TTL expiry events via keyspace notifications
+
+2. **Real-time first** — Socket.io provides the primary communication channel with polling fallback for unreliable networks.
+
+3. **Peer-to-peer media** — WebRTC handles voice/video calls directly between clients, using the server only for signaling.
+
+4. **Ephemeral by design** — all messages auto-expire after 24 hours. No permanent chat history.
+
+## Communication Flow
+
+| Channel | Protocol | Purpose |
+|---|---|---|
+| REST API | HTTP/HTTPS | CRUD operations, authentication, file uploads |
+| Socket.io | WebSocket (+ polling) | Messaging, typing, presence, receipts, signaling |
+| WebRTC | DTLS/SRTP (P2P) | Voice/video calls, screen sharing |
+
+## Deployment
+
+The app is deployed on **Render** with:
+- **Static site** — Vite-built React SPA
+- **Web service** — Express API + Socket.io server
+- **Render PostgreSQL** — managed database
+- **MongoDB Atlas** — M0 free tier
+- **Render Key-Value** — managed Redis

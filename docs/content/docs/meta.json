@@ -1,0 +1,15 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "---Getting Started---",
+    "getting-started",
+    "---Architecture---",
+    "architecture",
+    "---Server---",
+    "server",
+    "---Client---",
+    "client",
+    "---Features---",
+    "features"
+  ]
+}

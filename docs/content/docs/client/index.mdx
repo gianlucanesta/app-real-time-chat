@@ -1,0 +1,58 @@
+---
+title: Client Overview
+description: React + Vite frontend architecture.
+icon: Monitor
+---
+
+The frontend is a **React 19** single-page application built with **Vite**, **TypeScript**, and **Tailwind CSS 4**, using **TanStack Router** for file-based routing.
+
+## Tech Stack
+
+| Library | Purpose |
+|---|---|
+| **React 19** | UI framework |
+| **Vite 8** | Build tool with HMR |
+| **TypeScript** | Type safety |
+| **TanStack Router** | File-based routing with type-safe params |
+| **Tailwind CSS 4** | Utility-first styling |
+| **Socket.io Client** | Real-time communication |
+| **Lucide React** | Icon library |
+| **WaveSurfer.js** | Audio waveform visualization |
+| **pdfjs-dist** | PDF document preview |
+
+## Directory Structure
+
+```
+client/src/
+├── main.tsx              # App entry point
+├── components/
+│   ├── chat/             # Chat UI (message bubbles, input, sidebar)
+│   ├── layout/           # App layout, navigation
+│   ├── settings/         # Settings page components
+│   └── ui/               # Reusable UI primitives (Button, Modal, etc.)
+├── contexts/
+│   ├── AuthContext.tsx    # Authentication state
+│   ├── ChatContext.tsx    # Conversations, messages, call state
+│   ├── SettingsContext.tsx# User preferences
+│   ├── ThemeContext.tsx   # Dark/light mode
+│   └── ToastContext.tsx   # Toast notifications
+├── hooks/
+│   ├── useSocket.ts      # Socket.io lifecycle manager
+│   ├── useWebRTC.ts      # WebRTC call management
+│   ├── useChatSettings.ts
+│   └── useClickOutside.ts
+├── lib/
+│   ├── api.ts            # HTTP client with auto-refresh
+│   ├── validation.ts     # Input validation
+│   ├── utils.ts          # General utilities
+│   └── debounce.ts       # Debounce helper
+├── routes/               # TanStack Router file-based routes
+├── styles/               # CSS modules
+└── types/
+    └── index.ts          # Shared TypeScript types
+```
+
+<Cards>
+  <Card title="Routing" href="/docs/client/routing" />
+  <Card title="State Management" href="/docs/client/state" />
+</Cards>

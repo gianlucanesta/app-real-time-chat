@@ -1,0 +1,77 @@
+---
+title: Server Overview
+description: Express + TypeScript backend architecture.
+icon: Server
+---
+
+The backend is an **Express.js** application written in TypeScript, handling REST API requests, Socket.io real-time events, and integration with three databases.
+
+## Entry Point
+
+The server starts in `src/index.ts`:
+
+```typescript
+// Creates HTTP server with Express app
+const server = createServer(app);
+
+// Attaches Socket.io
+const io = new Server(server, {
+  cors: { origin: ALLOWED_ORIGIN, credentials: true },
+});
+
+// Initializes databases
+await connectPostgres();
+await connectMongo();
+await connectRedis();
+
+// Starts listening
+server.listen(PORT);
+```
+
+## Middleware Stack
+
+| Middleware | Purpose |
+|---|---|
+| `helmet()` | Security headers |
+| `cors()` | Cross-Origin Resource Sharing |
+| `cookie-parser` | Parse refresh token cookies |
+| `express.json()` | Parse JSON request bodies |
+| `auth.middleware` | JWT verification for protected routes |
+| `rate-limiter.middleware` | Per-IP rate limiting |
+| `error-handler.middleware` | Centralized error handling |
+
+## Directory Structure
+
+```
+server/src/
+├── index.ts              # Server bootstrap
+├── app.ts                # Express app configuration
+├── config/
+│   ├── db.ts             # PostgreSQL connection (pg)
+│   ├── mongo.ts          # MongoDB connection (Mongoose)
+│   ├── redis.ts          # Redis connection (ioredis)
+│   ├── cloudinary.ts     # Cloudinary SDK setup
+│   └── env.ts            # Environment variable validation
+├── controllers/          # Route handlers (thin layer)
+├── services/             # Business logic
+├── models/               # Mongoose schemas + PG queries
+├── routes/               # Express route definitions
+├── middleware/            # Auth, rate limiting, errors
+├── socket/               # Socket.io event handlers
+└── interfaces/           # TypeScript type definitions
+```
+
+## Architecture Pattern
+
+The server follows a layered architecture:
+
+1. **Routes** define HTTP endpoints and apply middleware
+2. **Controllers** validate input and delegate to services
+3. **Services** contain business logic and database operations
+4. **Models** handle data access (Mongoose + raw pg queries)
+
+<Cards>
+  <Card title="API Reference" href="/docs/server/api" />
+  <Card title="Authentication" href="/docs/server/authentication" />
+  <Card title="Socket Events" href="/docs/server/socket" />
+</Cards>

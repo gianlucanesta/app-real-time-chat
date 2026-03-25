@@ -1,0 +1,67 @@
+---
+title: Installation
+description: How to set up and run Ephemeral locally.
+icon: Download
+---
+
+## Prerequisites
+
+- **Node.js** ≥ 18
+- **PostgreSQL** (users & contacts)
+- **MongoDB** (messages & stories)
+- **Redis** (optional — TTL keyspace events)
+
+## Clone the Repository
+
+```bash
+git clone https://github.com/gianlucaromeo/app-real-time-chat.git
+cd app-real-time-chat
+```
+
+## Backend Setup
+
+```bash
+cd server
+npm install
+cp .env.example .env   # fill in values — see Environment Variables
+npm run dev
+```
+
+The API server starts on **port 3001** by default.
+
+## Frontend Setup
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+The Vite dev server starts on **port 5173** and proxies API requests to the backend.
+
+## Project Structure
+
+```
+app-real-time-chat/
+├── client/          # React + Vite frontend
+│   ├── src/
+│   │   ├── components/   # UI components (chat, layout, settings)
+│   │   ├── contexts/     # React contexts (Auth, Chat, Theme, etc.)
+│   │   ├── hooks/        # Custom hooks (useSocket, useWebRTC)
+│   │   ├── lib/          # API client, utilities
+│   │   ├── routes/       # TanStack Router file-based routes
+│   │   └── types/        # TypeScript type definitions
+│   └── ...
+├── server/          # Express + TypeScript backend
+│   ├── src/
+│   │   ├── config/       # Database & service configurations
+│   │   ├── controllers/  # Route handlers
+│   │   ├── middleware/    # Auth, rate limiting, error handling
+│   │   ├── models/       # Mongoose & PostgreSQL models
+│   │   ├── routes/       # Express route definitions
+│   │   ├── services/     # Business logic layer
+│   │   └── socket/       # Socket.io event handlers
+│   └── ...
+├── docs/            # Fumadocs documentation (this site)
+└── render.yaml      # Render deployment manifest
+```

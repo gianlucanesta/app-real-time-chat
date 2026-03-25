@@ -1,0 +1,5 @@
+{
+  "title": "Client",
+  "icon": "Monitor",
+  "pages": ["index", "routing", "state"]
+}

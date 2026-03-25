@@ -1,0 +1,64 @@
+---
+title: Messaging
+description: Ephemeral messaging system with delivery receipts and reactions.
+icon: MessageCircle
+---
+
+The core messaging system supports text, media, reactions, link previews, and view-once messages — all of which auto-expire after 24 hours.
+
+## Ephemeral Design
+
+Every message has an `expires_at` field set to **24 hours** from creation. Two mechanisms handle expiration:
+
+1. **MongoDB TTL index** — automatically deletes expired documents (runs every ~60s)
+2. **Redis keyspace events** — provides sub-minute precision:
+   - A Redis key `msg:{id}` is set with matching TTL
+   - On expiry, a keyspace notification triggers `message:expired` via Socket.io
+   - The client immediately removes the message from the UI
+
+## Message Types
+
+| Type | Description |
+|---|---|
+| **Text** | Plain text message |
+| **Image** | Image upload (Cloudinary) with preview |
+| **Video** | Video upload with duration metadata |
+| **Audio** | Voice message with waveform (WaveSurfer.js) |
+| **Document** | File upload (PDF preview via pdfjs-dist) |
+| **View-Once** | Media that can only be opened once |
+
+## Delivery Receipts
+
+Messages track four statuses (WhatsApp-style):
+
+| Status | Icon | Trigger |
+|---|---|---|
+| **Sending** | Spinner | Client sends (optimistic) |
+| **Sent** | ✓ | Server ack callback |
+| **Delivered** | ✓✓ | Recipient client sends `message:delivered` |
+| **Read** | ✓✓ (blue) | Recipient opens conversation → `message:read` |
+
+## Reactions
+
+Users can add emoji reactions to any message:
+- Tap/click a message → reaction picker
+- `message:react` event with `{ messageId, emoji }`
+- Toggle behavior: reacting with the same emoji removes it
+- Reactions display below the message bubble with user's `displayName`
+
+## Link Previews
+
+When a message contains a URL:
+1. Client detects URLs in the text
+2. Calls `GET /api/upload/link-preview?url=...`
+3. Server fetches OpenGraph metadata (title, description, image, siteName)
+4. Preview card renders below the message text
+
+## Message Selection & Actions
+
+Users can select messages via checkboxes for batch operations:
+- **Copy** — copy selected message text
+- **Delete** — delete selected messages (own only, with confirmation)
+- **Delete for Everyone** — remove for all participants
+- **Clear Chat** — delete all messages in a conversation
+- **Delete Chat** — remove all messages and the contact entry

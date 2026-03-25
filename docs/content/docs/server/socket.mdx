@@ -1,0 +1,84 @@
+---
+title: Socket Events
+description: Complete Socket.io event reference.
+icon: Radio
+---
+
+## Client → Server Events
+
+### Conversation Management
+
+| Event | Payload | Description |
+|---|---|---|
+| `join:conversation` | `conversationId: string` | Join a conversation room |
+| `leave:conversation` | `conversationId: string` | Leave a conversation room |
+
+### Messaging
+
+| Event | Payload | Description |
+|---|---|---|
+| `message:send` | `{ conversationId, text?, mediaUrl?, mediaType?, viewOnce?, linkPreview? }` + ack | Send a message (with server acknowledgment) |
+| `message:delivered` | `{ messageIds: string[], conversationId }` | Mark messages as delivered |
+| `message:read` | `{ messageIds: string[], conversationId }` | Mark messages as read |
+| `message:deleteForEveryone` | `{ messageIds: string[], conversationId }` + ack | Delete messages for all participants |
+| `message:react` | `{ messageId, conversationId, emoji }` + ack | Add or toggle an emoji reaction |
+| `message:viewOnce:open` | `{ messageId, conversationId }` | Open a view-once message |
+
+### Typing
+
+| Event | Payload | Description |
+|---|---|---|
+| `typing:start` | `conversationId: string` | Start typing indicator |
+| `typing:stop` | `conversationId: string` | Stop typing indicator |
+
+### WebRTC Signaling
+
+| Event | Payload | Description |
+|---|---|---|
+| `call:offer` | `{ to, withVideo, offer }` | Initiate a call (SDP offer) |
+| `call:answer` | `{ to, answer }` | Answer a call (SDP answer) |
+| `call:ice` | `{ to, candidate }` | Relay ICE candidate |
+| `call:end` | `{ to }` | End call |
+| `call:reject` | `{ to }` | Reject incoming call |
+
+---
+
+## Server → Client Events
+
+### Messaging
+
+| Event | Payload | Description |
+|---|---|---|
+| `message:new` | Full message object with sender profile | New message broadcast |
+| `message:expired` | `{ id }` | Message TTL expired (auto-delete notification) |
+| `message:status` | `{ messageIds: string[], status }` | Delivery/read receipt update |
+| `message:deleted` | `{ messageIds: string[], conversationId }` | Messages deleted broadcast |
+| `message:reaction` | `{ messageId, userId, emoji, action }` | Reaction added/removed |
+| `message:viewOnce:opened` | `{ messageId, conversationId }` | View-once message opened |
+
+### Presence & Typing
+
+| Event | Payload | Description |
+|---|---|---|
+| `typing` | `{ userId, displayName, typing: boolean }` | Typing indicator |
+| `presence:online` | `{ userId }` | User came online |
+| `presence:offline` | `{ userId }` | User went offline |
+| `presence:list` | `string[]` | Full list of online user IDs (sent on connect) |
+
+### WebRTC Signaling
+
+| Event | Payload | Description |
+|---|---|---|
+| `call:incoming` | `{ from, fromName, withVideo, offer }` | Incoming call notification |
+| `call:answer` | `{ from, answer }` | Call answer relay |
+| `call:ice` | `{ from, candidate }` | ICE candidate relay |
+| `call:ended` | `{ from }` | Call ended by other party |
+| `call:rejected` | `{ from }` | Call rejected |
+| `call:busy` | `{ from }` | User is busy (already in a call) |
+
+### System
+
+| Event | Payload | Description |
+|---|---|---|
+| `user:profile-updated` | `{ userId, displayName, initials, avatarGradient, avatarUrl }` | Profile change broadcast |
+| `error` | `{ message }` | Server error notification |

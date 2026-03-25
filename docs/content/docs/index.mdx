@@ -1,0 +1,30 @@
+---
+title: Ephemeral
+description: A full-stack real-time chat application with ephemeral messages, WebRTC calls, and stories.
+icon: MessageCircle
+---
+
+**Ephemeral** is a WhatsApp-style real-time chat application where all messages auto-expire after 24 hours. Built as a university project for the Web Development course (COMP-2002), it demonstrates modern full-stack engineering patterns including polyglot persistence, real-time communication, and peer-to-peer calling.
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Frontend** | React 19, TypeScript, Vite, TanStack Router, Tailwind CSS 4 |
+| **Backend** | Node.js, Express, TypeScript |
+| **Real-Time** | Socket.io (WebSocket + polling fallback) |
+| **Calls** | WebRTC (peer-to-peer voice/video + screen sharing) |
+| **Databases** | PostgreSQL (users, contacts), MongoDB (messages, stories), Redis (TTL events) |
+| **Storage** | Cloudinary (media uploads) |
+| **Auth** | JWT (access + refresh tokens), OAuth2 (Google, Facebook) |
+
+## Quick Navigation
+
+<Cards>
+  <Card title="Getting Started" href="/docs/getting-started/installation" icon="Rocket" />
+  <Card title="Architecture" href="/docs/architecture/overview" icon="Layers" />
+  <Card title="Server" href="/docs/server" icon="Server" />
+  <Card title="Client" href="/docs/client" icon="Monitor" />
+  <Card title="API Reference" href="/docs/server/api" icon="FileJson" />
+  <Card title="Features" href="/docs/features/messaging" icon="Zap" />
+</Cards>

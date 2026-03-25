@@ -1,0 +1,80 @@
+---
+title: Authentication
+description: JWT-based authentication with OAuth2 support.
+icon: Shield
+---
+
+Ephemeral uses a **dual-token JWT strategy** with short-lived access tokens and rotating refresh tokens.
+
+<ExcalidrawDiagram
+  name="auth-flow"
+  height={500}
+  caption="Fig. 5 — Authentication flow"
+/>
+
+## Token Strategy
+
+| Token             | Storage                                | Lifetime   | Purpose                         |
+| ----------------- | -------------------------------------- | ---------- | ------------------------------- |
+| **Access Token**  | Client memory / `Authorization` header | 15 minutes | API & Socket.io authentication  |
+| **Refresh Token** | HttpOnly cookie                        | 7 days     | Token rotation (silent refresh) |
+
+## Registration Flow
+
+1. Client sends `POST /api/auth/register` with `email`, `password`, `displayName`
+2. Server hashes password with **bcrypt** (10 rounds)
+3. Server creates user in PostgreSQL
+4. Server sends verification email via **Mailjet**
+5. User clicks verification link → `GET /api/auth/verify-email?token=xxx`
+6. Server marks `email_verified = true`
+
+## Login Flow
+
+1. Client sends `POST /api/auth/login` with `email`, `password`
+2. Server verifies password hash with bcrypt
+3. Server generates:
+   - JWT access token (payload: `{ sub: userId }`)
+   - Random refresh token → hashed and stored in `refresh_tokens` table
+4. Response: `{ accessToken }` + `Set-Cookie: refreshToken=... (HttpOnly, Secure, SameSite=Strict)`
+
+## Token Refresh
+
+1. Client detects 401 response or socket `connect_error`
+2. Client calls `POST /api/auth/refresh` (browser auto-sends HttpOnly cookie)
+3. Server validates refresh token hash, deletes old token, creates new one
+4. Response: `{ accessToken }` + new `Set-Cookie`
+
+## OAuth2
+
+Google and Facebook OAuth2 flows:
+
+1. Client redirects to `GET /api/auth/google` (or `/facebook`)
+2. Server redirects to provider's consent screen
+3. Provider redirects back to callback URL with authorization code
+4. Server exchanges code for user info, creates/links account
+5. Server redirects to frontend `/oauth-callback?token=...`
+
+## Socket Authentication
+
+Socket.io connections pass the JWT via the handshake:
+
+```typescript
+const socket = io(BACKEND_URL, {
+  auth: { token: accessToken },
+});
+```
+
+The server verifies in middleware:
+
+```typescript
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    socket.data.userId = decoded.sub;
+    next();
+  } catch {
+    next(new Error("Authentication failed"));
+  }
+});
+```

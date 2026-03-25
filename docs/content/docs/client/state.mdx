@@ -1,0 +1,70 @@
+---
+title: State Management
+description: React Context-based state architecture.
+icon: Workflow
+---
+
+Ephemeral uses **React Context API** for global state management, organized into five focused contexts.
+
+## Context Architecture
+
+```
+RootProvider
+├── ThemeContext        # Dark/light mode
+├── ToastContext        # Toast notifications
+├── AuthContext         # User session
+│   └── SettingsContext # User preferences
+│       └── ChatContext # Conversations, messages, calls
+```
+
+## AuthContext
+
+Manages user authentication state:
+
+- `user` — current user profile (or `null`)
+- `login(email, password)` — authenticate
+- `logout()` — clear session
+- `checkAuth()` — verify token on app mount
+- Auto-refreshes access tokens on 401 responses
+
+## ChatContext
+
+The largest context, managing:
+
+- **Conversations list** — sidebar data with last message snippets
+- **Active conversation** — currently selected chat
+- **Messages** — message list for the active conversation
+- **Typing indicators** — who's typing in each conversation
+- **Reactions** — emoji reactions on messages
+- **Media uploads** — optimistic upload handling
+- **Message deletion** — delete for everyone / clear chat
+- **WebRTC state** — call management (wraps `useWebRTC`)
+
+## Key Custom Hooks
+
+### `useSocket`
+
+Manages the Socket.io connection lifecycle:
+
+- Connects on login, disconnects on logout
+- Auto-refreshes token on `connect_error`
+- Provides the `socket` instance to consumers
+
+### `useWebRTC`
+
+Full WebRTC call management:
+
+- Create/receive offers and answers
+- ICE candidate exchange
+- Toggle microphone, camera, screen sharing
+- ICE restart with retry logic
+- Call state machine (idle → ringing → connected → ended)
+
+## API Layer
+
+`lib/api.ts` exports an `apiFetch()` wrapper that:
+
+1. Adds `Authorization: Bearer <token>` header
+2. On 401 response, calls `/api/auth/refresh`
+3. Retries the original request with the new token
+4. On second failure, redirects to login

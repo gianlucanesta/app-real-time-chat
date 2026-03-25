@@ -1,0 +1,74 @@
+---
+title: Real-Time Architecture
+description: Socket.io and WebRTC communication patterns.
+icon: Radio
+---
+
+Ephemeral uses two real-time channels: **Socket.io** for messaging and signaling, and **WebRTC** for peer-to-peer media calls.
+
+<ExcalidrawDiagram name="socket-events" height={500} caption="Fig. 3 — Socket.io event flow" />
+
+## Socket.io Connection
+
+The client establishes a Socket.io connection on login, passing the JWT access token:
+
+```typescript
+const socket = io(BACKEND_URL, {
+  auth: { token: accessToken },
+  transports: ['polling', 'websocket'],
+});
+```
+
+The server authenticates the connection in the middleware:
+
+```typescript
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  const decoded = jwt.verify(token, JWT_SECRET);
+  socket.data.userId = decoded.sub;
+  next();
+});
+```
+
+### Auto-Reconnection
+
+If the socket receives a `connect_error` due to token expiration, the client automatically:
+1. Calls `POST /api/auth/refresh` to get a new access token
+2. Updates the socket `auth.token`
+3. Reconnects
+
+## Conversation Rooms
+
+Each conversation uses a **Socket.io room** identified by a `conversationId` — a deterministic string built from both user UUIDs (sorted alphabetically):
+
+```
+conversationId = [userId1, userId2].sort().join(':')
+```
+
+Users `join:conversation` when opening a chat and `leave:conversation` when navigating away.
+
+## Message Lifecycle
+
+<ExcalidrawDiagram name="message-lifecycle" height={450} caption="Fig. 4 — Message status transitions" />
+
+A message goes through these statuses:
+
+1. **Sending** (client-side optimistic) — shows a spinner
+2. **Sent** — server acknowledges receipt (single tick ✓)
+3. **Delivered** — recipient's client confirms receipt (double tick ✓✓)
+4. **Read** — recipient opens the conversation (blue double tick ✓✓)
+
+## WebRTC Call Flow
+
+Calls use Socket.io for **signaling** and establish a direct peer-to-peer connection:
+
+1. **Caller** creates an `RTCPeerConnection` and sends `call:offer` with the SDP offer
+2. **Callee** receives `call:incoming`, creates its own peer connection, and sends `call:answer`
+3. Both sides exchange **ICE candidates** via `call:ice` events
+4. The media stream flows directly between peers
+
+Features include:
+- Toggle microphone/camera
+- Screen sharing (track replacement)
+- ICE restart with retry logic
+- Busy detection (reject if already in a call)

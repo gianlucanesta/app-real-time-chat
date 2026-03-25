@@ -1,0 +1,124 @@
+---
+title: Database Design
+description: Polyglot persistence strategy — PostgreSQL, MongoDB, and Redis.
+icon: Database
+---
+
+Ephemeral uses a **polyglot persistence** approach, selecting the best database for each data type.
+
+<ExcalidrawDiagram
+  name="database-schema"
+  height={600}
+  caption="Fig. 2 — Database schema overview"
+/>
+
+## PostgreSQL — Relational Data
+
+Used for data that requires relational integrity and complex queries.
+
+### `users` Table
+
+```sql
+CREATE TABLE users (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email         VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255),
+  display_name  VARCHAR(100) NOT NULL,
+  first_name    VARCHAR(50),
+  last_name     VARCHAR(50),
+  phone         VARCHAR(20),
+  role          VARCHAR(20) DEFAULT 'user',
+  avatar_url    TEXT,
+  initials      VARCHAR(4),
+  avatar_gradient VARCHAR(100),
+  email_verified BOOLEAN DEFAULT FALSE,
+  verification_token TEXT,
+  verification_token_expires TIMESTAMPTZ,
+  settings      JSONB DEFAULT '{}',
+  created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### `contacts` Table
+
+```sql
+CREATE TABLE contacts (
+  id             SERIAL PRIMARY KEY,
+  owner_id       UUID REFERENCES users(id) ON DELETE CASCADE,
+  display_name   VARCHAR(100) NOT NULL,
+  phone          VARCHAR(20) NOT NULL,
+  initials       VARCHAR(4),
+  gradient       VARCHAR(100),
+  linked_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at     TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(owner_id, phone)
+);
+```
+
+### `refresh_tokens` Table
+
+```sql
+CREATE TABLE refresh_tokens (
+  id         SERIAL PRIMARY KEY,
+  user_id    UUID REFERENCES users(id) ON DELETE CASCADE,
+  token_hash VARCHAR(255) NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL
+);
+```
+
+## MongoDB — Ephemeral Data
+
+Used for documents with TTL (Time-To-Live) auto-expiration.
+
+### `Message` Collection
+
+```typescript
+{
+  conversationId: string,       // sorted pair of user UUIDs
+  sender: string,               // UUID
+  text?: string,
+  mediaUrl?: string,
+  mediaType?: 'image' | 'video' | 'audio' | 'document',
+  mediaDuration?: number,
+  mediaFileName?: string,
+  viewOnce?: boolean,
+  viewedAt?: Date,
+  status: 'sent' | 'delivered' | 'read',
+  reactions: [{ userId, emoji, displayName }],
+  linkPreview?: { url, title, description, image, siteName },
+  expires_at: Date,             // TTL index — auto-deletes after 24h
+  createdAt: Date
+}
+```
+
+### `Status` Collection (Stories)
+
+```typescript
+{
+  userId: string,
+  items: [{
+    mediaType: 'image' | 'video' | 'text',
+    mediaUrl?: string,
+    text?: string,
+    textBgGradient?: string,
+    caption?: string,
+    viewedBy: [{ userId, viewedAt }],
+    createdAt: Date
+  }],
+  privacy: 'contacts' | 'contacts_except' | 'only_share_with',
+  exceptIds: string[],
+  onlyShareIds: string[],
+  expires_at: Date,             // TTL index — 24h
+  updatedAt: Date
+}
+```
+
+## Redis — TTL Events
+
+Redis is used for **sub-minute precision** message expiration via keyspace notifications:
+
+1. When a message is created, a Redis key `msg:{id}` is set with the same TTL
+2. Redis keyspace notifications (`__keyevent@0__:expired`) fire when the key expires
+3. The server listens for these events and broadcasts `message:expired` via Socket.io
+
+This provides faster expiry detection than MongoDB's TTL index (which runs every 60 seconds).

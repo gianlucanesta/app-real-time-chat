@@ -1,0 +1,61 @@
+---
+title: Media & Uploads
+description: File sharing via Cloudinary with preview support.
+icon: Image
+---
+
+Ephemeral supports uploading and sharing images, videos, audio messages, and documents via **Cloudinary**.
+
+## Upload Flow
+
+1. User selects a file (max **25 MB**)
+2. Client sends `POST /api/upload` with `multipart/form-data`
+3. Server uploads to Cloudinary via the SDK
+4. Server returns `{ url, publicId, mediaType }`
+5. Client sends message via Socket.io with `mediaUrl` and `mediaType`
+
+## Supported Types
+
+| Media Type | Extensions | Preview |
+|---|---|---|
+| **Image** | jpg, png, gif, webp | Inline image with lightbox |
+| **Video** | mp4, webm, mov | Video player with duration |
+| **Audio** | mp3, ogg, wav, webm | Waveform visualization (WaveSurfer.js) |
+| **Document** | pdf, doc, txt, etc. | PDF inline preview (pdfjs-dist) |
+
+## View-Once Messages
+
+A special mode for sensitive media:
+
+1. Sender enables "View Once" toggle before sending
+2. Message appears in chat with a locked indicator
+3. Recipient opens it → media is displayed once
+4. `message:viewOnce:open` event is emitted
+5. Server sets `viewedAt` timestamp
+6. Message thumbnail is blurred after viewing
+
+## Cloudinary Integration
+
+```typescript
+// server/src/config/cloudinary.ts
+import { v2 as cloudinary } from 'cloudinary';
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+```
+
+Files are uploaded to the `ephemeral/` folder in Cloudinary with automatic format optimization.
+
+## Status / Stories
+
+WhatsApp-like 24-hour stories:
+
+- **Image stories** — photo with optional caption
+- **Video stories** — short video clips
+- **Text stories** — colored gradient background with text
+- Privacy controls: `contacts`, `contacts_except`, `only_share_with`
+- View tracking: who viewed each story item
+- Auto-expiry via MongoDB TTL (24 hours)
