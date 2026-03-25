@@ -295,8 +295,8 @@ export function ChatMessage({
             {/* Message Bubble */}
             <div
               className={`group/bubble relative ${
-                isMediaBubble
-                  ? `rounded-2xl overflow-hidden shadow-sm ${isSent ? "rounded-br-sm" : "rounded-bl-sm"}`
+                isMediaBubble || statusReply
+                  ? `rounded-2xl overflow-hidden shadow-sm ${isSent ? "rounded-br-sm" : "rounded-bl-sm"} ${!isMediaBubble && statusReply && !isSent ? "border border-border/50" : ""}`
                   : `pr-8 px-4 py-3 text-[14px] leading-relaxed break-words shadow-sm rounded-2xl overflow-hidden ${
                       isSent
                         ? "text-white rounded-br-sm"
@@ -304,7 +304,7 @@ export function ChatMessage({
                     }`
               }`}
               style={
-                isSent && !isMediaBubble
+                isSent && !isMediaBubble && !statusReply
                   ? { background: "linear-gradient(135deg, #2563EB, #3B82F6)" }
                   : undefined
               }
@@ -480,41 +480,72 @@ export function ChatMessage({
                 </div>
               )}
               {/* Inline text for non-media bubbles */}
-              {text && !isViewOnceHidden && !isMediaBubble && (
+              {text && !isViewOnceHidden && !isMediaBubble && !statusReply && (
                 <>
-                  {/* Status reply preview box */}
-                  {statusReply && (
-                    <div
-                      className={`mb-1.5 rounded-lg overflow-hidden border-l-4 ${isSent ? "border-white/50 bg-white/10" : "border-accent/60 bg-accent/5"}`}
-                    >
-                      <div className="px-2 pt-1.5 pb-1">
-                        <p className={`text-[11px] font-semibold mb-1 ${isSent ? "text-white/80" : "text-accent"}`}>
-                          {statusReply.senderName}'s status
-                        </p>
-                        {statusReply.mediaType === "text" && statusReply.text ? (
-                          <div
-                            className="w-full h-12 rounded-md flex items-center justify-center text-white text-[11px] font-medium text-center px-2"
-                            style={{ background: statusReply.textBgGradient || "linear-gradient(135deg,#6366f1,#a855f7)" }}
-                          >
-                            <span className="line-clamp-2">{statusReply.text}</span>
-                          </div>
-                        ) : statusReply.mediaUrl ? (
-                          <div className="w-full h-12 rounded-md overflow-hidden">
-                            {statusReply.mediaType === "image" ? (
-                              <img src={statusReply.mediaUrl} alt="status" className="w-full h-full object-cover" />
-                            ) : (
-                              <video src={statusReply.mediaUrl} className="w-full h-full object-cover" />
-                            )}
-                          </div>
-                        ) : null}
-                        {statusReply.caption && (
-                          <p className={`text-[11px] mt-1 truncate ${isSent ? "text-white/70" : "text-text-secondary"}`}>{statusReply.caption}</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
                   <span>{text}</span>
                 </>
+              )}
+
+              {/* Status reply — media-card style */}
+              {statusReply && (
+                <div className="flex flex-col -mx-4 -mt-3">
+                  {/* Status card */}
+                  <div className="relative">
+                    <p
+                      className={`absolute top-2 left-3 z-10 text-[11px] font-semibold drop-shadow ${isSent ? "text-white/90" : "text-white/90"}`}
+                    >
+                      {statusReply.senderName}&apos;s status
+                    </p>
+                    {statusReply.mediaType === "text" ? (
+                      <div
+                        className="w-full aspect-[4/3] flex items-center justify-center text-white text-[16px] font-medium text-center px-6"
+                        style={{
+                          background:
+                            statusReply.textBgGradient ||
+                            "linear-gradient(135deg,#6366f1,#a855f7)",
+                        }}
+                      >
+                        <span className="line-clamp-4">{statusReply.text}</span>
+                      </div>
+                    ) : statusReply.mediaUrl ? (
+                      <div className="w-full aspect-[4/3] overflow-hidden bg-black/10">
+                        {statusReply.mediaType === "image" ? (
+                          <img
+                            src={statusReply.mediaUrl}
+                            alt="status"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <video
+                            src={statusReply.mediaUrl}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                      </div>
+                    ) : null}
+                    {statusReply.caption && (
+                      <p className="absolute bottom-2 left-3 right-3 text-[11px] text-white/80 truncate drop-shadow">
+                        {statusReply.caption}
+                      </p>
+                    )}
+                  </div>
+                  {/* Reply text as caption */}
+                  {text && (
+                    <div
+                      className={`px-3 py-2 text-[14px] leading-relaxed ${isSent ? "text-white" : "text-text-main"}`}
+                      style={
+                        isSent
+                          ? {
+                              background:
+                                "linear-gradient(135deg, #2563EB, #3B82F6)",
+                            }
+                          : { background: "var(--card)" }
+                      }
+                    >
+                      <span>{text}</span>
+                    </div>
+                  )}
+                </div>
               )}
               {/* Link preview card — only for non-media bubbles */}
               {linkPreview && !isMediaBubble && (

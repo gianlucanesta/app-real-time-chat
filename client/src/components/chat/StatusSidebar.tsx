@@ -29,6 +29,7 @@ function formatStatusTime(iso: string): string {
 interface StatusSidebarProps {
   myStatus: MyStatus;
   recentStatuses: ContactStatus[];
+  loading?: boolean;
   userAvatar?: string | null;
   userGradient: string;
   userInitials: string;
@@ -41,6 +42,7 @@ interface StatusSidebarProps {
 export function StatusSidebar({
   myStatus,
   recentStatuses,
+  loading,
   userAvatar,
   userGradient,
   userInitials,
@@ -211,66 +213,71 @@ export function StatusSidebar({
           </h2>
         </div>
 
-        {recentStatuses.length === 0 && (
+        {loading ? (
+          <div className="flex flex-col gap-1 px-4 py-2">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="flex items-center gap-3 py-3 animate-pulse"
+              >
+                <div className="w-[46px] h-[46px] rounded-full bg-border/40 shrink-0" />
+                <div className="flex-1 min-w-0 space-y-2">
+                  <div className="h-3.5 w-24 rounded bg-border/40" />
+                  <div className="h-3 w-16 rounded bg-border/30" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : recentStatuses.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-text-secondary text-[13px] gap-2">
             <p>No recent status updates</p>
           </div>
-        )}
+        ) : null}
 
-        {recentStatuses.map((cs) => (
-          <button
-            key={cs.contactId}
-            className="flex items-center gap-3 px-4 py-3.5 md:py-3 w-full hover:bg-input/50 transition-colors text-left"
-            onClick={() => onViewContactStatus(cs)}
-          >
-            {/* Avatar with ring */}
-            <div className="relative inline-block shrink-0">
-              {cs.contactAvatar ? (
-                <img
-                  src={cs.contactAvatar}
-                  alt={cs.contactName}
-                  className={`w-[46px] h-[46px] rounded-full object-cover ring-2 ring-offset-2 ring-offset-card ${
-                    cs.allViewed ? "ring-text-secondary/40" : "ring-accent"
-                  }`}
-                />
-              ) : (
-                <div
-                  className={`w-[46px] h-[46px] rounded-full flex items-center justify-center text-white text-sm font-semibold ring-2 ring-offset-2 ring-offset-card ${
-                    cs.allViewed ? "ring-text-secondary/40" : "ring-accent"
-                  }`}
-                  style={{
-                    background:
-                      cs.contactGradient ||
-                      "linear-gradient(135deg, #6366f1, #a855f7)",
-                  }}
-                >
-                  {cs.contactInitials}
-                </div>
-              )}
-            </div>
+        {!loading &&
+          recentStatuses.map((cs) => (
+            <button
+              key={cs.contactId}
+              className="flex items-center gap-3 px-4 py-3.5 md:py-3 w-full hover:bg-input/50 transition-colors text-left"
+              onClick={() => onViewContactStatus(cs)}
+            >
+              {/* Avatar with ring */}
+              <div className="relative inline-block shrink-0">
+                {cs.contactAvatar ? (
+                  <img
+                    src={cs.contactAvatar}
+                    alt={cs.contactName}
+                    className={`w-[46px] h-[46px] rounded-full object-cover ring-2 ring-offset-2 ring-offset-card ${
+                      cs.allViewed ? "ring-text-secondary/40" : "ring-accent"
+                    }`}
+                  />
+                ) : (
+                  <div
+                    className={`w-[46px] h-[46px] rounded-full flex items-center justify-center text-white text-sm font-semibold ring-2 ring-offset-2 ring-offset-card ${
+                      cs.allViewed ? "ring-text-secondary/40" : "ring-accent"
+                    }`}
+                    style={{
+                      background:
+                        cs.contactGradient ||
+                        "linear-gradient(135deg, #6366f1, #a855f7)",
+                    }}
+                  >
+                    {cs.contactInitials}
+                  </div>
+                )}
+              </div>
 
-            {/* Info */}
-            <div className="min-w-0">
-              <p className="text-[14px] font-semibold text-text-main truncate">
-                {cs.contactName}
-              </p>
-              <p className="text-[12.5px] text-text-secondary truncate">
-                {formatStatusTime(cs.lastUpdated)}
-              </p>
-            </div>
-          </button>
-        ))}
-
-        {/* Footer encryption notice */}
-        <div className="px-4 py-4 mt-2">
-          <p className="text-[11.5px] text-text-secondary flex items-center gap-1.5">
-            <Lock className="w-3 h-3 shrink-0" />
-            Your status updates are{" "}
-            <span className="text-accent font-medium cursor-pointer hover:underline">
-              end-to-end encrypted
-            </span>
-          </p>
-        </div>
+              {/* Info */}
+              <div className="min-w-0">
+                <p className="text-[14px] font-semibold text-text-main truncate">
+                  {cs.contactName}
+                </p>
+                <p className="text-[12.5px] text-text-secondary truncate">
+                  {formatStatusTime(cs.lastUpdated)}
+                </p>
+              </div>
+            </button>
+          ))}
       </div>
     </aside>
   );

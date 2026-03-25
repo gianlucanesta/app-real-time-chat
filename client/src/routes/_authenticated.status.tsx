@@ -48,7 +48,12 @@ function buildPrivacyContacts(
 
 function StatusPage() {
   const { user } = useAuth();
-  const { conversations, sendStatusReplyMessage, setActiveConversation } = useChat();
+  const {
+    conversations,
+    sendStatusReplyMessage,
+    setActiveConversation,
+    addOrUpdateConversation,
+  } = useChat();
   const navigate = useNavigate();
 
   // Privacy state
@@ -72,6 +77,7 @@ function StatusPage() {
   // Status data from API
   const [myStatus, setMyStatus] = useState<MyStatus>({ items: [] });
   const [feedStatuses, setFeedStatuses] = useState<ContactStatus[]>([]);
+  const [statusLoading, setStatusLoading] = useState(true);
 
   // Contacts for privacy picker
   const privacyContacts = useMemo(
@@ -122,6 +128,8 @@ function StatusPage() {
         setFeedStatuses(feedData.statuses);
       } catch (err) {
         console.warn("[status] failed to fetch statuses:", err);
+      } finally {
+        setStatusLoading(false);
       }
     };
 
@@ -153,18 +161,34 @@ function StatusPage() {
 
   const handleStatusReply = useCallback(
     (contactId: string, text: string, statusItemId: string) => {
-      if (!viewingStatus) return;
+      if (!viewingStatus || !user) return;
 
       // Find the status item being replied to
       const item = viewingStatus.items.find((i) => i.id === statusItemId);
       if (!item) return;
 
-      // Find or construct the direct conversation ID for this contact
-      const conv = conversations.find(
-        (c) =>
-          c.type === "direct" && c.participants.includes(contactId),
+      // Find existing conversation or build a new one
+      let conv = conversations.find(
+        (c) => c.type === "direct" && c.participants.includes(contactId),
       );
-      if (!conv) return;
+
+      if (!conv) {
+        const convId = [user.id, contactId].sort().join("___");
+        conv = {
+          id: convId,
+          type: "direct",
+          name: viewingStatus.contactName,
+          avatar: viewingStatus.contactAvatar,
+          gradient:
+            viewingStatus.contactGradient ||
+            "linear-gradient(135deg, #6366f1, #a855f7)",
+          initials: viewingStatus.contactInitials || "??",
+          unreadCount: 0,
+          isOnline: false,
+          participants: [user.id, contactId],
+        };
+        addOrUpdateConversation(conv);
+      }
 
       sendStatusReplyMessage(contactId, conv.id, text, {
         mediaType: item.mediaType,
@@ -182,7 +206,15 @@ function StatusPage() {
       // Close the viewer
       handleCloseViewer();
     },
-    [viewingStatus, conversations, sendStatusReplyMessage, setActiveConversation, navigate],
+    [
+      viewingStatus,
+      user,
+      conversations,
+      sendStatusReplyMessage,
+      setActiveConversation,
+      addOrUpdateConversation,
+      navigate,
+    ],
   );
 
   const handleOpenCreator = useCallback((mode?: "text" | "media") => {
@@ -266,6 +298,7 @@ function StatusPage() {
       <StatusSidebar
         myStatus={myStatus}
         recentStatuses={feedStatuses}
+        loading={statusLoading}
         userAvatar={user?.avatarUrl}
         userGradient={
           user?.avatarGradient || "linear-gradient(135deg, #6366f1, #a855f7)"

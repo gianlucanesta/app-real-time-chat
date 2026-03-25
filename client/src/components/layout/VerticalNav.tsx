@@ -2,7 +2,6 @@ import { Link, useLocation } from "@tanstack/react-router";
 import {
   MessageSquare,
   Phone,
-  Users2,
   Megaphone,
   Star,
   Archive,
@@ -45,7 +44,7 @@ export function VerticalNav() {
     { icon: MessageSquare, path: "/", label: "Chats" },
     { icon: Phone, path: "/calls", label: "Calls" },
     { icon: CircleDashed, path: "/status", label: "Status" },
-    { icon: Users2, path: "/community", label: "Community" },
+    { icon: Megaphone, path: "/channels", label: "Channels" },
   ];
 
   const profileInitials =
