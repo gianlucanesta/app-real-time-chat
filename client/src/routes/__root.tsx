@@ -1,8 +1,6 @@
-import {
-  createRootRouteWithContext,
-  Outlet,
-} from "@tanstack/react-router";
+import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import { ErrorBoundary } from "../components/ErrorBoundary";
 import type { AuthContextType } from "../contexts/AuthContext";
 
 interface MyRouterContext {
@@ -20,8 +18,10 @@ const queryClient = new QueryClient({
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   component: () => (
-    <QueryClientProvider client={queryClient}>
-      <Outlet />
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <Outlet />
+      </QueryClientProvider>
+    </ErrorBoundary>
   ),
 });

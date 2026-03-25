@@ -125,7 +125,7 @@ export function MediaViewer({
           {current.type === "image" && (
             <img
               src={current.url}
-              alt=""
+              alt="Shared media"
               className="max-w-full max-h-[70vh] object-contain rounded-lg"
             />
           )}
@@ -185,7 +185,7 @@ export function MediaViewer({
               {item.type === "image" ? (
                 <img
                   src={item.url}
-                  alt=""
+                  alt="Media thumbnail"
                   className="w-full h-full object-cover"
                 />
               ) : (

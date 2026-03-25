@@ -374,7 +374,7 @@ export function MediaPreviewScreen({
                 {f.type === "image" ? (
                   <img
                     src={f.previewUrl}
-                    alt=""
+                    alt={f.file.name || "File thumbnail"}
                     className="w-full h-full object-cover"
                   />
                 ) : f.type === "video" ? (

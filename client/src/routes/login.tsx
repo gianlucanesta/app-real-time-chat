@@ -1,16 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useCallback } from "react";
-import {
-  Mail,
-  Lock,
-  MessageSquare,
-  Eye,
-  EyeOff,
-  ChevronDown,
-} from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ChevronDown } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import EphemeralBrand from "../components/ui/EphemeralBrand";
 import { useAuth } from "../contexts/AuthContext";
 import { apiFetch } from "../lib/api";
 import type { AuthResponse } from "../types";
@@ -120,11 +114,7 @@ function LoginPage() {
       >
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-3 md:mb-4">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-accent rounded-md flex items-center justify-center text-white">
-              <MessageSquare className="w-6 h-6 md:w-7 md:h-7 fill-current" />
-            </div>
-          </div>
+          <EphemeralBrand />
           <h1 className="text-xl md:text-2xl font-bold text-text-main mb-1">
             Welcome Back
           </h1>

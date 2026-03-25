@@ -330,7 +330,7 @@ export function ChatMessage({
                     >
                       <img
                         src={mediaUrl}
-                        alt=""
+                        alt={mediaFileName || "Shared image"}
                         className={`w-[300px] h-[200px] object-cover${isUploading ? " opacity-60" : ""}`}
                         loading="lazy"
                       />
@@ -882,7 +882,7 @@ export function ChatMessage({
           {mediaType === "image" && (
             <img
               src={mediaUrl}
-              alt=""
+              alt={mediaFileName || "View-once media"}
               className="max-w-[90vw] max-h-[80vh] object-contain rounded-lg"
               onClick={(e) => e.stopPropagation()}
             />

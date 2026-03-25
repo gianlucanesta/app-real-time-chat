@@ -42,13 +42,7 @@ import { PrivacySettings } from "../components/settings/PrivacySettings";
 import { AccountSettings } from "../components/settings/AccountSettings";
 import type { User as UserType } from "../types";
 
-const LANGUAGE_OPTIONS = [
-  { value: "en", label: "English" },
-  { value: "it", label: "Italiano \u2014 coming soon", disabled: true },
-  { value: "es", label: "Espa\u00f1ol \u2014 coming soon", disabled: true },
-  { value: "fr", label: "Fran\u00e7ais \u2014 coming soon", disabled: true },
-  { value: "de", label: "Deutsch \u2014 coming soon", disabled: true },
-];
+const LANGUAGE_OPTIONS = [{ value: "en", label: "English" }];
 
 const TEXT_SIZE_OPTIONS = [
   { value: "75", label: "75%" },
@@ -109,18 +103,6 @@ const NAV_ITEMS = [
     icon: Bell,
     label: "Notifications",
     description: "Messages, groups, sounds",
-  },
-  {
-    id: "keyboard",
-    icon: Keyboard,
-    label: "Keyboard Shortcuts",
-    description: "Quick actions",
-  },
-  {
-    id: "help",
-    icon: HelpCircle,
-    label: "Help & Feedback",
-    description: "Help center, contact us, privacy policy",
   },
 ];
 
@@ -370,7 +352,7 @@ function SettingsPage() {
             {currentAvatar ? (
               <img
                 src={currentAvatar}
-                alt="Avatar"
+                alt={`${user?.displayName || "User"}'s profile picture`}
                 className="w-28 h-28 rounded-full object-cover border-2 border-border"
               />
             ) : (
@@ -584,7 +566,7 @@ function SettingsPage() {
             </button>
             <img
               src={currentAvatar}
-              alt="Avatar preview"
+              alt={`${user?.displayName || "User"}'s profile picture preview`}
               className="max-w-[85vw] max-h-[85vh] object-contain rounded-lg"
               onClick={(e) => e.stopPropagation()}
             />
@@ -656,7 +638,7 @@ function SettingsPage() {
           {user?.avatarUrl ? (
             <img
               src={user.avatarUrl}
-              alt="Profile"
+              alt={`${user?.displayName || "User"}'s profile picture`}
               className="w-20 h-20 rounded-full object-cover shadow-lg"
             />
           ) : (

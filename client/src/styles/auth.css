@@ -2,6 +2,23 @@
    Auth pages — login / signup shared styles
    ══════════════════════════════════════════════════════════ */
 
+/* ── Ephemeral brand animation letters ───────────────────── */
+.ephemeral-letter {
+  display: inline-block;
+  font-family: "Orbitron", sans-serif;
+  font-weight: 900;
+  font-size: 1.55rem;
+  letter-spacing: 0.04em;
+  color: var(--color-text-main);
+  opacity: 0;
+  transform: translateY(6px);
+}
+@media (min-width: 768px) {
+  .ephemeral-letter {
+    font-size: 1.85rem;
+  }
+}
+
 /* ── Login success modal ─────────────────────────────────── */
 .success-modal-overlay {
   background: rgba(0, 0, 0, 0.6);

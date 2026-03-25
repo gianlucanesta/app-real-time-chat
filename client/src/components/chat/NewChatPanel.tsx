@@ -118,12 +118,6 @@ export function NewChatPanel({
       </div>
 
       <div className="flex flex-col shrink-0">
-        <button className="flex items-center gap-4 px-4 py-3 bg-transparent border-none cursor-pointer text-text-main text-base text-left hover:bg-input transition-colors">
-          <div className="w-11 h-11 rounded-full bg-accent flex items-center justify-center shrink-0">
-            <Users className="w-5 h-5 text-white" />
-          </div>
-          New group
-        </button>
         <button
           className="flex items-center gap-4 px-4 py-3 bg-transparent border-none cursor-pointer text-text-main text-base text-left hover:bg-input transition-colors"
           onClick={onOpenNewContact}
@@ -132,12 +126,6 @@ export function NewChatPanel({
             <UserPlus className="w-5 h-5 text-white" />
           </div>
           New contact
-        </button>
-        <button className="flex items-center gap-4 px-4 py-3 bg-transparent border-none cursor-pointer text-text-main text-base text-left hover:bg-input transition-colors">
-          <div className="w-11 h-11 rounded-full bg-accent flex items-center justify-center shrink-0">
-            <Users className="w-5 h-5 text-white" />
-          </div>
-          New community
         </button>
       </div>
 
@@ -193,7 +181,15 @@ export function NewChatPanel({
         {results.map((u) => (
           <div
             key={u.id}
+            role="button"
+            tabIndex={0}
             onClick={() => handleSelectUser(u)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleSelectUser(u);
+              }
+            }}
             className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-input/50 transition-colors"
           >
             <div className="relative inline-block shrink-0">

@@ -359,7 +359,7 @@ export function StatusViewer({
           ) : (
             <img
               src={currentItem?.mediaUrl}
-              alt=""
+              alt={currentItem?.caption || "Status image"}
               className="max-w-full max-h-full object-contain rounded-lg"
             />
           )}

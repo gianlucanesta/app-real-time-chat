@@ -41,7 +41,11 @@ import { useToast } from "../../contexts/ToastContext";
 import { getAccessToken } from "../../lib/api";
 import { disintegrate } from "../../lib/disintegrate";
 import { LinkPreviewCard } from "./LinkPreviewCard";
-import { useChatSettings, applyEmojiReplace, DOODLE_BG_IMAGE } from "../../hooks/useChatSettings";
+import {
+  useChatSettings,
+  applyEmojiReplace,
+  DOODLE_BG_IMAGE,
+} from "../../hooks/useChatSettings";
 
 /** Return a human-friendly date label for a message group separator. */
 function dateSeparatorLabel(dateStr: string): string {
@@ -963,7 +967,10 @@ export function ChatArea({
             ? { backgroundColor: chatSettings.wallpaperColor }
             : {}),
           ...(chatSettings.doodlesEnabled && chatSettings.wallpaperColor
-            ? { backgroundImage: DOODLE_BG_IMAGE, backgroundSize: "200px 200px" }
+            ? {
+                backgroundImage: DOODLE_BG_IMAGE,
+                backgroundSize: "200px 200px",
+              }
             : {}),
         }}
       >
@@ -1016,27 +1023,30 @@ export function ChatArea({
         ))}
 
         {/* Typing indicator bubble */}
-        {isContactTyping && (
-          <div className="flex items-end mb-4 self-start">
-            <div
-              className="px-4 py-3 bg-card border border-border/50 rounded-2xl rounded-bl-sm shadow-sm flex items-center gap-[6px]"
-              aria-label="Contact is typing"
-            >
-              <span
-                className="w-2.5 h-2.5 rounded-full bg-accent/70 animate-bounce"
-                style={{ animationDelay: "0ms" }}
-              />
-              <span
-                className="w-2.5 h-2.5 rounded-full bg-accent/70 animate-bounce"
-                style={{ animationDelay: "160ms" }}
-              />
-              <span
-                className="w-2.5 h-2.5 rounded-full bg-accent/70 animate-bounce"
-                style={{ animationDelay: "320ms" }}
-              />
+        <div aria-live="polite" aria-atomic="true">
+          {isContactTyping && (
+            <div className="flex items-end mb-4 self-start">
+              <div
+                className="px-4 py-3 bg-card border border-border/50 rounded-2xl rounded-bl-sm shadow-sm flex items-center gap-[6px]"
+                aria-label="Contact is typing"
+                role="status"
+              >
+                <span
+                  className="w-2.5 h-2.5 rounded-full bg-accent/70 animate-bounce"
+                  style={{ animationDelay: "0ms" }}
+                />
+                <span
+                  className="w-2.5 h-2.5 rounded-full bg-accent/70 animate-bounce"
+                  style={{ animationDelay: "160ms" }}
+                />
+                <span
+                  className="w-2.5 h-2.5 rounded-full bg-accent/70 animate-bounce"
+                  style={{ animationDelay: "320ms" }}
+                />
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Scroll anchor */}
         <div ref={messagesEndRef} className="shrink-0" />

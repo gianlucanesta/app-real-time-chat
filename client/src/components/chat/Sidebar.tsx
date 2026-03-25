@@ -212,12 +212,14 @@ export function Sidebar({
           <button
             onClick={() => setIsNewChatOpen(true)}
             className="w-8 h-8 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors"
+            aria-label="New chat"
           >
             <Edit className="w-4 h-4" />
           </button>
           <div className="relative" ref={menuRef}>
             <button
               className="w-8 h-8 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors"
+              aria-label="Menu"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               <MoreVertical className="w-4 h-4" />
@@ -337,7 +339,15 @@ export function Sidebar({
         {filteredConversations.map((chat) => (
           <div
             key={chat.id}
+            role="button"
+            tabIndex={0}
             onClick={() => setActiveConversation(chat)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setActiveConversation(chat);
+              }
+            }}
             className={`group flex items-center gap-3 px-4 py-3.5 md:py-3 cursor-pointer transition-colors relative ${
               activeConversation?.id === chat.id
                 ? "bg-accent/15 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-accent before:rounded-r-full"

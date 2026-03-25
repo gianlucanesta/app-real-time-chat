@@ -1,6 +1,12 @@
 const PARTICLE_COUNT = 50;
 const DURATION_MS = 900;
 
+export interface DisintegrateOptions {
+  particleCount?: number;
+  durationMs?: number;
+  squareOnly?: boolean;
+}
+
 /** Generate a random number in [min, max). */
 function rand(min: number, max: number) {
   return min + Math.random() * (max - min);
@@ -27,7 +33,14 @@ function shiftColor(
  * Always sweeps right-to-left. Targets the inner bubble (.group\/bubble)
  * so the effect stays localised on the actual message, not the wrapper.
  */
-export function disintegrate(element: HTMLElement): Promise<void> {
+export function disintegrate(
+  element: HTMLElement,
+  opts?: DisintegrateOptions,
+): Promise<void> {
+  const pCount = opts?.particleCount ?? PARTICLE_COUNT;
+  const dur = opts?.durationMs ?? DURATION_MS;
+  const squareOnly = opts?.squareOnly ?? false;
+
   return new Promise((resolve) => {
     const bubble =
       element.querySelector<HTMLElement>(".group\\/bubble") ?? element;
@@ -70,7 +83,7 @@ export function disintegrate(element: HTMLElement): Promise<void> {
       willChange: "transform",
     });
 
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
+    for (let i = 0; i < pCount; i++) {
       const p = document.createElement("div");
       const size = rand(3, 7);
       const startX = rand(0, rect.width);
@@ -82,7 +95,7 @@ export function disintegrate(element: HTMLElement): Promise<void> {
         top: `${startY}px`,
         width: `${size}px`,
         height: `${size}px`,
-        borderRadius: Math.random() > 0.5 ? "50%" : "2px",
+        borderRadius: squareOnly ? "2px" : Math.random() > 0.5 ? "50%" : "2px",
         backgroundColor: colors[Math.floor(Math.random() * colors.length)],
         opacity: "1",
         pointerEvents: "none",
@@ -100,15 +113,15 @@ export function disintegrate(element: HTMLElement): Promise<void> {
         { clipPath: "inset(0 0 0 0)", opacity: 1 },
         { clipPath: "inset(0 100% 0 0)", opacity: 0 },
       ],
-      { duration: DURATION_MS * 0.6, easing: "ease-in", fill: "forwards" },
+      { duration: dur * 0.6, easing: "ease-in", fill: "forwards" },
     );
 
-    // Particles — right-to-left with stagger
+    // Particles — right-to-left with stagger (rightmost first)
     const particles = Array.from(wrapper.children) as HTMLDivElement[];
     const animations = particles.map((p) => {
       const px = parseFloat(p.style.left) / rect.width;
-      const delay = px * DURATION_MS * 0.3;
-      const duration = rand(DURATION_MS * 0.4, DURATION_MS * 0.8);
+      const delay = (1 - px) * dur * 0.3;
+      const duration = rand(dur * 0.4, dur * 0.8);
       const tx = rand(-160, -30);
       const ty = rand(-50, 50);
       const rot = rand(-90, 90);

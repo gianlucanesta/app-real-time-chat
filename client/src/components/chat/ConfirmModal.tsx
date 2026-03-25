@@ -1,3 +1,5 @@
+import { useFocusTrap } from "../../hooks/useFocusTrap";
+
 interface ConfirmModalProps {
   isOpen: boolean;
   title: string;
@@ -17,14 +19,23 @@ export function ConfirmModal({
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
+  const trapRef = useFocusTrap<HTMLDivElement>(isOpen);
+
   if (!isOpen) return null;
 
   return (
     <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
       role="dialog"
+      aria-modal="true"
       aria-labelledby="confirm-modal-title"
-      onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
+      ref={trapRef}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onCancel();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") onCancel();
+      }}
     >
       <div className="w-full max-w-[380px] bg-card rounded-2xl p-8 shadow-2xl text-center animate-in fade-in zoom-in-95">
         {/* Icon */}
