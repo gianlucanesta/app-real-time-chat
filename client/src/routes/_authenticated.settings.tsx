@@ -701,9 +701,6 @@ function SettingsPage() {
                       {item.description}
                     </span>
                   </div>
-                  {item.badge && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-danger mr-1" />
-                  )}
                   <ChevronRight className="w-4 h-4 text-text-secondary" />
                 </button>
               );
