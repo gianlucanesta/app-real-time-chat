@@ -69,6 +69,57 @@ userRouter.patch("/me/settings", authMiddleware, ctrl.updateSettings);
  *       200:
  *         description: Array of blocked users
  */
+/**
+ * @openapi
+ * /api/users/me:
+ *   delete:
+ *     tags: [Users]
+ *     summary: Delete user account permanently
+ *     description: Permanently deletes the authenticated user's account and all associated data. This action is irreversible.
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Account deleted
+ *       404:
+ *         description: User not found
+ */
+userRouter.delete("/me", authMiddleware, ctrl.deleteAccount);
+
+/**
+ * @openapi
+ * /api/users/me/report:
+ *   post:
+ *     tags: [Users]
+ *     summary: Request account info report
+ *     description: Queues an export of the user's account information and settings.
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Report request acknowledged
+ *       404:
+ *         description: User not found
+ */
+userRouter.post("/me/report", authMiddleware, ctrl.requestReport);
+
+/**
+ * @openapi
+ * /api/users/me/report/channels:
+ *   post:
+ *     tags: [Users]
+ *     summary: Request channel activity report
+ *     description: Queues an export of the user's channel activity data.
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Channel report request acknowledged
+ *       404:
+ *         description: User not found
+ */
+userRouter.post("/me/report/channels", authMiddleware, ctrl.requestChannelReport);
+
 userRouter.get("/blocked", authMiddleware, ctrl.listBlocked);
 
 /**

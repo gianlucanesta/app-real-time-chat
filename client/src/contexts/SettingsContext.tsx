@@ -47,6 +47,8 @@ export interface UserSettings {
   privacyBlockUnknown: boolean;
   privacyProtectIp: boolean;
   privacyDisableLinkPreviews: boolean;
+  // Account
+  securityNotifications: boolean;
 }
 
 const DEFAULTS: UserSettings = {
@@ -85,6 +87,8 @@ const DEFAULTS: UserSettings = {
   privacyBlockUnknown: true,
   privacyProtectIp: false,
   privacyDisableLinkPreviews: false,
+  // Account
+  securityNotifications: true,
 };
 
 // ── localStorage ↔ settings key mapping ─────────────────────────────────
@@ -125,6 +129,8 @@ const LS_MAP: Record<keyof UserSettings, string> = {
   privacyBlockUnknown: "ephemeral-privacy-block-unknown",
   privacyProtectIp: "ephemeral-privacy-protect-ip",
   privacyDisableLinkPreviews: "ephemeral-privacy-disable-link-previews",
+  // Account
+  securityNotifications: "ephemeral-security-notifications",
 };
 
 /** Read all settings from localStorage, falling back to defaults. */

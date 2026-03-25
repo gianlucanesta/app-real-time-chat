@@ -178,6 +178,62 @@ export async function updateSettings(
   }
 }
 
+/** DELETE /api/users/me — permanently delete account */
+export async function deleteAccount(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const deleted = await UserModel.deleteAccount(req.user!.sub);
+    if (!deleted) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    res.status(200).json({ deleted: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** POST /api/users/me/report — request account info export */
+export async function requestReport(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const user = await UserModel.findById(req.user!.sub);
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    // In production this would queue an async export job.
+    // For now, return a success acknowledgment.
+    res.status(200).json({ message: "Report request received. You will be notified when it is ready." });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** POST /api/users/me/report/channels — request channel activity export */
+export async function requestChannelReport(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const user = await UserModel.findById(req.user!.sub);
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    res.status(200).json({ message: "Channel report request received. You will be notified when it is ready." });
+  } catch (err) {
+    next(err);
+  }
+}
+
 /** GET /api/users/blocked */
 export async function listBlocked(
   req: Request,

@@ -399,6 +399,15 @@ export async function unblockUser(
   return (rowCount ?? 0) > 0;
 }
 
+/** Delete a user account and all associated data (FK CASCADE handles related tables). */
+export async function deleteAccount(userId: string): Promise<boolean> {
+  const { rowCount } = await pool.query(
+    `DELETE FROM users WHERE id = $1`,
+    [userId],
+  );
+  return (rowCount ?? 0) > 0;
+}
+
 /** List all blocked users with their profile info. */
 export async function listBlockedUsers(
   blockerId: string,

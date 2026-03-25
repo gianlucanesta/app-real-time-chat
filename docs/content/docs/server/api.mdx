@@ -8,79 +8,85 @@ All endpoints are prefixed with `/api/`. Protected endpoints require a JWT `Auth
 
 ## Health
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| `GET` | `/api/health` | No | Health check |
+| Method | Endpoint      | Auth | Description  |
+| ------ | ------------- | ---- | ------------ |
+| `GET`  | `/api/health` | No   | Health check |
 
 ## Authentication
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| `POST` | `/api/auth/register` | No | Register a new account |
-| `POST` | `/api/auth/login` | No | Login → JWT access token + refresh cookie |
-| `POST` | `/api/auth/refresh` | No | Rotate refresh token |
-| `POST` | `/api/auth/logout` | Yes | Invalidate session |
-| `GET` | `/api/auth/verify-email` | No | Email verification via `?token=` |
-| `POST` | `/api/auth/resend-verification` | No | Resend verification email |
-| `POST` | `/api/auth/forgot-password` | No | Request password reset email |
-| `POST` | `/api/auth/reset-password` | No | Reset password with token |
-| `GET` | `/api/auth/google` | No | Start Google OAuth2 flow |
-| `GET` | `/api/auth/google/callback` | No | Google OAuth2 callback |
-| `GET` | `/api/auth/facebook` | No | Start Facebook OAuth2 flow |
-| `GET` | `/api/auth/facebook/callback` | No | Facebook OAuth2 callback |
+| Method | Endpoint                        | Auth | Description                               |
+| ------ | ------------------------------- | ---- | ----------------------------------------- |
+| `POST` | `/api/auth/register`            | No   | Register a new account                    |
+| `POST` | `/api/auth/login`               | No   | Login → JWT access token + refresh cookie |
+| `POST` | `/api/auth/refresh`             | No   | Rotate refresh token                      |
+| `POST` | `/api/auth/logout`              | Yes  | Invalidate session                        |
+| `GET`  | `/api/auth/verify-email`        | No   | Email verification via `?token=`          |
+| `POST` | `/api/auth/resend-verification` | No   | Resend verification email                 |
+| `POST` | `/api/auth/forgot-password`     | No   | Request password reset email              |
+| `POST` | `/api/auth/reset-password`      | No   | Reset password with token                 |
+| `GET`  | `/api/auth/google`              | No   | Start Google OAuth2 flow                  |
+| `GET`  | `/api/auth/google/callback`     | No   | Google OAuth2 callback                    |
+| `GET`  | `/api/auth/facebook`            | No   | Start Facebook OAuth2 flow                |
+| `GET`  | `/api/auth/facebook/callback`   | No   | Facebook OAuth2 callback                  |
 
 ## Users
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| `GET` | `/api/users/me` | Yes | Get current user profile |
-| `GET` | `/api/users/me/settings` | Yes | Get user settings (JSONB) |
-| `PATCH` | `/api/users/me/settings` | Yes | Update user settings |
-| `GET` | `/api/users/search?q=` | Yes | Search users by display name |
-| `GET` | `/api/users/lookup-phone?phone=` | Yes | Find user by phone |
-| `PATCH` | `/api/users/:id` | Yes | Update user profile |
+| Method   | Endpoint                         | Auth | Description                               |
+| -------- | -------------------------------- | ---- | ----------------------------------------- |
+| `GET`    | `/api/users/me`                  | Yes  | Get current user profile                  |
+| `DELETE` | `/api/users/me`                  | Yes  | Delete account permanently (irreversible) |
+| `GET`    | `/api/users/me/settings`         | Yes  | Get user settings (JSONB)                 |
+| `PATCH`  | `/api/users/me/settings`         | Yes  | Update user settings                      |
+| `POST`   | `/api/users/me/report`           | Yes  | Request account info export               |
+| `POST`   | `/api/users/me/report/channels`  | Yes  | Request channel activity export           |
+| `GET`    | `/api/users/blocked`             | Yes  | List blocked users                        |
+| `POST`   | `/api/users/block`               | Yes  | Block a user                              |
+| `DELETE` | `/api/users/block/:userId`       | Yes  | Unblock a user                            |
+| `GET`    | `/api/users/search?q=`           | Yes  | Search users by display name              |
+| `GET`    | `/api/users/lookup-phone?phone=` | Yes  | Find user by phone                        |
+| `PATCH`  | `/api/users/:id`                 | Yes  | Update user profile                       |
 
 ## Contacts
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| `GET` | `/api/contacts` | Yes | List all contacts |
-| `POST` | `/api/contacts` | Yes | Create/upsert contact |
-| `DELETE` | `/api/contacts/:id` | Yes | Delete contact |
+| Method   | Endpoint            | Auth | Description           |
+| -------- | ------------------- | ---- | --------------------- |
+| `GET`    | `/api/contacts`     | Yes  | List all contacts     |
+| `POST`   | `/api/contacts`     | Yes  | Create/upsert contact |
+| `DELETE` | `/api/contacts/:id` | Yes  | Delete contact        |
 
 ## Messages
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| `GET` | `/api/messages/:conversationId` | Yes | List messages (max 200) |
-| `POST` | `/api/messages` | Yes | Send message |
-| `DELETE` | `/api/messages` | Yes | Delete specific messages by IDs |
-| `DELETE` | `/api/messages/:conversationId` | Yes | Clear entire conversation |
+| Method   | Endpoint                        | Auth | Description                     |
+| -------- | ------------------------------- | ---- | ------------------------------- |
+| `GET`    | `/api/messages/:conversationId` | Yes  | List messages (max 200)         |
+| `POST`   | `/api/messages`                 | Yes  | Send message                    |
+| `DELETE` | `/api/messages`                 | Yes  | Delete specific messages by IDs |
+| `DELETE` | `/api/messages/:conversationId` | Yes  | Clear entire conversation       |
 
 ## Conversations
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| `GET` | `/api/conversations` | Yes | List all conversations with last message |
+| Method | Endpoint             | Auth | Description                              |
+| ------ | -------------------- | ---- | ---------------------------------------- |
+| `GET`  | `/api/conversations` | Yes  | List all conversations with last message |
 
 ## Upload
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| `POST` | `/api/upload` | Yes | Upload file to Cloudinary (max 25 MB) |
-| `DELETE` | `/api/upload` | Yes | Delete Cloudinary asset |
-| `GET` | `/api/upload/link-preview?url=` | Yes | Generate OG link preview |
+| Method   | Endpoint                        | Auth | Description                           |
+| -------- | ------------------------------- | ---- | ------------------------------------- |
+| `POST`   | `/api/upload`                   | Yes  | Upload file to Cloudinary (max 25 MB) |
+| `DELETE` | `/api/upload`                   | Yes  | Delete Cloudinary asset               |
+| `GET`    | `/api/upload/link-preview?url=` | Yes  | Generate OG link preview              |
 
 ## Status (Stories)
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| `GET` | `/api/status/me` | Yes | Get my status |
-| `GET` | `/api/status/feed` | Yes | Get contacts' statuses feed |
-| `POST` | `/api/status` | Yes | Add status item |
-| `PATCH` | `/api/status/:itemId/view` | Yes | Mark status as viewed |
-| `DELETE` | `/api/status/:itemId` | Yes | Delete status item |
-| `PATCH` | `/api/status/privacy` | Yes | Update status privacy |
+| Method   | Endpoint                   | Auth | Description                 |
+| -------- | -------------------------- | ---- | --------------------------- |
+| `GET`    | `/api/status/me`           | Yes  | Get my status               |
+| `GET`    | `/api/status/feed`         | Yes  | Get contacts' statuses feed |
+| `POST`   | `/api/status`              | Yes  | Add status item             |
+| `PATCH`  | `/api/status/:itemId/view` | Yes  | Mark status as viewed       |
+| `DELETE` | `/api/status/:itemId`      | Yes  | Delete status item          |
+| `PATCH`  | `/api/status/privacy`      | Yes  | Update status privacy       |
 
 ## OpenAPI
 

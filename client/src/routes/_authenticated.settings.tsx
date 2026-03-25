@@ -39,6 +39,7 @@ import { VideoVoiceSettings } from "../components/settings/VideoVoiceSettings";
 import { NotificationSettings } from "../components/settings/NotificationSettings";
 import { ChatSettings } from "../components/settings/ChatSettings";
 import { PrivacySettings } from "../components/settings/PrivacySettings";
+import { AccountSettings } from "../components/settings/AccountSettings";
 import type { User as UserType } from "../types";
 
 const LANGUAGE_OPTIONS = [
@@ -635,6 +636,7 @@ function SettingsPage() {
     if (id === "video") return <VideoVoiceSettings />;
     if (id === "notifications") return <NotificationSettings />;
     if (id === "privacy") return <PrivacySettings />;
+    if (id === "account") return <AccountSettings />;
     const item = NAV_ITEMS.find((n) => n.id === id);
     return <StubSection label={item?.label || id} />;
   }
@@ -1337,6 +1339,13 @@ function SettingsPageDesktop() {
                 Privacy
               </h1>
               <PrivacySettings />
+            </>
+          ) : desktopSection === "account" ? (
+            <>
+              <h1 className="text-[22px] font-bold text-text-main mb-6">
+                Account
+              </h1>
+              <AccountSettings />
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-20 text-text-secondary gap-3">
