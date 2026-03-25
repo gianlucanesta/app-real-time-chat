@@ -92,6 +92,7 @@
       "roundness": {
         "type": 3
       },
+      "boundElements": [{ "id": "pg-text", "type": "text" }],
       "strokeColor": "#c1c2c5",
       "seed": 5
     },
@@ -124,6 +125,7 @@
       "roundness": {
         "type": 3
       },
+      "boundElements": [{ "id": "mongo-text", "type": "text" }],
       "strokeColor": "#c1c2c5",
       "seed": 7
     },
@@ -156,6 +158,7 @@
       "roundness": {
         "type": 3
       },
+      "boundElements": [{ "id": "redis-text", "type": "text" }],
       "strokeColor": "#c1c2c5",
       "seed": 9
     },
@@ -188,6 +191,7 @@
       "roundness": {
         "type": 3
       },
+      "boundElements": [{ "id": "cloudinary-text", "type": "text" }],
       "strokeColor": "#c1c2c5",
       "seed": 11
     },
