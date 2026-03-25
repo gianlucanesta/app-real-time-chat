@@ -38,7 +38,6 @@
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "client-box",
-      "strokeColor": "#ffffff",
       "seed": 2
     },
     {
@@ -76,7 +75,6 @@
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "server-box",
-      "strokeColor": "#ffffff",
       "seed": 4
     },
     {
@@ -109,7 +107,6 @@
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "pg-box",
-      "strokeColor": "#ffffff",
       "seed": 6
     },
     {
@@ -142,7 +139,6 @@
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "mongo-box",
-      "strokeColor": "#ffffff",
       "seed": 8
     },
     {
@@ -175,7 +171,6 @@
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "redis-box",
-      "strokeColor": "#ffffff",
       "seed": 10
     },
     {
@@ -208,7 +203,6 @@
       "textAlign": "center",
       "verticalAlign": "middle",
       "containerId": "cloudinary-box",
-      "strokeColor": "#ffffff",
       "seed": 12
     },
     {

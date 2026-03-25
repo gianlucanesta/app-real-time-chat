@@ -13,7 +13,6 @@
       "text": "PostgreSQL",
       "fontSize": 24,
       "fontFamily": 1,
-      "strokeColor": "#ffffff",
       "seed": 1
     },
     {
@@ -42,7 +41,6 @@
       "text": "users",
       "fontSize": 20,
       "fontFamily": 1,
-      "strokeColor": "#ffffff",
       "seed": 3
     },
     {
@@ -55,7 +53,6 @@
       "text": "🔑 id (UUID PK)\nemail (UNIQUE)\npassword_hash\ndisplay_name\nfirst_name / last_name\nphone\nrole\navatar_url\ninitials\navatar_gradient\nemail_verified\nverification_token\nsettings (JSONB)\ncreated_at",
       "fontSize": 13,
       "fontFamily": 3,
-      "strokeColor": "#d1d1d6",
       "seed": 4
     },
     {
@@ -84,7 +81,6 @@
       "text": "contacts",
       "fontSize": 20,
       "fontFamily": 1,
-      "strokeColor": "#ffffff",
       "seed": 6
     },
     {
@@ -97,7 +93,6 @@
       "text": "🔑 id (SERIAL PK)\n🔗 owner_id → users.id\ndisplay_name\nphone\ninitials / gradient\n🔗 linked_user_id → users.id\ncreated_at\nUQ(owner_id, phone)",
       "fontSize": 13,
       "fontFamily": 3,
-      "strokeColor": "#d1d1d6",
       "seed": 7
     },
     {
@@ -126,7 +121,6 @@
       "text": "refresh_tokens",
       "fontSize": 20,
       "fontFamily": 1,
-      "strokeColor": "#ffffff",
       "seed": 9
     },
     {
@@ -139,7 +133,6 @@
       "text": "🔑 id (SERIAL PK)\n🔗 user_id → users.id\ntoken_hash\nexpires_at",
       "fontSize": 13,
       "fontFamily": 3,
-      "strokeColor": "#d1d1d6",
       "seed": 10
     },
     {
@@ -194,7 +187,6 @@
       "text": "MongoDB",
       "fontSize": 24,
       "fontFamily": 1,
-      "strokeColor": "#ffffff",
       "seed": 13
     },
     {
@@ -223,7 +215,6 @@
       "text": "Message",
       "fontSize": 20,
       "fontFamily": 1,
-      "strokeColor": "#ffffff",
       "seed": 15
     },
     {
@@ -236,7 +227,6 @@
       "text": "conversationId (indexed)\nsender (UUID)\ntext\nmediaUrl / mediaType\nmediaDuration\nviewOnce / viewedAt\nstatus (sent→delivered→read)\nreactions [{emoji, userId}]\nlinkPreview {url, title...}\n⏰ expires_at (TTL 24h)\ncreatedAt",
       "fontSize": 13,
       "fontFamily": 3,
-      "strokeColor": "#d1d1d6",
       "seed": 16
     },
     {
@@ -265,7 +255,6 @@
       "text": "Status (Stories)",
       "fontSize": 20,
       "fontFamily": 1,
-      "strokeColor": "#ffffff",
       "seed": 18
     },
     {
@@ -278,7 +267,6 @@
       "text": "userId\nitems [{mediaType, text,\n  viewedBy[], createdAt}]\nprivacy (enum)\nexceptIds / onlyShareIds\n⏰ expires_at (TTL 24h)\nupdatedAt",
       "fontSize": 13,
       "fontFamily": 3,
-      "strokeColor": "#d1d1d6",
       "seed": 19
     },
     {
@@ -320,7 +308,6 @@
       "text": "msg:{id} → TTL keys\nKeyspace expiry notifications",
       "fontSize": 13,
       "fontFamily": 3,
-      "strokeColor": "#d1d1d6",
       "seed": 22
     },
     {

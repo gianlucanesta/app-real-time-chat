@@ -14,7 +14,6 @@
       "fontSize": 24,
       "fontFamily": 1,
       "textAlign": "center",
-      "strokeColor": "#ffffff",
       "seed": 1
     },
     {
@@ -24,7 +23,6 @@
       "y": 70,
       "width": 160,
       "height": 60,
-      "strokeColor": "#ffffff",
       "backgroundColor": "#a5d8ff",
       "fillStyle": "solid",
       "strokeWidth": 2,
@@ -61,7 +59,6 @@
       "y": 70,
       "width": 160,
       "height": 60,
-      "strokeColor": "#ffffff",
       "backgroundColor": "#b2f2bb",
       "fillStyle": "solid",
       "strokeWidth": 2,
@@ -98,7 +95,6 @@
       "y": 70,
       "width": 160,
       "height": 60,
-      "strokeColor": "#ffffff",
       "backgroundColor": "#a5d8ff",
       "fillStyle": "solid",
       "strokeWidth": 2,
