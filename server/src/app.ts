@@ -2,7 +2,9 @@ import express from "express";
 import cors, { type CorsOptions } from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
+import swaggerUi from "swagger-ui-express";
 import { env } from "./config/env.js";
+import { swaggerSpec } from "./config/swagger.js";
 import { globalLimiter } from "./middleware/rate-limiter.middleware.js";
 import { errorHandler } from "./middleware/error-handler.middleware.js";
 import { healthRouter } from "./routes/health.routes.js";
@@ -51,6 +53,29 @@ export function createApp(): express.Express {
   app.use(globalLimiter);
 
   // ── Routes ─────────────────────────────────────────────────────────────────
+
+  // Swagger UI needs 'unsafe-inline' for its bundled scripts/styles — override
+  // helmet's default CSP only for this route (headers can be changed until
+  // res.end() is called, so this overwrite runs before anything is flushed).
+  app.use(
+    "/api/docs",
+    (
+      _req: express.Request,
+      res: express.Response,
+      next: express.NextFunction,
+    ) => {
+      res.setHeader(
+        "Content-Security-Policy",
+        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;",
+      );
+      next();
+    },
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerSpec, {
+      customSiteTitle: "Ephemeral Chat API Docs",
+    }),
+  );
+  app.get("/api/docs.json", (_req, res) => res.json(swaggerSpec));
   app.use("/api/health", healthRouter);
   app.use("/api/auth", authRouter);
   app.use("/api/users", userRouter);

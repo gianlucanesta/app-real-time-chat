@@ -11,8 +11,12 @@ import {
   Smile,
   Send,
   Reply,
+  Flag,
+  BellOff,
 } from "lucide-react";
 import type { ContactStatus, StatusItem } from "../../types";
+import { EmojiPicker } from "./EmojiPicker";
+import { useClickOutside } from "../../hooks/useClickOutside";
 
 /* ── Constants ───────────────────────────────────────────── */
 const STORY_DURATION = 6000; // 6s per status item
@@ -29,6 +33,9 @@ interface StatusViewerProps {
   userInitials?: string;
   onClose: () => void;
   onMarkViewed?: (itemId: string) => void;
+  onReply?: (contactId: string, text: string, statusItemId: string) => void;
+  onMuteNotifications?: (contactId: string) => void;
+  onReport?: (contactId: string) => void;
 }
 
 export function StatusViewer({
@@ -40,15 +47,24 @@ export function StatusViewer({
   userInitials,
   onClose,
   onMarkViewed,
+  onReply,
+  onMuteNotifications,
+  onReport,
 }: StatusViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [progress, setProgress] = useState(0);
   const [replyText, setReplyText] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const replyInputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef(Date.now());
   const elapsedRef = useRef(0);
+
+  useClickOutside(menuRef, () => setShowMenu(false));
 
   const items = contactStatus?.items ?? [];
   const totalItems = items.length;
@@ -127,6 +143,22 @@ export function StatusViewer({
   // Pause on hold
   const handlePauseToggle = useCallback(() => {
     setIsPaused((p) => !p);
+  }, []);
+
+  // Send reply
+  const handleSendReply = useCallback(() => {
+    const text = replyText.trim();
+    if (!text || !currentItem) return;
+    const contactId = contactStatus?.contactId ?? "";
+    onReply?.(contactId, text, currentItem.id);
+    setReplyText("");
+  }, [replyText, currentItem, contactStatus, onReply]);
+
+  // Emoji selection
+  const handleEmojiSelect = useCallback((emoji: string) => {
+    setReplyText((prev) => prev + emoji);
+    setShowEmojiPicker(false);
+    replyInputRef.current?.focus();
   }, []);
 
   // Key navigation
@@ -258,9 +290,43 @@ export function StatusViewer({
                 <Volume2 className="w-4 h-4" />
               )}
             </button>
-            <button className="w-8 h-8 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-colors">
-              <MoreVertical className="w-4 h-4" />
-            </button>
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => {
+                  setShowMenu((v) => !v);
+                  setIsPaused(true);
+                }}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-colors"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+              {showMenu && (
+                <div className="absolute right-0 top-full mt-1 w-52 bg-panel border border-border rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      const id = contactStatus?.contactId ?? "";
+                      onReport?.(id);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 text-[14px] text-text-main hover:bg-input/50 transition-colors"
+                  >
+                    <Flag className="w-4 h-4 text-text-secondary" />
+                    Report
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      const id = contactStatus?.contactId ?? "";
+                      onMuteNotifications?.(id);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 text-[14px] text-text-main hover:bg-input/50 transition-colors"
+                  >
+                    <BellOff className="w-4 h-4 text-text-secondary" />
+                    Mute notifications
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -311,26 +377,57 @@ export function StatusViewer({
 
         {/* Reply bar (only for other's statuses) */}
         {!isMyStatus && (
-          <div className="flex items-center gap-2 px-4 py-3 z-10">
-            <button className="w-9 h-9 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-colors shrink-0">
+          <div className="relative flex items-center gap-2 px-4 py-3 z-10">
+            {/* Emoji picker */}
+            {showEmojiPicker && (
+              <div className="absolute bottom-full left-2 mb-2">
+                <EmojiPicker
+                  onSelect={handleEmojiSelect}
+                  onClose={() => setShowEmojiPicker(false)}
+                  position="top"
+                  align="left"
+                />
+              </div>
+            )}
+            <button
+              onClick={() => {
+                setShowEmojiPicker((v) => !v);
+                setIsPaused(true);
+              }}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-colors shrink-0"
+            >
               <Smile className="w-5 h-5" />
             </button>
-            <button className="w-9 h-9 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-colors shrink-0">
+            <button
+              onClick={() => replyInputRef.current?.focus()}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-colors shrink-0"
+            >
               <Reply className="w-5 h-5" />
             </button>
             <div className="flex-1 flex items-center bg-white/10 rounded-full h-10 px-4 border border-white/10">
               <input
+                ref={replyInputRef}
                 type="text"
                 placeholder="Write a reply..."
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSendReply();
+                }}
                 className="flex-1 bg-transparent border-none outline-none text-[13.5px] text-white placeholder:text-white/40"
                 onFocus={() => setIsPaused(true)}
-                onBlur={() => setIsPaused(false)}
+                onBlur={() => {
+                  // small delay so click on send button registers before unpausing
+                  setTimeout(() => {
+                    if (!replyInputRef.current?.matches(":focus"))
+                      setIsPaused(false);
+                  }, 200);
+                }}
               />
             </div>
             <button
-              className="w-9 h-9 rounded-full flex items-center justify-center bg-accent text-white hover:bg-accent-hover transition-colors shrink-0"
+              onClick={handleSendReply}
+              className="w-9 h-9 rounded-full flex items-center justify-center bg-accent text-white hover:bg-accent-hover transition-colors shrink-0 disabled:opacity-40"
               disabled={!replyText.trim()}
             >
               <Send className="w-4 h-4" />
