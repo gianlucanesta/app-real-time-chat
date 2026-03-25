@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const BG = '#1a1b26';
 
@@ -13,36 +13,32 @@ interface ExcalidrawDiagramProps {
 /**
  * Renders an Excalidraw diagram as a static SVG using `exportToSvg`.
  *
- * Previous versions used the interactive `<Excalidraw>` canvas component, but
- * its internal state lifecycle caused the canvas to blank out after mount in
- * production builds. Static SVG export eliminates every canvas/WebGL issue
- * while keeping full visual fidelity (dark theme, all element types, arrows,
- * text, embedded images).
+ * The generated SVG string is stored in React state and rendered via
+ * `dangerouslySetInnerHTML` so React owns the DOM tree. Previous versions
+ * inserted the SVG imperatively (`replaceChildren`) and then triggered a
+ * re-render with `setStatus('ready')` — React's reconciliation would then
+ * wipe the imperatively-added node because it didn't exist in the virtual DOM,
+ * causing the diagram to blank out after ~1-2 seconds.
  */
 export function ExcalidrawDiagram({
   name,
   height = 500,
   caption,
 }: ExcalidrawDiagramProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
-    'loading',
-  );
+  const [svgHtml, setSvgHtml] = useState<string | null>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
       try {
-        // 1. Fetch the .excalidraw scene JSON
         const res = await fetch(`/diagrams/${name}.excalidraw`);
         if (!res.ok) throw new Error(`Diagram ${name} not found`);
         const scene = await res.json();
 
-        // 2. Dynamically import the export utility (keeps SSR-safe)
         const { exportToSvg } = await import('@excalidraw/excalidraw');
 
-        // 3. Convert elements → pure SVG (no canvas involved)
         const svg = await exportToSvg({
           elements: scene.elements ?? [],
           appState: {
@@ -54,23 +50,18 @@ export function ExcalidrawDiagram({
           files: scene.files ?? {},
         });
 
-        if (cancelled || !containerRef.current) return;
+        if (cancelled) return;
 
-        // 4. Make the SVG responsive inside its container
+        // Make the SVG responsive
         svg.removeAttribute('width');
         svg.removeAttribute('height');
         svg.setAttribute('width', '100%');
         svg.setAttribute('height', '100%');
-        svg.style.width = '100%';
-        svg.style.height = '100%';
-        svg.style.maxHeight = `${height}px`;
-        svg.style.objectFit = 'contain';
 
-        // 5. Insert into the DOM
-        containerRef.current.replaceChildren(svg);
-        setStatus('ready');
+        // Store as string so React manages the DOM — no imperative conflict
+        setSvgHtml(svg.outerHTML);
       } catch {
-        if (!cancelled) setStatus('error');
+        if (!cancelled) setError(true);
       }
     })();
 
@@ -79,7 +70,7 @@ export function ExcalidrawDiagram({
     };
   }, [name, height]);
 
-  if (status === 'error') {
+  if (error) {
     return (
       <div className="rounded-lg border border-fd-border bg-fd-muted/50 p-8 text-center text-fd-muted-foreground">
         Diagram not found: <code>{name}</code>
@@ -90,13 +81,23 @@ export function ExcalidrawDiagram({
   return (
     <figure className="my-6 not-prose">
       <div
-        ref={containerRef}
-        className="rounded-lg border border-fd-border overflow-hidden flex items-center justify-center"
+        className="rounded-lg border border-fd-border overflow-hidden"
         style={{ height, background: BG }}
       >
-        {status === 'loading' && (
+        {svgHtml ? (
           <div
-            className="animate-pulse rounded-lg"
+            dangerouslySetInnerHTML={{ __html: svgHtml }}
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          />
+        ) : (
+          <div
+            className="animate-pulse"
             style={{ width: '100%', height: '100%', background: BG }}
           />
         )}
