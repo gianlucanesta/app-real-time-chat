@@ -71,6 +71,12 @@ export function CallScreen({
     startMouse: { x: 0, y: 0 },
     startOffset: { x: 0, y: 0 },
   });
+  const didDragRef = useRef(false);
+  const [isSwapped, setIsSwapped] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const controlsTimerRef = useRef<number | undefined>(undefined);
+  const clickTimerRef = useRef<number | undefined>(undefined);
+  const remoteVideoPipRef = useRef<HTMLVideoElement>(null);
 
   const isOpen =
     status === "calling" ||
@@ -140,6 +146,53 @@ export function CallScreen({
     }
   }, [localStream, status]);
 
+  // ── Controls auto-hide ────────────────────────────────────────────
+  const showControls = useCallback(() => {
+    setControlsVisible(true);
+    window.clearTimeout(controlsTimerRef.current);
+    controlsTimerRef.current = window.setTimeout(() => {
+      setControlsVisible(false);
+    }, 3000);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      showControls();
+    } else {
+      window.clearTimeout(controlsTimerRef.current);
+      window.clearTimeout(clickTimerRef.current);
+      setControlsVisible(true);
+      setIsSwapped(false);
+    }
+    return () => {
+      window.clearTimeout(controlsTimerRef.current);
+      window.clearTimeout(clickTimerRef.current);
+    };
+  }, [isOpen, showControls]);
+
+  // ── Remote pip video stream & audio routing ─────────────────────────
+  useEffect(() => {
+    const el = remoteVideoPipRef.current;
+    if (!el) return;
+    if (isSwapped && remoteStream) {
+      el.srcObject = remoteStream;
+      el.play().catch(() => {});
+      const speakerId = localStorage.getItem("ephemeral-speaker-id");
+      if (speakerId && "setSinkId" in el) {
+        (el as any).setSinkId(speakerId).catch(() => {});
+      }
+    } else {
+      el.srcObject = null;
+    }
+  }, [isSwapped, remoteStream]);
+
+  // Mute main remote video when it is in the background (swap active)
+  useEffect(() => {
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.muted = isSwapped;
+    }
+  }, [isSwapped]);
+
   /** Attach stream to a <video> element and start playback. */
   const attachStream = useCallback(
     (el: HTMLVideoElement, stream: MediaStream | null) => {
@@ -202,6 +255,7 @@ export function CallScreen({
   // ── PiP drag handlers ─────────────────────────────────────────────────
   const handlePipPointerDown = useCallback(
     (e: React.PointerEvent) => {
+      didDragRef.current = false;
       dragRef.current = {
         active: true,
         startMouse: { x: e.clientX, y: e.clientY },
@@ -215,13 +269,12 @@ export function CallScreen({
 
   const handlePipPointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragRef.current.active) return;
+    const dx = e.clientX - dragRef.current.startMouse.x;
+    const dy = e.clientY - dragRef.current.startMouse.y;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) didDragRef.current = true;
     setPipOffset({
-      x:
-        dragRef.current.startOffset.x +
-        (e.clientX - dragRef.current.startMouse.x),
-      y:
-        dragRef.current.startOffset.y +
-        (e.clientY - dragRef.current.startMouse.y),
+      x: dragRef.current.startOffset.x + dx,
+      y: dragRef.current.startOffset.y + dy,
     });
   }, []);
 
@@ -230,8 +283,20 @@ export function CallScreen({
   }, []);
 
   const handlePipDoubleClick = useCallback(() => {
+    window.clearTimeout(clickTimerRef.current);
     setPipExpanded((prev) => !prev);
   }, []);
+
+  const handlePipClick = useCallback(() => {
+    if (didDragRef.current) return;
+    window.clearTimeout(clickTimerRef.current);
+    clickTimerRef.current = window.setTimeout(() => {
+      if (callWithVideo && localStream) {
+        setIsSwapped((prev) => !prev);
+        setPipOffset({ x: 0, y: 0 });
+      }
+    }, 220);
+  }, [callWithVideo, localStream]);
 
   if (!isOpen) return null;
 
@@ -242,23 +307,66 @@ export function CallScreen({
   const showLocalPip = localStream && callWithVideo;
 
   return (
-    <div className="call-screen open" role="dialog" aria-label="Active call">
+    <div
+      className="call-screen open"
+      role="dialog"
+      aria-label="Active call"
+      onPointerMove={showControls}
+    >
       {/* Video / Avatar area */}
       <div className="call-screen-content">
-        {/* Remote video — always in DOM so remote audio plays even on voice calls */}
+        {/* Remote video — always in DOM for audio; visually hidden when swapped */}
         <video
           ref={remoteVideoCallback}
           autoPlay
           playsInline
           className="call-remote-video"
           style={{
-            opacity: showRemoteVideo ? 1 : 0,
-            pointerEvents: showRemoteVideo ? "auto" : "none",
+            opacity: !isSwapped && showRemoteVideo ? 1 : 0,
+            pointerEvents: !isSwapped && showRemoteVideo ? "auto" : "none",
           }}
         />
 
+        {/* Local video in full-screen main area when swapped */}
+        {isSwapped && showLocalPip && (
+          <video
+            ref={localVideoCallback}
+            autoPlay
+            playsInline
+            muted
+            className="call-remote-video"
+            style={{ opacity: isCameraOff ? 0 : 1, transform: "scaleX(-1)" }}
+          />
+        )}
+        {isSwapped && showLocalPip && isCameraOff && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {localAvatarUrl ? (
+              <img
+                src={localAvatarUrl}
+                alt="You"
+                className="call-avatar rounded-full object-cover"
+              />
+            ) : (
+              <div
+                className="call-avatar"
+                style={{ background: localGradient }}
+              >
+                {localInitials}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Avatar / status fallback (voice call, pre-connect, or remote camera off) */}
-        {!showRemoteVideo && (
+        {!isSwapped && !showRemoteVideo && (
           <>
             {contactAvatarUrl ? (
               <img
@@ -318,7 +426,7 @@ export function CallScreen({
           </>
         )}
 
-        {/* Local video PiP — draggable & double-click to expand */}
+        {/* PiP — shows local (default) or remote (swapped); draggable & click-to-swap */}
         {showLocalPip && (
           <div
             className={`call-local-pip${pipExpanded ? " call-local-pip--expanded" : ""}`}
@@ -330,8 +438,58 @@ export function CallScreen({
             onPointerMove={handlePipPointerMove}
             onPointerUp={handlePipPointerUp}
             onDoubleClick={handlePipDoubleClick}
+            onClick={handlePipClick}
           >
-            {isCameraOff ? (
+            {isSwapped ? (
+              showRemoteVideo ? (
+                <video
+                  ref={remoteVideoPipRef}
+                  autoPlay
+                  playsInline
+                  className="call-local-video"
+                />
+              ) : (
+                <div
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "inherit",
+                    overflow: "hidden",
+                  }}
+                >
+                  {contactAvatarUrl ? (
+                    <img
+                      src={contactAvatarUrl}
+                      alt={contactName}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        background: contactGradient,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#fff",
+                        fontSize: pipExpanded ? "2rem" : "1rem",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {contactInitials}
+                    </div>
+                  )}
+                </div>
+              )
+            ) : isCameraOff ? (
               <div
                 className="call-local-avatar"
                 style={{
@@ -390,7 +548,14 @@ export function CallScreen({
       </div>
 
       {/* Bottom action bar */}
-      <div className="call-screen-bar">
+      <div
+        className="call-screen-bar"
+        style={{
+          opacity: controlsVisible ? 1 : 0,
+          pointerEvents: controlsVisible ? "auto" : "none",
+          transition: "opacity 0.4s ease",
+        }}
+      >
         {/* Camera (only for video calls) */}
         {callWithVideo && (
           <button
