@@ -488,7 +488,7 @@ export function ChatMessage({
 
               {/* Status reply — media-card style */}
               {statusReply && (
-                <div className="flex flex-col -mx-4 -mt-3">
+                <div className="flex flex-col -mx-4 -mt-3 min-w-[220px]">
                   {/* Status card */}
                   <div className="relative">
                     <p
@@ -498,7 +498,7 @@ export function ChatMessage({
                     </p>
                     {statusReply.mediaType === "text" ? (
                       <div
-                        className="w-full aspect-[4/3] flex items-center justify-center text-white text-[16px] font-medium text-center px-6"
+                        className="w-full aspect-[4/3] min-h-[150px] flex items-center justify-center text-white text-[16px] font-medium text-center px-6"
                         style={{
                           background:
                             statusReply.textBgGradient ||
@@ -508,7 +508,7 @@ export function ChatMessage({
                         <span className="line-clamp-4">{statusReply.text}</span>
                       </div>
                     ) : statusReply.mediaUrl ? (
-                      <div className="w-full aspect-[4/3] overflow-hidden bg-black/10">
+                      <div className="w-full aspect-[4/3] min-h-[150px] overflow-hidden bg-black/10">
                         {statusReply.mediaType === "image" ? (
                           <img
                             src={statusReply.mediaUrl}
