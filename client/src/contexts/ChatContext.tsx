@@ -197,7 +197,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     string[]
   >([]);
   const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
-  const [feedStatusUserIds, setFeedStatusUserIds] = useState<Set<string>>(new Set());
+  const [feedStatusUserIds, setFeedStatusUserIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [hiddenMessageIds, setHiddenMessageIds] = useState<Set<string>>(() => {
     try {
       const stored = localStorage.getItem("hiddenMessageIds");
@@ -1012,7 +1014,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   // ── Send a status reply message (from the Status page) ──────────────────
   const sendStatusReplyMessage = useCallback(
     (
-      recipientId: string,
+      _recipientId: string,
       conversationId: string,
       text: string,
       statusReply: {
@@ -1033,7 +1035,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         senderId: user.id ?? "me",
         senderName: user.displayName ?? "Me",
         text,
-        timestamp: now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        timestamp: now.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
         rawTimestamp: now.toISOString(),
         status: "sending",
         isMe: true,
@@ -1061,10 +1066,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         ),
       );
 
-      socket.emit(
-        "join:conversation",
-        conversationId,
-      );
+      socket.emit("join:conversation", conversationId);
 
       socket.emit(
         "message:send",
@@ -1088,7 +1090,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             setConversations((prev) =>
               prev.map((c) =>
                 c.id === conversationId && c.lastMessageId === tempId
-                  ? { ...c, lastMessageId: res.messageId!, lastMessageStatus: "sent" }
+                  ? {
+                      ...c,
+                      lastMessageId: res.messageId!,
+                      lastMessageStatus: "sent",
+                    }
                   : c,
               ),
             );

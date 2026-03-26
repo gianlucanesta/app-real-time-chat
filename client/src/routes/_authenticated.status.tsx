@@ -178,7 +178,7 @@ function StatusPage() {
           id: convId,
           type: "direct",
           name: viewingStatus.contactName,
-          avatar: viewingStatus.contactAvatar,
+          avatar: viewingStatus.contactAvatar ?? undefined,
           gradient:
             viewingStatus.contactGradient ||
             "linear-gradient(135deg, #6366f1, #a855f7)",
@@ -190,7 +190,7 @@ function StatusPage() {
         addOrUpdateConversation(conv);
       }
 
-      sendStatusReplyMessage(contactId, conv.id, text, {
+      sendStatusReplyMessage(contactId, conv!.id, text, {
         mediaType: item.mediaType,
         text: item.text || null,
         textBgGradient: item.textBgGradient || null,
@@ -200,7 +200,7 @@ function StatusPage() {
       });
 
       // Navigate to chat and open this conversation
-      setActiveConversation(conv);
+      setActiveConversation(conv!);
       void navigate({ to: "/" });
 
       // Close the viewer

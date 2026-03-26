@@ -392,8 +392,8 @@ export function Sidebar({
                     )}
                   </div>
                 );
-              })()
-              }
+              })()}
+            </div>
 
             <div className="flex-1 min-w-0 py-0.5">
               <div className="flex items-center justify-between gap-2 mb-0.5">
