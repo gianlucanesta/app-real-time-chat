@@ -77,6 +77,13 @@ select.phone-select option {
   color: var(--color-text-main);
 }
 
+/* ── Auth page scrollable wrapper ────────────────────────── */
+/* Firefox cross-browser scrollbar (WebKit handled globally in base.css) */
+.auth-page-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
 /* ── Auth page bottom glow ───────────────────────────────── */
 .auth-page-glow::after {
   content: "";

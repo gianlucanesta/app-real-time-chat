@@ -526,7 +526,12 @@ export async function googleCallback(
       `${env.CLIENT_URL}/oauth-callback?accessToken=${encodeURIComponent(accessToken)}`,
     );
   } catch (err) {
-    console.error("[google] callback error:", (err as Error).message);
+    const pgCode = (err as any).code;
+    console.error(
+      "[google] callback error:",
+      (err as Error).message,
+      pgCode ? `(pg code: ${pgCode})` : "",
+    );
     res.redirect(failRedirect);
   }
 }

@@ -257,9 +257,13 @@ export async function findByGoogleId(googleId: string): Promise<IUser | null> {
 
 /**
  * Find-or-create a Google OAuth user.
- * - If the google_id already exists → return existing user.
+ * - If the google_id already exists → return existing user (regardless of email).
  * - If the email exists but google_id is NULL → link and return.
  * - Otherwise → create new user (email pre-verified, no password).
+ *
+ * NOTE: We look up by google_id FIRST to avoid a UNIQUE constraint violation
+ * on the google_id column when the INSERT...ON CONFLICT(email) path runs but
+ * another row already owns the same google_id.
  */
 export async function upsertGoogleUser({
   googleId,
@@ -276,6 +280,10 @@ export async function upsertGoogleUser({
   lastName?: string;
   avatarUrl?: string;
 }): Promise<IUser> {
+  // Step 1: already linked → return immediately, no INSERT needed.
+  const existing = await findByGoogleId(googleId);
+  if (existing) return existing;
+
   const initials = displayName
     .trim()
     .split(/\s+/)
@@ -309,11 +317,26 @@ export async function upsertGoogleUser({
 
 // ── Facebook OAuth ──────────────────────────────────────────────────────────
 
+/** Find a user by their Facebook user ID. */
+export async function findByFacebookId(
+  facebookId: string,
+): Promise<IUser | null> {
+  const { rows } = await pool.query<IUser>(
+    `SELECT ${SAFE_COLUMNS} FROM users WHERE facebook_id = $1`,
+    [facebookId],
+  );
+  return rows[0] ?? null;
+}
+
 /**
  * Find-or-create a Facebook OAuth user.
- * - If the facebook_id already exists → return existing user.
+ * - If the facebook_id already exists → return existing user (regardless of email).
  * - If the email exists but facebook_id is NULL → link and return.
  * - Otherwise → create new user (email pre-verified, no password).
+ *
+ * NOTE: We look up by facebook_id FIRST to avoid a UNIQUE constraint violation
+ * on the facebook_id column when the INSERT...ON CONFLICT(email) path runs but
+ * another row already owns the same facebook_id.
  */
 export async function upsertFacebookUser({
   facebookId,
@@ -330,6 +353,10 @@ export async function upsertFacebookUser({
   lastName?: string;
   avatarUrl?: string;
 }): Promise<IUser> {
+  // Step 1: already linked → return immediately, no INSERT needed.
+  const existing = await findByFacebookId(facebookId);
+  if (existing) return existing;
+
   const initials = displayName
     .trim()
     .split(/\s+/)

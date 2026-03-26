@@ -101,9 +101,10 @@ function SignupPage() {
   };
 
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-5 bg-bg text-text-main font-sans overflow-hidden auth-page-glow relative">
+    <div className="absolute inset-0 overflow-y-auto auth-page-glow auth-page-scroll">
+      <div className="min-h-full flex flex-col items-center justify-center p-4 sm:p-5 pb-14 bg-bg text-text-main font-sans">
       {signupSuccess ? (
-        <div className="w-full max-w-[440px] bg-card rounded-[16px] px-6 sm:px-8 py-10 relative z-10 flex flex-col items-center text-center mb-8">
+        <div className="w-full max-w-[440px] bg-card rounded-[16px] px-6 sm:px-8 py-10 relative z-10 flex flex-col items-center text-center">
           <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mb-6">
             <Mail className="w-8 h-8 text-accent" />
           </div>
@@ -139,7 +140,7 @@ function SignupPage() {
           </Link>
         </div>
       ) : (
-        <div className="w-full max-w-[440px] bg-card rounded-[16px] px-6 sm:px-8 py-8 sm:py-10 relative z-10 flex flex-col mb-8">
+        <div className="w-full max-w-[440px] bg-card rounded-[16px] px-6 sm:px-8 py-8 sm:py-10 relative z-10 flex flex-col">
           {/* Header */}
           <div className="text-center mb-8">
             <EphemeralBrand />
@@ -505,6 +506,7 @@ function SignupPage() {
         </div>
       )}
 
+      </div>
       {/* Page Footer */}
       <footer className="flex justify-center gap-4 sm:gap-5 text-[12px] text-text-secondary absolute bottom-4 sm:bottom-6 z-10 w-full">
         <a href="#" className="hover:text-text-main transition-colors p-2 -m-2">
