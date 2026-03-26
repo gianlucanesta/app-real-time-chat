@@ -132,6 +132,7 @@ interface ChatContextType {
   clearMessages: () => void;
   deleteConversation: () => void;
   markAllAsRead: (conversationIds?: string[]) => Promise<void>;
+  markAsUnread: (conversationIds: string[]) => Promise<void>;
   clearConversationById: (convId: string) => void;
   pendingRemoteDeletions: string[];
   confirmRemoteDeletion: (ids: string[]) => void;
@@ -1232,6 +1233,41 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     [socket],
   );
 
+  const markAsUnread = useCallback(async (conversationIds: string[]) => {
+    if (conversationIds.length === 0) return;
+
+    // Optimistically set unreadCount to 1 for each selected conversation
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (!conversationIds.includes(c.id)) return c;
+        return { ...c, unreadCount: Math.max(c.unreadCount, 1) };
+      }),
+    );
+
+    // If active conversation is included, update its last message status locally
+    const activeId = activeConvRef.current?.id;
+    if (activeId && conversationIds.includes(activeId)) {
+      setActiveMessages((prev) => {
+        const lastIncoming = [...prev]
+          .reverse()
+          .find((m) => !m.isMe && m.status === "read");
+        if (!lastIncoming) return prev;
+        return prev.map((m) =>
+          m.id === lastIncoming.id ? { ...m, status: "delivered" as const } : m,
+        );
+      });
+    }
+
+    try {
+      await apiFetch("/messages/mark-unread", {
+        method: "PATCH",
+        body: JSON.stringify({ conversationIds }),
+      });
+    } catch (err) {
+      console.warn("[chat] markAsUnread failed:", (err as Error).message);
+    }
+  }, []);
+
   const clearConversationById = useCallback((convId: string) => {
     if (activeConvRef.current?.id === convId) {
       setActiveMessages([]);
@@ -1606,6 +1642,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         clearMessages,
         deleteConversation,
         markAllAsRead,
+        markAsUnread,
         clearConversationById,
         pendingRemoteDeletions,
         confirmRemoteDeletion,

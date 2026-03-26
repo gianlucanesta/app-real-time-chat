@@ -153,8 +153,119 @@ export async function markAllAsRead(
       filter.conversationId = { $regex: userId };
     }
 
-    const result = await Message.updateMany(filter, { $set: { status: "read" } });
+    // Fetch unread message IDs grouped by conversation before updating
+    const unreadMessages = await Message.find(filter, {
+      _id: 1,
+      conversationId: 1,
+    }).lean();
+
+    const result = await Message.updateMany(filter, {
+      $set: { status: "read" },
+    });
+
+    // Broadcast read receipts via WebSocket so senders see blue double-ticks
+    const io = req.app.get("io");
+    if (io && unreadMessages.length > 0) {
+      const byConversation = new Map<string, string[]>();
+      for (const m of unreadMessages) {
+        const cid = m.conversationId as string;
+        const arr = byConversation.get(cid);
+        if (arr) arr.push(String(m._id));
+        else byConversation.set(cid, [String(m._id)]);
+      }
+
+      for (const [convId, messageIds] of byConversation) {
+        const payload = { messageIds, status: "read" as const };
+        const parts = convId.split("___");
+        const otherId =
+          parts.length === 2 ? parts.find((id: string) => id !== userId) : null;
+
+        if (otherId) {
+          io.to("conv:" + convId)
+            .to("user:" + otherId)
+            .emit("message:status", payload);
+        } else {
+          io.to("conv:" + convId).emit("message:status", payload);
+        }
+      }
+    }
+
     res.status(200).json({ updated: result.modifiedCount });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** PATCH /api/messages/mark-unread — revert last message in selected conversations to "delivered" */
+export async function markAsUnread(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const userId = String(req.user!.sub);
+    const { conversationIds } = req.body as { conversationIds: string[] };
+
+    if (!Array.isArray(conversationIds) || conversationIds.length === 0) {
+      res.status(400).json({ error: "conversationIds required" });
+      return;
+    }
+
+    const validIds = conversationIds.filter((id) =>
+      id.split("___").includes(userId),
+    );
+    if (validIds.length === 0) {
+      res.status(200).json({ updated: 0 });
+      return;
+    }
+
+    // For each conversation, find the last message sent TO us that is "read"
+    // and revert it to "delivered"
+    const io = req.app.get("io");
+    let totalUpdated = 0;
+
+    for (const convId of validIds) {
+      const lastMsg = await Message.findOne(
+        {
+          conversationId: convId,
+          sender: { $ne: userId },
+          status: "read",
+          expires_at: { $gt: new Date() },
+        },
+        { _id: 1, sender: 1 },
+      )
+        .sort({ createdAt: -1 })
+        .lean();
+
+      if (!lastMsg) continue;
+
+      await Message.updateOne(
+        { _id: lastMsg._id },
+        { $set: { status: "delivered" } },
+      );
+      totalUpdated++;
+
+      // Notify the sender via WebSocket so the blue ticks revert
+      if (io) {
+        const payload = {
+          messageIds: [String(lastMsg._id)],
+          status: "delivered" as const,
+        };
+        const parts = convId.split("___");
+        const otherId =
+          parts.length === 2 ? parts.find((id: string) => id !== userId) : null;
+
+        if (otherId) {
+          io.to("conv:" + convId)
+            .to("user:" + otherId)
+            .emit("message:status", payload);
+        } else {
+          io.to("conv:" + convId).emit("message:status", payload);
+        }
+      }
+    }
+
+    res.status(200).json({ updated: totalUpdated });
   } catch (err) {
     next(err);
   }

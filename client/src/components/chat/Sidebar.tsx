@@ -160,6 +160,7 @@ export function Sidebar({
     addOrUpdateConversation,
     feedStatusUserIds,
     markAllAsRead,
+    markAsUnread,
     clearConversationById,
   } = useChat();
 
@@ -169,9 +170,9 @@ export function Sidebar({
     setIsSelectMenuOpen(false);
   };
 
-  const handleMarkSelectedAsRead = () => {
+  const handleMarkSelectedAsUnread = () => {
     if (selectedIds.size > 0) {
-      void markAllAsRead(Array.from(selectedIds));
+      void markAsUnread(Array.from(selectedIds));
     }
     exitSelectMode();
   };
@@ -264,11 +265,11 @@ export function Sidebar({
             {isSelectMenuOpen && (
               <div className="absolute right-0 top-full mt-2 w-60 bg-card border border-border/80 rounded-xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2">
                 <button
-                  onClick={handleMarkSelectedAsRead}
+                  onClick={handleMarkSelectedAsUnread}
                   disabled={selectedIds.size === 0}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  <CheckCheck className="w-4 h-4 text-accent" /> Mark as read
+                  <CheckCheck className="w-4 h-4 text-accent" /> Mark as unread
                 </button>
                 <button
                   disabled

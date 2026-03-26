@@ -70,6 +70,7 @@ messageRouter.post("/", authMiddleware, ctrl.create);
  */
 messageRouter.delete("/", authMiddleware, ctrl.deleteMessages);
 messageRouter.patch("/mark-all-read", authMiddleware, ctrl.markAllAsRead);
+messageRouter.patch("/mark-unread", authMiddleware, ctrl.markAsUnread);
 
 /**
  * @openapi
@@ -89,4 +90,8 @@ messageRouter.patch("/mark-all-read", authMiddleware, ctrl.markAllAsRead);
  *       200:
  *         description: Conversation cleared
  */
-messageRouter.delete("/:conversationId", authMiddleware, ctrl.clearConversation);
+messageRouter.delete(
+  "/:conversationId",
+  authMiddleware,
+  ctrl.clearConversation,
+);
