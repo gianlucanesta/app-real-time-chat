@@ -222,6 +222,41 @@ function StatusPage() {
     setIsCreatorOpen(true);
   }, []);
 
+  // Open the viewer for my own statuses
+  const handleViewMyStatus = useCallback(() => {
+    if (!myStatus.items.length || !user) return;
+    const cs: ContactStatus = {
+      contactId: user.id,
+      contactName: user.displayName || "You",
+      contactAvatar: user.avatarUrl || null,
+      contactGradient:
+        user.avatarGradient || "linear-gradient(135deg, #6366f1, #a855f7)",
+      contactInitials: userInitials,
+      items: myStatus.items,
+      lastUpdated: myStatus.lastUpdated || new Date().toISOString(),
+      allViewed: false,
+    };
+    setViewingStatus(cs);
+    setViewingMyStatus(true);
+  }, [myStatus, user, userInitials]);
+
+  // Mark a status item as viewed and update allViewed on the feed entry
+  const handleMarkViewed = useCallback((itemId: string) => {
+    setFeedStatuses((prev) =>
+      prev.map((cs) => {
+        if (!cs.items.some((i) => i.id === itemId)) return cs;
+        const updatedItems = cs.items.map((i) =>
+          i.id === itemId ? { ...i, viewed: true } : i,
+        );
+        return {
+          ...cs,
+          items: updatedItems,
+          allViewed: updatedItems.every((i) => i.viewed),
+        };
+      }),
+    );
+  }, []);
+
   const handlePublishStatus = useCallback(
     async (status: {
       mediaType: "text" | "image" | "video";
@@ -306,6 +341,7 @@ function StatusPage() {
         userInitials={userInitials}
         onOpenNewStatusPhoto={() => handleOpenCreator("media")}
         onOpenNewStatusText={() => handleOpenCreator("text")}
+        onViewMyStatus={handleViewMyStatus}
         onViewContactStatus={handleViewContactStatus}
         onOpenPrivacy={() => setIsPrivacyOpen(true)}
       />
@@ -387,7 +423,8 @@ function StatusPage() {
           userGradient={user?.avatarGradient}
           userInitials={userInitials}
           onClose={handleCloseViewer}
-          onReply={handleStatusReply}
+          onMarkViewed={handleMarkViewed}
+          onReply={viewingMyStatus ? undefined : handleStatusReply}
         />
       )}
     </div>

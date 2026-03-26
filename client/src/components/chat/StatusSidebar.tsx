@@ -35,6 +35,7 @@ interface StatusSidebarProps {
   userInitials: string;
   onOpenNewStatusPhoto: () => void;
   onOpenNewStatusText: () => void;
+  onViewMyStatus?: () => void;
   onViewContactStatus: (status: ContactStatus) => void;
   onOpenPrivacy: () => void;
 }
@@ -48,6 +49,7 @@ export function StatusSidebar({
   userInitials,
   onOpenNewStatusPhoto,
   onOpenNewStatusText,
+  onViewMyStatus,
   onViewContactStatus,
   onOpenPrivacy,
 }: StatusSidebarProps) {
@@ -138,45 +140,81 @@ export function StatusSidebar({
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-toggle-off">
         {/* My Status */}
         <div className="relative" ref={avatarMenuRef}>
-          <button
-            className="flex items-center gap-3 px-4 py-3.5 w-full hover:bg-input/50 transition-colors text-left"
-            onClick={() => setIsAvatarMenuOpen(!isAvatarMenuOpen)}
-          >
-            <div className="relative inline-block shrink-0">
-              {userAvatar ? (
-                <img
-                  src={userAvatar}
-                  alt="My status"
-                  className={`w-[46px] h-[46px] rounded-full object-cover ${hasMyStatus ? "ring-2 ring-accent ring-offset-2 ring-offset-card" : ""}`}
-                />
-              ) : (
-                <div
-                  className={`w-[46px] h-[46px] rounded-full flex items-center justify-center text-white text-sm font-semibold ${hasMyStatus ? "ring-2 ring-accent ring-offset-2 ring-offset-card" : ""}`}
-                  style={{
-                    background:
-                      userGradient ||
-                      "linear-gradient(135deg, #6366f1, #a855f7)",
-                  }}
-                >
-                  {userInitials}
-                </div>
-              )}
-              {/* Green plus badge */}
-              <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-accent flex items-center justify-center border-2 border-card">
-                <Plus className="w-3 h-3 text-white" strokeWidth={3} />
+          {/* When already has status: clicking avatar opens the viewer, no dropdown */}
+          {hasMyStatus ? (
+            <button
+              className="flex items-center gap-3 px-4 py-3.5 w-full hover:bg-input/50 transition-colors text-left"
+              onClick={() => onViewMyStatus?.()}
+            >
+              <div className="relative inline-block shrink-0">
+                {userAvatar ? (
+                  <img
+                    src={userAvatar}
+                    alt="My status"
+                    className="w-[46px] h-[46px] rounded-full object-cover ring-2 ring-accent ring-offset-2 ring-offset-card"
+                  />
+                ) : (
+                  <div
+                    className="w-[46px] h-[46px] rounded-full flex items-center justify-center text-white text-sm font-semibold ring-2 ring-accent ring-offset-2 ring-offset-card"
+                    style={{
+                      background:
+                        userGradient ||
+                        "linear-gradient(135deg, #6366f1, #a855f7)",
+                    }}
+                  >
+                    {userInitials}
+                  </div>
+                )}
               </div>
-            </div>
-            <div className="min-w-0">
-              <p className="text-[14px] font-semibold text-text-main">
-                My status
-              </p>
-              <p className="text-[12.5px] text-text-secondary truncate">
-                {hasMyStatus
-                  ? `Updated ${formatStatusTime(myStatus.lastUpdated!)}`
-                  : "Click to add a status update"}
-              </p>
-            </div>
-          </button>
+              <div className="min-w-0">
+                <p className="text-[14px] font-semibold text-text-main">
+                  My status
+                </p>
+                <p className="text-[12.5px] text-text-secondary truncate">
+                  {`Updated ${formatStatusTime(myStatus.lastUpdated!)}`}
+                </p>
+              </div>
+            </button>
+          ) : (
+            /* No status yet: clicking avatar opens dropdown to add */
+            <button
+              className="flex items-center gap-3 px-4 py-3.5 w-full hover:bg-input/50 transition-colors text-left"
+              onClick={() => setIsAvatarMenuOpen(!isAvatarMenuOpen)}
+            >
+              <div className="relative inline-block shrink-0">
+                {userAvatar ? (
+                  <img
+                    src={userAvatar}
+                    alt="My status"
+                    className="w-[46px] h-[46px] rounded-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="w-[46px] h-[46px] rounded-full flex items-center justify-center text-white text-sm font-semibold"
+                    style={{
+                      background:
+                        userGradient ||
+                        "linear-gradient(135deg, #6366f1, #a855f7)",
+                    }}
+                  >
+                    {userInitials}
+                  </div>
+                )}
+                {/* Green plus badge — only when no status */}
+                <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-accent flex items-center justify-center border-2 border-card">
+                  <Plus className="w-3 h-3 text-white" strokeWidth={3} />
+                </div>
+              </div>
+              <div className="min-w-0">
+                <p className="text-[14px] font-semibold text-text-main">
+                  My status
+                </p>
+                <p className="text-[12.5px] text-text-secondary truncate">
+                  Click to add a status update
+                </p>
+              </div>
+            </button>
+          )}
           {isAvatarMenuOpen && (
             <div className="absolute left-16 top-full -mt-1 w-48 bg-card border border-border/80 rounded-xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2">
               <button

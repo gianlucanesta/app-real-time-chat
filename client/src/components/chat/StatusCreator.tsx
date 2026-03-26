@@ -7,6 +7,10 @@ import {
   Palette,
   X,
   Loader2,
+  Pencil,
+  Smile,
+  Wand2,
+  Plus,
 } from "lucide-react";
 import { getAccessToken } from "../../../src/lib/api";
 
@@ -137,6 +141,135 @@ export function StatusCreator({
 
   if (!isOpen) return null;
 
+  /* ── Media mode: fullscreen WhatsApp-style ── */
+  if (mode === "media") {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col bg-black">
+        {/* Top toolbar */}
+        <div className="flex items-center justify-between px-4 py-3 shrink-0">
+          <button
+            className="w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors"
+            onClick={() => {
+              setMediaPreview(null);
+              initialMode === "media" ? handleClose() : setMode("choose");
+            }}
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <div className="flex items-center gap-1">
+            <button className="w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+              <Pencil className="w-5 h-5" />
+            </button>
+            <button className="w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+              <Type className="w-5 h-5" />
+            </button>
+            <button className="w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+              <Smile className="w-5 h-5" />
+            </button>
+            <button className="w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+              <Wand2 className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="w-10" />
+        </div>
+
+        {/* Media preview area */}
+        <div className="flex-1 flex items-center justify-center overflow-hidden px-4 py-2">
+          {mediaPreview ? (
+            mediaType === "video" ? (
+              <video
+                src={mediaPreview}
+                className="max-w-full max-h-full object-contain rounded-xl"
+                controls
+              />
+            ) : (
+              <img
+                src={mediaPreview}
+                alt="Preview"
+                className="max-w-full max-h-full object-contain rounded-xl"
+              />
+            )
+          ) : (
+            <div className="flex flex-col items-center gap-4 text-white/60">
+              <ImageIcon className="w-16 h-16 opacity-30" />
+              <p className="text-[14px]">Select a photo or video</p>
+              <button
+                className="px-5 py-2 rounded-lg bg-accent text-white text-[14px] font-medium hover:bg-accent/90 transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Browse files
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom bar */}
+        <div className="flex items-center gap-3 px-4 py-4 shrink-0">
+          {/* Caption input */}
+          <div className="flex-1 flex items-center gap-3 bg-white/10 rounded-full h-11 px-4 border border-white/15">
+            <input
+              type="text"
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              placeholder="Add a caption..."
+              className="flex-1 bg-transparent border-none outline-none text-[13.5px] text-white placeholder:text-white/50"
+              maxLength={500}
+            />
+            <Smile className="w-5 h-5 text-white/50 shrink-0" />
+          </div>
+
+          {/* Thumbnail + add-more */}
+          <div className="flex items-center gap-2 shrink-0">
+            {mediaPreview && (
+              <div className="w-11 h-11 rounded-lg overflow-hidden border-2 border-accent shrink-0">
+                {mediaType === "video" ? (
+                  <video
+                    src={mediaPreview}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <img
+                    src={mediaPreview}
+                    alt="thumb"
+                    className="w-full h-full object-cover"
+                  />
+                )}
+              </div>
+            )}
+            <button
+              className="w-11 h-11 rounded-lg border-2 border-white/30 flex items-center justify-center text-white/70 hover:text-white hover:border-white/60 transition-colors shrink-0"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Send */}
+          <button
+            className="w-12 h-12 rounded-full bg-green-500 hover:bg-green-400 flex items-center justify-center text-white shrink-0 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-lg"
+            onClick={handlePublishMedia}
+            disabled={!mediaPreview || isUploading}
+          >
+            {isUploading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
+          </button>
+        </div>
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,video/*"
+          className="hidden"
+          onChange={handleFileSelect}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="relative w-full h-full md:w-[520px] md:h-[600px] md:rounded-2xl bg-card flex flex-col overflow-hidden border border-border shadow-2xl">
@@ -252,89 +385,6 @@ export function StatusCreator({
                 <Send className="w-4 h-4" />
               </button>
             </div>
-          </>
-        )}
-
-        {/* ── Media mode ── */}
-        {mode === "media" && (
-          <>
-            <div className="flex items-center gap-3 p-4 border-b border-border h-[64px] shrink-0">
-              <button
-                className="w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors"
-                onClick={() => {
-                  setMediaPreview(null);
-                  initialMode === "media" ? handleClose() : setMode("choose");
-                }}
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <h2 className="text-[17px] font-semibold text-text-main">
-                {mediaType === "video" ? "Video" : "Photo"} status
-              </h2>
-              {mediaPreview && (
-                <button
-                  className="ml-auto w-8 h-8 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors"
-                  onClick={() => setMediaPreview(null)}
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-
-            {/* Preview */}
-            <div className="flex-1 flex items-center justify-center bg-black/40 overflow-hidden">
-              {mediaPreview ? (
-                mediaType === "video" ? (
-                  <video
-                    src={mediaPreview}
-                    className="max-w-full max-h-full object-contain"
-                    controls
-                  />
-                ) : (
-                  <img
-                    src={mediaPreview}
-                    alt="Preview"
-                    className="max-w-full max-h-full object-contain"
-                  />
-                )
-              ) : (
-                <div className="flex flex-col items-center gap-4 text-text-secondary">
-                  <ImageIcon className="w-16 h-16 opacity-30" />
-                  <p className="text-[14px]">Select a photo or video</p>
-                  <button
-                    className="px-5 py-2 rounded-lg bg-accent text-white text-[14px] font-medium hover:bg-accent/90 transition-colors"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    Browse files
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Caption + send */}
-            {mediaPreview && (
-              <div className="flex items-center gap-3 p-4 border-t border-border bg-card">
-                <input
-                  type="text"
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
-                  placeholder="Add a caption..."
-                  className="flex-1 bg-input rounded-lg px-4 py-2.5 text-[14px] text-text-main placeholder:text-text-secondary outline-none border border-border focus:border-accent transition-colors"
-                  maxLength={500}
-                />
-                <button
-                  className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-white hover:bg-accent/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  onClick={handlePublishMedia}
-                  disabled={isUploading}
-                >
-                  {isUploading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-            )}
           </>
         )}
 

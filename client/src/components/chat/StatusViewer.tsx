@@ -309,7 +309,7 @@ export function StatusViewer({
                 <MoreVertical className="w-4 h-4" />
               </button>
               {showMenu && (
-                <div className="absolute right-0 top-full mt-1 w-52 bg-panel border border-border rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+                <div className="absolute right-0 top-full mt-2 w-52 bg-card border border-border/80 rounded-xl shadow-xl py-2 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
                   <button
                     onClick={() => {
                       setShowMenu(false);
