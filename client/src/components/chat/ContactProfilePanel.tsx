@@ -59,7 +59,7 @@ export function ContactProfilePanel({
   contactInitials,
   contactGradient,
   contactAvatarUrl,
-  contactEmail,
+  contactEmail: _contactEmail,
   contactPhone,
   contactBio,
   mediaCount = 0,
