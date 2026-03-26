@@ -121,12 +121,14 @@ export function CameraModal({ onClose, onCapture }: CameraModalProps) {
 
     recorder.onstop = () => {
       const blob = new Blob(chunksRef.current, { type: "video/webm" });
-      setCapturedBlob(blob);
-      setPreviewType("video");
-      setPreviewUrl(URL.createObjectURL(blob));
       setIsRecording(false);
       setCountdown(VIDEO_LIMIT_SECONDS);
       stopStream();
+      // Skip the in-modal preview and go directly to MediaPreviewScreen
+      const file = new File([blob], `camera-${Date.now()}.webm`, {
+        type: "video/webm",
+      });
+      onCapture(file, "video");
     };
 
     recorderRef.current = recorder;
