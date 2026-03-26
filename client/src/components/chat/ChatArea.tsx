@@ -30,6 +30,7 @@ import { ChatMessage } from "./ChatMessage";
 import { ConfirmModal } from "./ConfirmModal";
 import { DeleteChoiceModal } from "./DeleteChoiceModal";
 import { AttachmentMenu } from "./AttachmentMenu";
+import { CameraModal } from "./CameraModal";
 import { VoiceRecorder } from "./VoiceRecorder";
 import { MediaPreviewScreen } from "./MediaPreviewScreen";
 import { MediaViewer, type MediaItem } from "./MediaViewer";
@@ -161,6 +162,7 @@ export function ChatArea({
 
   // Attachment menu & voice recording
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [viewOnce, setViewOnce] = useState(false);
@@ -1247,6 +1249,7 @@ export function ChatArea({
                 <AttachmentMenu
                   onClose={() => setIsAttachmentMenuOpen(false)}
                   onSelectFile={handleFileSelected}
+                  onOpenCamera={() => setIsCameraOpen(true)}
                 />
               )}
             </div>
@@ -1354,6 +1357,17 @@ export function ChatArea({
           initialIndex={mediaViewerIndex}
           contactName={contactName}
           onClose={() => setMediaViewerIndex(null)}
+        />
+      )}
+
+      {/* Camera Modal */}
+      {isCameraOpen && (
+        <CameraModal
+          onClose={() => setIsCameraOpen(false)}
+          onCapture={(file, type) => {
+            setIsCameraOpen(false);
+            handleFileSelected(file, type);
+          }}
         />
       )}
 

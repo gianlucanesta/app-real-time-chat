@@ -41,9 +41,39 @@ import { PrivacySettings } from "../components/settings/PrivacySettings";
 import { AccountSettings } from "../components/settings/AccountSettings";
 import type { User as UserType } from "../types";
 
-const LANGUAGE_OPTIONS = [
-  { value: "en", label: "English" },
+const COUNTRY_CODES = [
+  { code: "+1", label: "+1 US" },
+  { code: "+44", label: "+44 UK" },
+  { code: "+39", label: "+39 IT" },
+  { code: "+49", label: "+49 DE" },
+  { code: "+33", label: "+33 FR" },
+  { code: "+34", label: "+34 ES" },
+  { code: "+351", label: "+351 PT" },
+  { code: "+31", label: "+31 NL" },
+  { code: "+32", label: "+32 BE" },
+  { code: "+41", label: "+41 CH" },
+  { code: "+43", label: "+43 AT" },
+  { code: "+61", label: "+61 AU" },
+  { code: "+81", label: "+81 JP" },
+  { code: "+86", label: "+86 CN" },
+  { code: "+91", label: "+91 IN" },
+  { code: "+55", label: "+55 BR" },
+  { code: "+52", label: "+52 MX" },
 ];
+
+function parsePhone(fullPhone: string): { prefix: string; number: string } {
+  const sorted = [...COUNTRY_CODES].sort(
+    (a, b) => b.code.length - a.code.length,
+  );
+  for (const { code } of sorted) {
+    if (fullPhone.startsWith(code)) {
+      return { prefix: code, number: fullPhone.slice(code.length) };
+    }
+  }
+  return { prefix: "+39", number: fullPhone };
+}
+
+const LANGUAGE_OPTIONS = [{ value: "en", label: "English" }];
 
 const TEXT_SIZE_OPTIONS = [
   { value: "75", label: "75%" },
@@ -138,7 +168,9 @@ function SettingsPage() {
   const [firstName] = useState(user?.firstName || "");
   const [lastName] = useState(user?.lastName || "");
   const [displayName, setDisplayName] = useState(user?.displayName || "");
-  const [phone, setPhone] = useState(user?.phone || "");
+  const _parsedPhone = parsePhone(user?.phone || "");
+  const [countryCode, setCountryCode] = useState(_parsedPhone.prefix);
+  const [phone, setPhone] = useState(_parsedPhone.number);
   const [role, setRole] = useState(user?.role || "");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
@@ -286,7 +318,9 @@ function SettingsPage() {
       phone: initPh,
       role: initR,
     } = initialValuesRef.current;
-    if (displayName === initDN && phone === initPh && role === initR) return;
+    const fullPhone = countryCode + phone;
+    if (displayName === initDN && fullPhone === initPh && role === initR)
+      return;
 
     clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(async () => {
@@ -295,10 +329,10 @@ function SettingsPage() {
       try {
         const data = await apiFetch<{ user: UserType }>(`/users/${user.id}`, {
           method: "PATCH",
-          body: JSON.stringify({ displayName, phone, role }),
+          body: JSON.stringify({ displayName, phone: fullPhone, role }),
         });
         updateUser(normalizeUser(data.user as any));
-        initialValuesRef.current = { displayName, phone, role };
+        initialValuesRef.current = { displayName, phone: fullPhone, role };
         setAutoSaveStatus("saved");
         setTimeout(() => setAutoSaveStatus("idle"), 2500);
       } catch {
@@ -307,7 +341,7 @@ function SettingsPage() {
       }
     }, 800);
     return () => clearTimeout(saveTimeoutRef.current);
-  }, [displayName, phone, role]);
+  }, [displayName, phone, countryCode, role]);
 
   // ── Shared: General section content ──────────────────────────────────────
   function GeneralSection() {
@@ -504,13 +538,37 @@ function SettingsPage() {
             <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
               Phone
             </Label>
-            <Input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              icon={<Phone className="w-[17px] h-[17px] text-text-secondary" />}
-              className="h-11 bg-input/60 border-border/50 text-[14px]"
-            />
+            <div className="flex gap-2">
+              <select
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                className="h-11 px-2 rounded-[10px] bg-input border border-border/50 text-text-main text-[14px] focus:outline-none focus:border-accent transition-colors flex-shrink-0 cursor-pointer"
+                style={{ minWidth: 88, maxWidth: 100 }}
+              >
+                {COUNTRY_CODES.map((c) => (
+                  <option
+                    key={c.code}
+                    value={c.code}
+                    className="bg-card text-text-main"
+                  >
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+              <div className="flex-1 min-w-0">
+                <Input
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                  icon={
+                    <Phone className="w-[17px] h-[17px] text-text-secondary" />
+                  }
+                  className="h-11 bg-input/60 border-border/50 text-[14px]"
+                />
+              </div>
+            </div>
           </div>
           {/* Role */}
           <div className="flex flex-col gap-1.5">
@@ -761,7 +819,9 @@ function SettingsPageDesktop() {
   const [firstName] = useState(nameParts[0] || "");
   const [lastName] = useState(nameParts.slice(1).join(" ") || "");
   const [displayName, setDisplayName] = useState(user?.displayName || "");
-  const [phone, setPhone] = useState(user?.phone || "");
+  const _parsedPhoneD = parsePhone(user?.phone || "");
+  const [countryCode, setCountryCode] = useState(_parsedPhoneD.prefix);
+  const [phone, setPhone] = useState(_parsedPhoneD.number);
   const [role, setRole] = useState(user?.role || "");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
@@ -909,7 +969,9 @@ function SettingsPageDesktop() {
       phone: initPh,
       role: initR,
     } = initialValuesRef.current;
-    if (displayName === initDN && phone === initPh && role === initR) return;
+    const fullPhone = countryCode + phone;
+    if (displayName === initDN && fullPhone === initPh && role === initR)
+      return;
 
     clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(async () => {
@@ -918,10 +980,10 @@ function SettingsPageDesktop() {
       try {
         const data = await apiFetch<{ user: UserType }>(`/users/${user.id}`, {
           method: "PATCH",
-          body: JSON.stringify({ displayName, phone, role }),
+          body: JSON.stringify({ displayName, phone: fullPhone, role }),
         });
         updateUser(normalizeUser(data.user as any));
-        initialValuesRef.current = { displayName, phone, role };
+        initialValuesRef.current = { displayName, phone: fullPhone, role };
         setAutoSaveStatus("saved");
         setTimeout(() => setAutoSaveStatus("idle"), 2500);
       } catch {
@@ -930,7 +992,7 @@ function SettingsPageDesktop() {
       }
     }, 800);
     return () => clearTimeout(saveTimeoutRef.current);
-  }, [displayName, phone, role]);
+  }, [displayName, phone, countryCode, role]);
 
   const filteredNav = NAV_ITEMS.filter((item) =>
     item.label.toLowerCase().includes(navSearch.toLowerCase()),
@@ -1199,15 +1261,39 @@ function SettingsPageDesktop() {
                       <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
                         Phone
                       </Label>
-                      <Input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        icon={
-                          <Phone className="w-[17px] h-[17px] text-text-secondary" />
-                        }
-                        className="h-11 bg-input/60 border-border/50 text-[14px]"
-                      />
+                      <div className="flex gap-2">
+                        <select
+                          value={countryCode}
+                          onChange={(e) => setCountryCode(e.target.value)}
+                          className="h-11 px-2 rounded-[10px] bg-input border border-border/50 text-text-main text-[14px] focus:outline-none focus:border-accent transition-colors flex-shrink-0 cursor-pointer"
+                          style={{ minWidth: 88, maxWidth: 100 }}
+                        >
+                          {COUNTRY_CODES.map((c) => (
+                            <option
+                              key={c.code}
+                              value={c.code}
+                              className="bg-card text-text-main"
+                            >
+                              {c.label}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="flex-1 min-w-0">
+                          <Input
+                            type="tel"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={phone}
+                            onChange={(e) =>
+                              setPhone(e.target.value.replace(/\D/g, ""))
+                            }
+                            icon={
+                              <Phone className="w-[17px] h-[17px] text-text-secondary" />
+                            }
+                            className="h-11 bg-input/60 border-border/50 text-[14px]"
+                          />
+                        </div>
+                      </div>
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">

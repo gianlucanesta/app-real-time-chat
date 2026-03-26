@@ -8,13 +8,13 @@ interface AttachmentMenuProps {
     file: File,
     type: "image" | "video" | "audio" | "document",
   ) => void;
+  onOpenCamera: () => void;
 }
 
-export function AttachmentMenu({ onClose, onSelectFile }: AttachmentMenuProps) {
+export function AttachmentMenu({ onClose, onSelectFile, onOpenCamera }: AttachmentMenuProps) {
   const menuRef = useClickOutside<HTMLDivElement>(onClose);
   const documentInputRef = useRef<HTMLInputElement>(null);
   const photoVideoInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (
@@ -80,21 +80,16 @@ export function AttachmentMenu({ onClose, onSelectFile }: AttachmentMenuProps) {
       <button
         type="button"
         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-text-main hover:bg-input/60 transition-colors"
-        onClick={() => cameraInputRef.current?.click()}
+        onClick={() => {
+          onClose();
+          onOpenCamera();
+        }}
       >
         <span className="w-8 h-8 rounded-full bg-rose-500/15 flex items-center justify-center">
           <Camera className="w-4 h-4 text-rose-500" />
         </span>
         Camera
       </button>
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => handleFileChange(e, "image")}
-      />
 
       {/* Audio */}
       <button
