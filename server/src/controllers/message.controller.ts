@@ -126,6 +126,40 @@ export async function deleteMessages(
   }
 }
 
+/** PATCH /api/messages/mark-all-read — mark all incoming messages as read */
+export async function markAllAsRead(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const userId = String(req.user!.sub);
+    const { conversationIds } = req.body as { conversationIds?: string[] };
+
+    const filter: Record<string, unknown> = {
+      sender: { $ne: userId },
+      status: { $ne: "read" },
+      expires_at: { $gt: new Date() },
+    };
+
+    if (Array.isArray(conversationIds) && conversationIds.length > 0) {
+      // Only mark the requested conversations — validate user is a participant
+      const validIds = conversationIds.filter((id) =>
+        id.split("___").includes(userId),
+      );
+      filter.conversationId = { $in: validIds };
+    } else {
+      // Mark all — user must be a participant
+      filter.conversationId = { $regex: userId };
+    }
+
+    const result = await Message.updateMany(filter, { $set: { status: "read" } });
+    res.status(200).json({ updated: result.modifiedCount });
+  } catch (err) {
+    next(err);
+  }
+}
+
 /** DELETE /api/messages/:conversationId — clear entire conversation */
 export async function clearConversation(
   req: Request,

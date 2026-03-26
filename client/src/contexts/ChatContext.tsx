@@ -131,6 +131,8 @@ interface ChatContextType {
   markViewOnceOpened: (messageId: string) => void;
   clearMessages: () => void;
   deleteConversation: () => void;
+  markAllAsRead: (conversationIds?: string[]) => Promise<void>;
+  clearConversationById: (convId: string) => void;
   pendingRemoteDeletions: string[];
   confirmRemoteDeletion: (ids: string[]) => void;
   reactions: Record<string, Reaction[]>;
@@ -1184,6 +1186,46 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setPendingRemoteDeletions((prev) => prev.filter((id) => !ids.includes(id)));
   }, []);
 
+  const markAllAsRead = useCallback(async (conversationIds?: string[]) => {
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (conversationIds && !conversationIds.includes(c.id)) return c;
+        return { ...c, unreadCount: 0 };
+      }),
+    );
+    try {
+      await apiFetch("/messages/mark-all-read", {
+        method: "PATCH",
+        body: JSON.stringify(conversationIds ? { conversationIds } : {}),
+      });
+    } catch (err) {
+      console.warn("[chat] markAllAsRead failed:", (err as Error).message);
+    }
+  }, []);
+
+  const clearConversationById = useCallback((convId: string) => {
+    if (activeConvRef.current?.id === convId) {
+      setActiveMessages([]);
+    }
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === convId
+          ? {
+              ...c,
+              lastMessage: "",
+              lastMessageTime: undefined,
+              lastMessageId: undefined,
+              lastMessageStatus: undefined,
+              unreadCount: 0,
+            }
+          : c,
+      ),
+    );
+    apiFetch(`/messages/${convId}`, { method: "DELETE" }).catch((err) =>
+      console.warn("[chat] clearConversationById failed:", (err as Error).message),
+    );
+  }, []);
+
   const clearMessages = useCallback(() => {
     if (!activeConversation) return;
     const convId = activeConversation.id;
@@ -1531,6 +1573,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         markViewOnceOpened,
         clearMessages,
         deleteConversation,
+        markAllAsRead,
+        clearConversationById,
         pendingRemoteDeletions,
         confirmRemoteDeletion,
         reactions,

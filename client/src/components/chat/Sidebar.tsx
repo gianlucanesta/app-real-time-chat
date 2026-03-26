@@ -6,6 +6,7 @@ import {
   MessageSquare,
   CheckSquare,
   Check,
+  CheckCheck,
   LogOut,
   ChevronDown,
   Lock,
@@ -16,6 +17,9 @@ import {
   Timer,
   RotateCcw,
   Ban,
+  X,
+  BellOff,
+  Trash2,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useClickOutside } from "../../hooks/useClickOutside";
@@ -129,12 +133,18 @@ export function Sidebar({
   const [searchQuery, setSearchQuery] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isSelectMenuOpen, setIsSelectMenuOpen] = useState(false);
 
   // Panels controlled by parent (ChatIndex) so ChatArea can also open them
   const isNewContactOpen = isNewContactOpenProp ?? false;
   const isNewGroupOpen = isNewGroupOpenProp ?? false;
 
   const menuRef = useClickOutside<HTMLDivElement>(() => setIsMenuOpen(false));
+  const selectMenuRef = useClickOutside<HTMLDivElement>(() =>
+    setIsSelectMenuOpen(false),
+  );
 
   const filters = ["All", "Unread", "Favorites"];
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
@@ -149,7 +159,27 @@ export function Sidebar({
     setActiveConversation,
     addOrUpdateConversation,
     feedStatusUserIds,
+    markAllAsRead,
+    clearConversationById,
   } = useChat();
+
+  const exitSelectMode = () => {
+    setIsSelectMode(false);
+    setSelectedIds(new Set());
+    setIsSelectMenuOpen(false);
+  };
+
+  const handleMarkSelectedAsRead = () => {
+    if (selectedIds.size > 0) {
+      void markAllAsRead(Array.from(selectedIds));
+    }
+    exitSelectMode();
+  };
+
+  const handleClearSelected = () => {
+    selectedIds.forEach((id) => clearConversationById(id));
+    exitSelectMode();
+  };
 
   // Filter + search + sort conversations
   const filteredConversations = useMemo(() => {
@@ -210,57 +240,121 @@ export function Sidebar({
       />
 
       {/* Sidebar Header */}
-      <div className="flex items-center justify-between p-4 h-[72px] shrink-0">
-        <h1 className="text-2xl md:text-xl font-bold text-text-main">Chat</h1>
-        <div className="flex gap-1">
+      {isSelectMode ? (
+        /* ── Select mode header ── */
+        <div className="flex items-center px-3 h-[72px] shrink-0 gap-1 border-b border-border/40">
           <button
-            onClick={() => setIsNewChatOpen(true)}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors"
-            aria-label="New chat"
+            onClick={exitSelectMode}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors"
+            aria-label="Exit select mode"
           >
-            <Edit className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
-          <div className="relative" ref={menuRef}>
+          <span className="flex-1 px-2 text-[17px] font-semibold text-text-main">
+            Selected: {selectedIds.size}
+          </span>
+          <div className="relative" ref={selectMenuRef}>
             <button
-              className="w-8 h-8 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors"
-              aria-label="Menu"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors"
+              aria-label="Selection options"
+              onClick={() => setIsSelectMenuOpen(!isSelectMenuOpen)}
             >
               <MoreVertical className="w-4 h-4" />
             </button>
-            {isMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border/80 rounded-xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2">
+            {isSelectMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-60 bg-card border border-border/80 rounded-xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2">
                 <button
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors"
-                  onClick={() => {
-                    onOpenNewGroup?.();
-                    setIsMenuOpen(false);
-                  }}
+                  onClick={handleMarkSelectedAsRead}
+                  disabled={selectedIds.size === 0}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  <Users className="w-4 h-4 text-text-secondary" /> New group
+                  <CheckCheck className="w-4 h-4 text-accent" /> Mark as read
                 </button>
-                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors">
-                  <MessageSquare className="w-4 h-4 text-text-secondary" />{" "}
-                  Important messages
-                </button>
-                <div className="w-full h-px bg-border/50 my-1"></div>
-                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors">
-                  <CheckSquare className="w-4 h-4 text-text-secondary" /> Select
-                  chat
-                </button>
-                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors">
-                  <Check className="w-4 h-4 text-text-secondary" /> Mark all as
-                  read
+                <button
+                  disabled
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main opacity-40 cursor-not-allowed"
+                >
+                  <BellOff className="w-4 h-4 text-text-secondary" /> Mute
+                  notifications
                 </button>
                 <div className="w-full h-px bg-border/50 my-1"></div>
-                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] font-medium text-danger hover:bg-danger/10 transition-colors">
-                  <LogOut className="w-4 h-4" /> Disconnect
+                <button
+                  onClick={handleClearSelected}
+                  disabled={selectedIds.size === 0}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] font-medium text-danger hover:bg-danger/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Trash2 className="w-4 h-4" /> Clear selected chats
                 </button>
               </div>
             )}
           </div>
         </div>
-      </div>
+      ) : (
+        /* ── Normal header ── */
+        <div className="flex items-center justify-between p-4 h-[72px] shrink-0">
+          <h1 className="text-2xl md:text-xl font-bold text-text-main">Chat</h1>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setIsNewChatOpen(true)}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors"
+              aria-label="New chat"
+            >
+              <Edit className="w-4 h-4" />
+            </button>
+            <div className="relative" ref={menuRef}>
+              <button
+                className="w-8 h-8 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors"
+                aria-label="Menu"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+              {isMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border/80 rounded-xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2">
+                  <button
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors"
+                    onClick={() => {
+                      onOpenNewGroup?.();
+                      setIsMenuOpen(false);
+                    }}
+                  >
+                    <Users className="w-4 h-4 text-text-secondary" /> New group
+                  </button>
+                  <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors">
+                    <MessageSquare className="w-4 h-4 text-text-secondary" />{" "}
+                    Important messages
+                  </button>
+                  <div className="w-full h-px bg-border/50 my-1"></div>
+                  <button
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors"
+                    onClick={() => {
+                      setIsSelectMode(true);
+                      setIsMenuOpen(false);
+                    }}
+                  >
+                    <CheckSquare className="w-4 h-4 text-text-secondary" />{" "}
+                    Select chat
+                  </button>
+                  <button
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors"
+                    onClick={() => {
+                      void markAllAsRead();
+                      setIsMenuOpen(false);
+                    }}
+                  >
+                    <Check className="w-4 h-4 text-text-secondary" /> Mark all
+                    as read
+                  </button>
+                  <div className="w-full h-px bg-border/50 my-1"></div>
+                  <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] font-medium text-danger hover:bg-danger/10 transition-colors">
+                    <LogOut className="w-4 h-4" /> Disconnect
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search Input */}
       <div className="px-4 pb-3">
@@ -354,19 +448,57 @@ export function Sidebar({
             key={chat.id}
             role="button"
             tabIndex={0}
-            onClick={() => setActiveConversation(chat)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
+            onClick={() => {
+              if (isSelectMode) {
+                setSelectedIds((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(chat.id)) next.delete(chat.id);
+                  else next.add(chat.id);
+                  return next;
+                });
+              } else {
                 setActiveConversation(chat);
               }
             }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                if (isSelectMode) {
+                  setSelectedIds((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(chat.id)) next.delete(chat.id);
+                    else next.add(chat.id);
+                    return next;
+                  });
+                } else {
+                  setActiveConversation(chat);
+                }
+              }
+            }}
             className={`group flex items-center gap-3 px-4 py-3.5 md:py-3 cursor-pointer transition-colors relative ${
-              activeConversation?.id === chat.id
-                ? "bg-accent/15 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-accent before:rounded-r-full"
-                : "hover:bg-input/50"
+              isSelectMode
+                ? selectedIds.has(chat.id)
+                  ? "bg-accent/10"
+                  : "hover:bg-input/50"
+                : activeConversation?.id === chat.id
+                  ? "bg-accent/15 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-accent before:rounded-r-full"
+                  : "hover:bg-input/50"
             }`}
           >
+            {/* Select mode checkbox */}
+            {isSelectMode && (
+              <div
+                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
+                  selectedIds.has(chat.id)
+                    ? "bg-accent border-accent"
+                    : "border-border"
+                }`}
+              >
+                {selectedIds.has(chat.id) && (
+                  <Check className="w-3 h-3 text-white stroke-[3]" />
+                )}
+              </div>
+            )}
             <div className="relative inline-block shrink-0">
               {(() => {
                 const hasStatus =

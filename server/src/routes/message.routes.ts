@@ -69,6 +69,7 @@ messageRouter.post("/", authMiddleware, ctrl.create);
  *         description: Validation error
  */
 messageRouter.delete("/", authMiddleware, ctrl.deleteMessages);
+messageRouter.patch("/mark-all-read", authMiddleware, ctrl.markAllAsRead);
 
 /**
  * @openapi
