@@ -96,6 +96,11 @@ export interface ServerToClientEvents {
     avatarGradient: string;
     avatarUrl: string | null;
   }) => void;
+  /** Sent to the status owner whenever someone views one of their items */
+  "status:viewed": (data: {
+    itemId: string;
+    viewerCount: number;
+  }) => void;
 }
 
 export interface ClientToServerEvents {

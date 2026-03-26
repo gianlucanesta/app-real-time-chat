@@ -53,6 +53,7 @@ function StatusPage() {
     sendStatusReplyMessage,
     setActiveConversation,
     addOrUpdateConversation,
+    socket,
   } = useChat();
   const navigate = useNavigate();
 
@@ -76,6 +77,7 @@ function StatusPage() {
 
   // Status data from API
   const [myStatus, setMyStatus] = useState<MyStatus>({ items: [] });
+  const [myStatusViewerCount, setMyStatusViewerCount] = useState(0);
   const [feedStatuses, setFeedStatuses] = useState<ContactStatus[]>([]);
   const [statusLoading, setStatusLoading] = useState(true);
 
@@ -106,6 +108,13 @@ function StatusPage() {
         }>("/status/me");
 
         if (myData.status) {
+          // Compute initial viewer count from viewedBy arrays
+          const allViewers = new Set<string>();
+          for (const item of myData.status.items) {
+            for (const v of (item as any).viewedBy ?? []) allViewers.add(v);
+          }
+          setMyStatusViewerCount(allViewers.size);
+
           setMyStatus({
             items: myData.status.items.map((item) => ({
               id: item._id,
@@ -242,6 +251,9 @@ function StatusPage() {
 
   // Mark a status item as viewed and update allViewed on the feed entry
   const handleMarkViewed = useCallback((itemId: string) => {
+    // Persist to server
+    apiFetch(`/status/${itemId}/view`, { method: "PATCH" }).catch(() => {});
+
     setFeedStatuses((prev) =>
       prev.map((cs) => {
         if (!cs.items.some((i) => i.id === itemId)) return cs;
@@ -256,6 +268,16 @@ function StatusPage() {
       }),
     );
   }, []);
+
+  // Real-time: update viewer count when someone views my status
+  useEffect(() => {
+    if (!socket) return;
+    const handler = (data: { itemId: string; viewerCount: number }) => {
+      setMyStatusViewerCount(data.viewerCount);
+    };
+    socket.on("status:viewed", handler);
+    return () => { socket.off("status:viewed", handler); };
+  }, [socket]);
 
   // Delete a single status item
   const handleDeleteStatus = useCallback(
@@ -453,7 +475,7 @@ function StatusPage() {
           onClose={handleCloseViewer}
           onMarkViewed={handleMarkViewed}
           onReply={viewingMyStatus ? undefined : handleStatusReply}
-          viewerCount={viewingMyStatus ? 0 : undefined}
+          viewerCount={viewingMyStatus ? myStatusViewerCount : undefined}
           onDeleteStatus={viewingMyStatus ? handleDeleteStatus : undefined}
         />
       )}

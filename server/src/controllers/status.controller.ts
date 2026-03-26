@@ -155,10 +155,29 @@ export async function markViewed(
     const userId = req.user!.sub;
     const { itemId } = req.params;
 
-    await Status.updateOne(
+    // Add viewer to the item's viewedBy set
+    const updated = await Status.findOneAndUpdate(
       { "items._id": itemId },
       { $addToSet: { "items.$.viewedBy": userId } },
+      { new: true },
     );
+
+    if (updated) {
+      // Compute total unique viewers across all items so the owner sees
+      // a single aggregated counter.
+      const allViewers = new Set<string>();
+      for (const item of updated.items) {
+        for (const v of (item as any).viewedBy ?? []) allViewers.add(v);
+      }
+      // Emit real-time update to the status owner
+      const io = req.app.get("io");
+      if (io) {
+        io.to(`user:${updated.userId}`).emit("status:viewed", {
+          itemId,
+          viewerCount: allViewers.size,
+        });
+      }
+    }
 
     res.status(200).json({ ok: true });
   } catch (err) {
