@@ -319,7 +319,9 @@ export function ChatArea({
 
   // Scroll-to-bottom logic
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevConvIdRef = useRef<string | undefined>(undefined);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
 
   useEffect(() => {
     if (!messagesEndRef.current || !activeMessages.length) return;
@@ -336,6 +338,23 @@ export function ChatArea({
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [isContactTyping]);
+
+  // Show/hide scroll-to-bottom button based on scroll position
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const handleScroll = () => {
+      const distanceFromBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight;
+      setShowScrollBtn(distanceFromBottom > 300);
+    };
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
 
   // Typing emit logic
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1002,7 +1021,8 @@ export function ChatArea({
 
       {/* Messages Area */}
       <div
-        className={`flex-1 overflow-y-auto px-4 md:px-8 flex flex-col pt-6 pb-28 md:pb-32 scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-toggle-off ${isSelectMode ? "select-mode" : ""}`}
+        ref={messagesContainerRef}
+        className={`flex-1 overflow-y-auto px-4 md:px-8 flex flex-col pt-6 pb-4 scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-toggle-off ${isSelectMode ? "select-mode" : ""}`}
         style={{
           ...(chatSettings.wallpaperColor
             ? { backgroundColor: chatSettings.wallpaperColor }
@@ -1236,8 +1256,20 @@ export function ChatArea({
         </div>
       </div>
 
+      {/* Scroll to bottom FAB */}
+      {showScrollBtn && (
+        <button
+          type="button"
+          onClick={scrollToBottom}
+          className="absolute bottom-[72px] right-4 z-20 w-10 h-10 rounded-full bg-card border border-border/50 shadow-lg flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-all"
+          aria-label="Scroll to latest message"
+        >
+          <ChevronDown className="w-5 h-5" />
+        </button>
+      )}
+
       {/* Chat Input Area */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 px-3 pb-2 md:px-4 md:pb-2 pt-2">
+      <div className="shrink-0 z-20 px-3 pb-2 md:px-4 md:pb-2 pt-2">
         {/* Link preview above input */}
         {(linkPreview || isLoadingPreview) && !isRecording && (
           <div className="mb-2 ml-1">

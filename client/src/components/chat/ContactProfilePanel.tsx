@@ -88,45 +88,47 @@ export function ContactProfilePanel({
 
   return (
     <div
-      className={`absolute inset-0 z-[30] bg-bg md:bg-card flex flex-col transition-transform duration-200 ease-in-out ${isOpen ? "translate-x-0" : "translate-x-full"}`}
+      className={`absolute inset-0 z-[80] bg-bg md:bg-card flex flex-col transition-transform duration-200 ease-in-out ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       aria-hidden={!isOpen}
     >
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border bg-bg pb-6">
-        {/* Hero: close/edit buttons flanking avatar + name + contact info */}
-        <div className="flex flex-col items-center justify-center pt-8 pb-6 px-4">
-          {/* Avatar row with X on left, Edit on right */}
-          <div className="flex items-center justify-center gap-6 w-full max-w-xs mb-4">
-            <button
-              type="button"
-              className="w-10 h-10 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors shrink-0"
-              onClick={onClose}
-              aria-label="Close"
-            >
-              <X className="w-5 h-5" />
-            </button>
+        {/* Hero: close/edit buttons in corners, avatar + name centred */}
+        <div className="relative flex flex-col items-center justify-center pt-12 pb-6 px-4">
+          {/* X button — absolute top-left */}
+          <button
+            type="button"
+            className="absolute top-3 left-3 w-10 h-10 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          {/* Edit button — absolute top-right */}
+          <button
+            type="button"
+            className="absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors"
+            onClick={onEditClick}
+            aria-label="Edit contact"
+          >
+            <Edit3 className="w-5 h-5" />
+          </button>
+          {/* Avatar */}
+          <div className="mb-4">
             {contactAvatarUrl ? (
               <img
                 src={contactAvatarUrl}
                 alt={contactName}
-                className="w-24 h-24 rounded-full object-cover shadow-sm shrink-0"
+                className="w-24 h-24 rounded-full object-cover shadow-sm"
               />
             ) : (
               <div
-                className="w-24 h-24 rounded-full text-3xl font-bold flex items-center justify-center shadow-sm shrink-0"
+                className="w-24 h-24 rounded-full text-3xl font-bold flex items-center justify-center shadow-sm"
                 style={{ background: contactGradient, color: "#fff" }}
               >
                 {contactInitials}
               </div>
             )}
-            <button
-              type="button"
-              className="w-10 h-10 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors shrink-0"
-              onClick={onEditClick}
-              aria-label="Edit contact"
-            >
-              <Edit3 className="w-5 h-5" />
-            </button>
           </div>
           <div className="text-xl font-bold text-text-main mb-0.5">
             {contactName}
@@ -141,36 +143,38 @@ export function ContactProfilePanel({
         </div>
 
         {/* Quick action buttons: Audio | Video | Search */}
-        <div className="flex items-center justify-center gap-2 px-4 mb-6">
-          <button
-            type="button"
-            className="flex flex-col items-center justify-center flex-1 py-3 bg-card rounded-xl hover:bg-input transition-colors border border-border/50 text-accent"
-            onClick={onAudioCall}
-          >
-            <Phone className="w-5 h-5 mb-1.5" />
-            <span className="text-xs font-medium">Audio</span>
-          </button>
-          <button
-            type="button"
-            className="flex flex-col items-center justify-center flex-1 py-3 bg-card rounded-xl hover:bg-input transition-colors border border-border/50 text-accent"
-            onClick={onVideoCall}
-          >
-            <Video className="w-5 h-5 mb-1.5" />
-            <span className="text-xs font-medium">Video</span>
-          </button>
-          <button
-            type="button"
-            className="flex flex-col items-center justify-center flex-1 py-3 bg-card rounded-xl hover:bg-input transition-colors border border-border/50 text-accent"
-            onClick={onSearch}
-          >
-            <Search className="w-5 h-5 mb-1.5" />
-            <span className="text-xs font-medium">Search</span>
-          </button>
+        <div className="flex items-center justify-center mb-6 px-4">
+          <div className="flex items-center gap-2 w-full max-w-xs">
+            <button
+              type="button"
+              className="flex flex-col items-center justify-center flex-1 py-3 bg-card rounded-xl hover:bg-input transition-colors border border-border/50 text-accent"
+              onClick={onAudioCall}
+            >
+              <Phone className="w-5 h-5 mb-1.5" />
+              <span className="text-xs font-medium">Audio</span>
+            </button>
+            <button
+              type="button"
+              className="flex flex-col items-center justify-center flex-1 py-3 bg-card rounded-xl hover:bg-input transition-colors border border-border/50 text-accent"
+              onClick={onVideoCall}
+            >
+              <Video className="w-5 h-5 mb-1.5" />
+              <span className="text-xs font-medium">Video</span>
+            </button>
+            <button
+              type="button"
+              className="flex flex-col items-center justify-center flex-1 py-3 bg-card rounded-xl hover:bg-input transition-colors border border-border/50 text-accent"
+              onClick={onSearch}
+            >
+              <Search className="w-5 h-5 mb-1.5" />
+              <span className="text-xs font-medium">Search</span>
+            </button>
+          </div>
         </div>
 
         {/* Bio / Info section */}
         {contactBio && (
-          <div className="bg-card mb-2 mx-4 rounded-xl border border-border/50 overflow-hidden shadow-sm px-4 py-3.5">
+          <div className="bg-card mb-2 mx-auto w-full max-w-xs rounded-xl border border-border/50 overflow-hidden shadow-sm px-4 py-3.5">
             <div className="text-xs font-semibold text-text-secondary mb-1">
               Info
             </div>
@@ -179,7 +183,7 @@ export function ContactProfilePanel({
         )}
 
         {/* Group 1: Media + Important */}
-        <div className="bg-card mb-2 mx-4 rounded-xl border border-border/50 overflow-hidden shadow-sm">
+        <div className="bg-card mb-2 mx-auto w-full max-w-xs rounded-xl border border-border/50 overflow-hidden shadow-sm">
           <button
             type="button"
             className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-input transition-colors text-text-main text-sm"
@@ -210,7 +214,7 @@ export function ContactProfilePanel({
         </div>
 
         {/* Group 2: Notifications + Chat theme */}
-        <div className="bg-card mb-2 mx-4 rounded-xl border border-border/50 overflow-hidden shadow-sm">
+        <div className="bg-card mb-2 mx-auto w-full max-w-xs rounded-xl border border-border/50 overflow-hidden shadow-sm">
           <button
             type="button"
             className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-input transition-colors text-text-main text-sm"
@@ -235,7 +239,7 @@ export function ContactProfilePanel({
         </div>
 
         {/* Group 3: Disappearing messages + Encryption */}
-        <div className="bg-card mb-2 mx-4 rounded-xl border border-border/50 overflow-hidden shadow-sm">
+        <div className="bg-card mb-2 mx-auto w-full max-w-xs rounded-xl border border-border/50 overflow-hidden shadow-sm">
           <button
             type="button"
             className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-input transition-colors text-text-main text-sm"
@@ -271,7 +275,7 @@ export function ContactProfilePanel({
 
         {/* Groups in common */}
         {groupsInCommon.length > 0 && (
-          <div className="bg-card mb-2 mx-4 rounded-xl border border-border/50 overflow-hidden shadow-sm">
+          <div className="bg-card mb-2 mx-auto w-full max-w-xs rounded-xl border border-border/50 overflow-hidden shadow-sm">
             <div className="px-4 pt-3.5 pb-2">
               <div className="flex items-center gap-2 text-xs font-semibold text-text-secondary">
                 <Users2 className="w-4 h-4" />
@@ -314,7 +318,7 @@ export function ContactProfilePanel({
         )}
 
         {/* Add to favorites */}
-        <div className="bg-card mb-2 mx-4 rounded-xl border border-border/50 overflow-hidden shadow-sm">
+        <div className="bg-card mb-2 mx-auto w-full max-w-xs rounded-xl border border-border/50 overflow-hidden shadow-sm">
           <button
             type="button"
             className="w-full flex items-center gap-4 px-4 py-3.5 hover:bg-input transition-colors text-sm font-medium text-text-main"
@@ -330,7 +334,7 @@ export function ContactProfilePanel({
         </div>
 
         {/* Danger actions: Clear chat + Block + Report + Delete */}
-        <div className="bg-card mx-4 rounded-xl border border-border/50 overflow-hidden shadow-sm">
+        <div className="bg-card mx-auto w-full max-w-xs rounded-xl border border-border/50 overflow-hidden shadow-sm">
           <button
             type="button"
             className="w-full flex items-center gap-4 px-4 py-3.5 hover:bg-danger/10 text-danger transition-colors text-sm font-medium"
