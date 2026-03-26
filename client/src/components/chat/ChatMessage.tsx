@@ -488,17 +488,17 @@ export function ChatMessage({
 
               {/* Status reply — media-card style */}
               {statusReply && (
-                <div className="flex flex-col -mx-4 -mt-3 min-w-[220px]">
+                <div className="flex flex-col min-w-[260px]">
                   {/* Status card */}
                   <div className="relative">
                     <p
-                      className={`absolute top-2 left-3 z-10 text-[11px] font-semibold drop-shadow ${isSent ? "text-white/90" : "text-white/90"}`}
+                      className="absolute top-3 left-4 right-4 z-10 text-[12px] font-semibold drop-shadow text-white/90 truncate"
                     >
                       {statusReply.senderName}&apos;s status
                     </p>
                     {statusReply.mediaType === "text" ? (
                       <div
-                        className="w-full aspect-[4/3] min-h-[150px] flex items-center justify-center text-white text-[16px] font-medium text-center px-6"
+                        className="w-full aspect-[4/3] min-h-[180px] flex items-center justify-center text-white text-[17px] font-medium text-center px-8"
                         style={{
                           background:
                             statusReply.textBgGradient ||
@@ -508,7 +508,7 @@ export function ChatMessage({
                         <span className="line-clamp-4">{statusReply.text}</span>
                       </div>
                     ) : statusReply.mediaUrl ? (
-                      <div className="w-full aspect-[4/3] min-h-[150px] overflow-hidden bg-black/10">
+                      <div className="w-full aspect-[4/3] min-h-[180px] overflow-hidden bg-black/10">
                         {statusReply.mediaType === "image" ? (
                           <img
                             src={statusReply.mediaUrl}
@@ -524,15 +524,15 @@ export function ChatMessage({
                       </div>
                     ) : null}
                     {statusReply.caption && (
-                      <p className="absolute bottom-2 left-3 right-3 text-[11px] text-white/80 truncate drop-shadow">
+                      <p className="absolute bottom-3 left-4 right-4 text-[11px] text-white/80 truncate drop-shadow">
                         {statusReply.caption}
                       </p>
                     )}
                   </div>
-                  {/* Reply text as caption */}
+                  {/* Reply text */}
                   {text && (
                     <div
-                      className={`pl-3 pr-8 py-2 text-[14px] leading-relaxed ${isSent ? "text-white" : "text-text-main"}`}
+                      className={`pl-4 pr-10 py-3 text-[14px] leading-relaxed ${isSent ? "text-white" : "text-text-main"}`}
                       style={
                         isSent
                           ? {
