@@ -116,6 +116,17 @@ export function StatusViewer({
     }
   }, [currentIndex]);
 
+  // If items were deleted and currentIndex is now out-of-bounds, clamp it.
+  // The parent already closes the viewer when 0 items remain, so here we only
+  // need to handle the "deleted last item while more remain" case.
+  useEffect(() => {
+    if (totalItems > 0 && currentIndex >= totalItems) {
+      setCurrentIndex(totalItems - 1);
+      setProgress(0);
+      elapsedRef.current = 0;
+    }
+  }, [totalItems, currentIndex]);
+
   // Start/resume progress timer
   useEffect(() => {
     if (!currentItem || isPaused) return;
