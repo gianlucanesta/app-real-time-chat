@@ -14,6 +14,19 @@ interface EditContactPanelProps {
   contactInitials: string;
   contactGradient: string;
   contactAvatarUrl?: string | null;
+  contactFirstName?: string;
+  contactLastName?: string;
+  contactPhone?: string;
+}
+
+function parseCountryCode(phone: string): { code: string; local: string } {
+  const known = ["+1", "+39", "+44", "+49", "+33", "+34"];
+  for (const code of known) {
+    if (phone.startsWith(code)) {
+      return { code, local: phone.slice(code.length).trim() };
+    }
+  }
+  return { code: "+1", local: phone };
 }
 
 export function EditContactPanel({
@@ -23,13 +36,19 @@ export function EditContactPanel({
   contactInitials,
   contactGradient,
   contactAvatarUrl,
+  contactFirstName,
+  contactLastName,
+  contactPhone,
 }: EditContactPanelProps) {
-  const [firstName, setFirstName] = useState(contactName.split(" ")[0] ?? "");
-  const [lastName, setLastName] = useState(
-    contactName.split(" ").slice(1).join(" "),
+  const parsed = parseCountryCode(contactPhone ?? "");
+  const [firstName, setFirstName] = useState(
+    contactFirstName ?? contactName.split(" ")[0] ?? "",
   );
-  const [phone, setPhone] = useState("340 822 4072");
-  const [country, setCountry] = useState("+39");
+  const [lastName, setLastName] = useState(
+    contactLastName ?? contactName.split(" ").slice(1).join(" "),
+  );
+  const [phone, setPhone] = useState(parsed.local);
+  const [country, setCountry] = useState(parsed.code);
 
   const avatarInitials =
     `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() ||
@@ -176,9 +195,11 @@ export function EditContactPanel({
 
           {/* Phone hint */}
           <div className="ml-[44px] min-h-[20px] mb-8">
-            <div className="text-success text-[13px] font-medium">
-              This phone number is on Ephemeral.
-            </div>
+            {phone.trim().length > 0 && (
+              <div className="text-success text-[13px] font-medium">
+                This phone number is on Ephemeral.
+              </div>
+            )}
           </div>
 
           {/* Sync toggle */}

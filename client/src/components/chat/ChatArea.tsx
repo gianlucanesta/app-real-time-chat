@@ -765,6 +765,9 @@ export function ChatArea({
         contactInitials={contactInitials}
         contactGradient={contactGradient}
         contactAvatarUrl={contactAvatarUrl}
+        contactFirstName={activeConversation?.firstName}
+        contactLastName={activeConversation?.lastName}
+        contactPhone={activeConversation?.phone}
       />
 
       {/* Chat Header */}

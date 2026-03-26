@@ -95,6 +95,9 @@ export async function list(
           unreadCount,
           isOnline: false,
           participants: parts,
+          phone: partner?.phone ?? "",
+          firstName: partner?.first_name ?? "",
+          lastName: partner?.last_name ?? "",
         };
       }),
     );

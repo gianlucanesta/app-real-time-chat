@@ -87,6 +87,9 @@ export interface Conversation {
   unreadCount: number;
   isOnline?: boolean;
   participants: string[];
+  phone?: string;
+  firstName?: string;
+  lastName?: string;
   isTyping?: boolean;
   typingName?: string;
 }
@@ -267,9 +270,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         .then(({ statuses }) => {
           setFeedStatusUserIds(
             new Set(
-              statuses
-                .filter((s) => !s.allViewed)
-                .map((s) => s.contactId),
+              statuses.filter((s) => !s.allViewed).map((s) => s.contactId),
             ),
           );
         })
