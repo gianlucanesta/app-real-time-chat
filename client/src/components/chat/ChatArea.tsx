@@ -685,7 +685,6 @@ export function ChatArea({
         contactGradient={contactGradient}
         contactAvatarUrl={contactAvatarUrl}
         contactEmail={user?.email}
-        isOnline={isContactOnline}
         mediaCount={
           activeMessages.filter(
             (m) =>
@@ -1238,7 +1237,7 @@ export function ChatArea({
       </div>
 
       {/* Chat Input Area */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 px-3 pb-2 md:px-4 md:pb-2 pt-12 bg-gradient-to-t from-bg via-bg to-transparent">
+      <div className="absolute bottom-0 left-0 right-0 z-20 px-3 pb-2 md:px-4 md:pb-2 pt-2">
         {/* Link preview above input */}
         {(linkPreview || isLoadingPreview) && !isRecording && (
           <div className="mb-2 ml-1">

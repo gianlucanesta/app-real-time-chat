@@ -210,7 +210,7 @@ userRouter.get("/search", authMiddleware, ctrl.search);
  *           type: string
  *     responses:
  *       200:
- *         description: User found (or { found: false })
+ *         description: "User found (or { found: false })"
  *       422:
  *         description: Invalid phone param
  */
