@@ -532,7 +532,7 @@ export function ChatMessage({
                   {/* Reply text as caption */}
                   {text && (
                     <div
-                      className={`px-3 py-2 text-[14px] leading-relaxed ${isSent ? "text-white" : "text-text-main"}`}
+                      className={`pl-3 pr-8 py-2 text-[14px] leading-relaxed ${isSent ? "text-white" : "text-text-main"}`}
                       style={
                         isSent
                           ? {

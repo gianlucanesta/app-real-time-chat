@@ -153,16 +153,25 @@ export function StatusViewer({
     setReplyText("");
   }, [replyText, currentItem, contactStatus, onReply]);
 
-  // Emoji selection
+  // Emoji selection — keep picker open so multiple emojis can be added
   const handleEmojiSelect = useCallback((emoji: string) => {
     setReplyText((prev) => prev + emoji);
-    setShowEmojiPicker(false);
     replyInputRef.current?.focus();
   }, []);
 
-  // Key navigation
+  // Pause timer while typing, resume 2 s after the last keystroke
+  useEffect(() => {
+    if (!replyText) return;
+    setIsPaused(true);
+    const t = setTimeout(() => setIsPaused(false), 2000);
+    return () => clearTimeout(t);
+  }, [replyText]);
+
+  // Key navigation — skip when focus is inside an input/textarea
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
       if (e.key === "ArrowRight") goNext();
       else if (e.key === "ArrowLeft") goPrev();
       else if (e.key === "Escape") onClose();
