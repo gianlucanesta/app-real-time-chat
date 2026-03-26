@@ -11,8 +11,10 @@ import {
   Smile,
   Wand2,
   Plus,
+  Check,
 } from "lucide-react";
 import { getAccessToken } from "../../../src/lib/api";
+import { EmojiPicker } from "./EmojiPicker";
 
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api";
 
@@ -45,6 +47,56 @@ const TEXT_GRADIENTS = [
   "linear-gradient(135deg, #0f172a, #1e293b)",
 ];
 
+type MediaTool = "none" | "draw" | "text" | "emoji" | "filter";
+
+interface TextOverlay {
+  id: number;
+  text: string;
+  color: string;
+}
+interface EmojiOverlay {
+  id: number;
+  emoji: string;
+}
+
+const DRAW_COLORS = [
+  "#ffffff",
+  "#000000",
+  "#ef4444",
+  "#f97316",
+  "#eab308",
+  "#22c55e",
+  "#3b82f6",
+  "#a855f7",
+  "#ec4899",
+];
+const TEXT_COLORS = [
+  "#ffffff",
+  "#ffdd59",
+  "#ff6b6b",
+  "#48dbfb",
+  "#ff9ff3",
+  "#54a0ff",
+];
+const CSS_FILTERS = [
+  "none",
+  "grayscale(100%)",
+  "sepia(80%)",
+  "saturate(200%) contrast(1.1)",
+  "brightness(1.15) contrast(0.9)",
+  "hue-rotate(200deg) saturate(120%)",
+  "brightness(0.85) contrast(1.2)",
+];
+const FILTER_NAMES = [
+  "Original",
+  "B&W",
+  "Sepia",
+  "Vivid",
+  "Fade",
+  "Cool",
+  "Drama",
+];
+
 export function StatusCreator({
   isOpen,
   onClose,
@@ -61,12 +113,36 @@ export function StatusCreator({
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ── Media tool state ──
+  const [activeTool, setActiveTool] = useState<MediaTool>("none");
+  const [drawColor, setDrawColor] = useState("#ffffff");
+  const [textInput, setTextInput] = useState("");
+  const [textColor, setTextColor] = useState("#ffffff");
+  const [textOverlays, setTextOverlays] = useState<TextOverlay[]>([]);
+  const [emojiOverlays, setEmojiOverlays] = useState<EmojiOverlay[]>([]);
+  const [filterIdx, setFilterIdx] = useState(0);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mediaAreaRef = useRef<HTMLDivElement>(null);
+  const isDrawingActive = useRef(false);
+  const lastPtRef = useRef<{ x: number; y: number } | null>(null);
+  const overlayIdRef = useRef(0);
+
   // Sync mode when the creator opens or initialMode changes
   useEffect(() => {
     if (isOpen) {
       setMode(initialMode || "choose");
     }
   }, [isOpen, initialMode]);
+
+  // Init canvas drawing buffer size when media loads
+  useEffect(() => {
+    if (!mediaPreview || !canvasRef.current || !mediaAreaRef.current) return;
+    const { width, height } = mediaAreaRef.current.getBoundingClientRect();
+    if (width > 0 && height > 0) {
+      canvasRef.current.width = width;
+      canvasRef.current.height = height;
+    }
+  }, [mediaPreview]);
 
   const handleClose = () => {
     setMode(initialMode || "choose");
@@ -75,6 +151,15 @@ export function StatusCreator({
     setMediaPreview(null);
     setMediaFile(null);
     setCaption("");
+    setActiveTool("none");
+    setTextInput("");
+    setTextOverlays([]);
+    setEmojiOverlays([]);
+    setFilterIdx(0);
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext("2d");
+      ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    }
     onClose();
   };
 
@@ -107,14 +192,153 @@ export function StatusCreator({
     handleClose();
   };
 
+  /* ── Drawing helpers ──────────────────────────────── */
+  const getCanvasPos = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!canvasRef.current) return null;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const clientX =
+      "touches" in e
+        ? (e as React.TouchEvent).touches[0].clientX
+        : (e as React.MouseEvent).clientX;
+    const clientY =
+      "touches" in e
+        ? (e as React.TouchEvent).touches[0].clientY
+        : (e as React.MouseEvent).clientY;
+    return {
+      x: (clientX - rect.left) * (canvasRef.current.width / rect.width),
+      y: (clientY - rect.top) * (canvasRef.current.height / rect.height),
+    };
+  };
+
+  const handleDrawStart = (e: React.MouseEvent | React.TouchEvent) => {
+    if (activeTool !== "draw") return;
+    e.preventDefault();
+    isDrawingActive.current = true;
+    const pt = getCanvasPos(e);
+    if (!pt || !canvasRef.current) return;
+    lastPtRef.current = pt;
+    const ctx = canvasRef.current.getContext("2d")!;
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = drawColor;
+    ctx.fill();
+  };
+
+  const handleDrawMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawingActive.current || activeTool !== "draw" || !canvasRef.current)
+      return;
+    e.preventDefault();
+    const pt = getCanvasPos(e);
+    if (!pt || !lastPtRef.current) return;
+    const ctx = canvasRef.current.getContext("2d")!;
+    ctx.beginPath();
+    ctx.moveTo(lastPtRef.current.x, lastPtRef.current.y);
+    ctx.lineTo(pt.x, pt.y);
+    ctx.strokeStyle = drawColor;
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.stroke();
+    lastPtRef.current = pt;
+  };
+
+  const handleDrawEnd = () => {
+    isDrawingActive.current = false;
+    lastPtRef.current = null;
+  };
+
+  const addTextOverlay = () => {
+    if (!textInput.trim()) return;
+    setTextOverlays((prev) => [
+      ...prev,
+      { id: overlayIdRef.current++, text: textInput.trim(), color: textColor },
+    ]);
+    setTextInput("");
+    setActiveTool("none");
+  };
+
+  const addEmojiOverlay = (emoji: string) => {
+    setEmojiOverlays((prev) => [
+      ...prev,
+      { id: overlayIdRef.current++, emoji },
+    ]);
+  };
+
+  /* ── Publish with compositing ────────────────────────── */
   const handlePublishMedia = async () => {
     if (!mediaFile) return;
     setIsUploading(true);
     try {
-      // Upload file to Cloudinary via server
-      const formData = new FormData();
-      formData.append("file", mediaFile);
+      let fileToUpload: File = mediaFile;
 
+      // For images, bake filter + drawing + text + emoji onto a canvas
+      if (mediaType === "image" && mediaPreview) {
+        const img = new Image();
+        img.src = mediaPreview;
+        await new Promise<void>((resolve) => {
+          img.onload = () => resolve();
+        });
+        const cvs = document.createElement("canvas");
+        cvs.width = img.naturalWidth;
+        cvs.height = img.naturalHeight;
+        const ctx = cvs.getContext("2d")!;
+
+        const filterCss = CSS_FILTERS[filterIdx];
+        if (filterCss !== "none") ctx.filter = filterCss;
+        ctx.drawImage(img, 0, 0);
+        ctx.filter = "none";
+
+        if (canvasRef.current && canvasRef.current.width > 0) {
+          ctx.drawImage(canvasRef.current, 0, 0, cvs.width, cvs.height);
+        }
+
+        if (textOverlays.length > 0) {
+          const fs = Math.max(32, Math.round(cvs.width * 0.065));
+          ctx.font = `bold ${fs}px Inter, Arial, sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          const lineH = fs * 1.4;
+          const startY =
+            cvs.height / 2 - ((textOverlays.length - 1) * lineH) / 2;
+          textOverlays.forEach((t, i) => {
+            const y = startY + i * lineH;
+            ctx.strokeStyle = "rgba(0,0,0,0.7)";
+            ctx.lineWidth = fs * 0.12;
+            ctx.strokeText(t.text, cvs.width / 2, y);
+            ctx.fillStyle = t.color;
+            ctx.fillText(t.text, cvs.width / 2, y);
+          });
+        }
+
+        if (emojiOverlays.length > 0) {
+          const es = Math.max(48, Math.round(cvs.width * 0.12));
+          ctx.font = `${es}px sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "alphabetic";
+          const gap = es * 1.4;
+          const totalW = emojiOverlays.length * gap;
+          const startX = (cvs.width - totalW) / 2 + gap / 2;
+          emojiOverlays.forEach((em, i) => {
+            ctx.fillText(em.emoji, startX + i * gap, cvs.height - es * 0.3);
+          });
+        }
+
+        const blob = await new Promise<Blob>((resolve, reject) =>
+          cvs.toBlob(
+            (b) => (b ? resolve(b) : reject(new Error("toBlob failed"))),
+            "image/jpeg",
+            0.92,
+          ),
+        );
+        fileToUpload = new File(
+          [blob],
+          mediaFile.name.replace(/\.[^.]+$/, ".jpg"),
+          { type: "image/jpeg" },
+        );
+      }
+
+      const formData = new FormData();
+      formData.append("file", fileToUpload);
       const token = getAccessToken();
       const uploadRes = await fetch(`${API_BASE}/upload`, {
         method: "POST",
@@ -122,7 +346,6 @@ export function StatusCreator({
         credentials: "include",
         body: formData,
       });
-
       if (!uploadRes.ok) throw new Error("Upload failed");
       const { url } = await uploadRes.json();
 
@@ -144,7 +367,11 @@ export function StatusCreator({
   /* ── Media mode: fullscreen WhatsApp-style ── */
   if (mode === "media") {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col bg-black">
+      <div
+        className="fixed inset-0 z-50 flex flex-col bg-black select-none"
+        onMouseUp={handleDrawEnd}
+        onTouchEnd={handleDrawEnd}
+      >
         {/* Top toolbar */}
         <div className="flex items-center justify-between px-4 py-3 shrink-0">
           <button
@@ -156,39 +383,147 @@ export function StatusCreator({
           >
             <X className="w-6 h-6" />
           </button>
-          <div className="flex items-center gap-1">
-            <button className="w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-              <Pencil className="w-5 h-5" />
+
+          {/* Center: tool-specific panel or default 4 icons */}
+          {activeTool === "draw" ? (
+            <div className="flex items-center gap-1.5 bg-black/50 rounded-full px-3 py-1.5">
+              {DRAW_COLORS.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setDrawColor(c)}
+                  className={`w-7 h-7 rounded-full border-2 transition-transform ${
+                    drawColor === c
+                      ? "border-white scale-125"
+                      : "border-white/30 hover:scale-110"
+                  }`}
+                  style={{ background: c }}
+                />
+              ))}
+            </div>
+          ) : activeTool === "filter" ? (
+            <span className="text-white/70 text-[13px] font-medium">
+              Choose a filter
+            </span>
+          ) : activeTool === "emoji" ? (
+            <span className="text-white/70 text-[13px] font-medium">
+              Choose an emoji
+            </span>
+          ) : (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setActiveTool("draw")}
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                title="Draw"
+              >
+                <Pencil className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setActiveTool("text")}
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                title="Add text"
+              >
+                <Type className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setActiveTool("emoji")}
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                title="Add emoji"
+              >
+                <Smile className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setActiveTool("filter")}
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                title="Filters"
+              >
+                <Wand2 className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+
+          {activeTool !== "none" ? (
+            <button
+              className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-[13px] font-medium transition-colors"
+              onClick={() => setActiveTool("none")}
+            >
+              Done
             </button>
-            <button className="w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-              <Type className="w-5 h-5" />
-            </button>
-            <button className="w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-              <Smile className="w-5 h-5" />
-            </button>
-            <button className="w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors">
-              <Wand2 className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="w-10" />
+          ) : (
+            <div className="w-16" />
+          )}
         </div>
 
         {/* Media preview area */}
-        <div className="flex-1 flex items-center justify-center overflow-hidden px-4 py-2">
+        <div
+          ref={mediaAreaRef}
+          className="flex-1 relative flex items-center justify-center overflow-hidden px-4 py-2"
+        >
           {mediaPreview ? (
-            mediaType === "video" ? (
-              <video
-                src={mediaPreview}
-                className="max-w-full max-h-full object-contain rounded-xl"
-                controls
+            <>
+              {mediaType === "video" ? (
+                <video
+                  src={mediaPreview}
+                  className="max-w-full max-h-full object-contain rounded-xl"
+                  controls
+                />
+              ) : (
+                <img
+                  src={mediaPreview}
+                  alt="Preview"
+                  className="max-w-full max-h-full object-contain rounded-xl"
+                  style={{ filter: CSS_FILTERS[filterIdx] }}
+                />
+              )}
+
+              {/* Text overlays */}
+              {textOverlays.map((t, i) => (
+                <div
+                  key={t.id}
+                  className="absolute inset-x-4 text-center pointer-events-none"
+                  style={{
+                    top: `calc(50% + ${
+                      (i - (textOverlays.length - 1) / 2) * 2.8
+                    }rem)`,
+                    transform: "translateY(-50%)",
+                  }}
+                >
+                  <p
+                    className="text-2xl font-bold drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)] whitespace-pre-wrap"
+                    style={{ color: t.color }}
+                  >
+                    {t.text}
+                  </p>
+                </div>
+              ))}
+
+              {/* Emoji overlays */}
+              {emojiOverlays.length > 0 && (
+                <div className="absolute bottom-4 inset-x-0 flex items-center justify-center gap-1 flex-wrap px-8 pointer-events-none">
+                  {emojiOverlays.map((em) => (
+                    <span
+                      key={em.id}
+                      className="text-4xl drop-shadow-lg leading-none"
+                    >
+                      {em.emoji}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Drawing canvas overlay */}
+              <canvas
+                ref={canvasRef}
+                className={`absolute inset-0 w-full h-full ${
+                  activeTool === "draw"
+                    ? "cursor-crosshair z-10"
+                    : "pointer-events-none"
+                }`}
+                onMouseDown={handleDrawStart}
+                onMouseMove={handleDrawMove}
+                onTouchStart={handleDrawStart}
+                onTouchMove={handleDrawMove}
               />
-            ) : (
-              <img
-                src={mediaPreview}
-                alt="Preview"
-                className="max-w-full max-h-full object-contain rounded-xl"
-              />
-            )
+            </>
           ) : (
             <div className="flex flex-col items-center gap-4 text-white/60">
               <ImageIcon className="w-16 h-16 opacity-30" />
@@ -203,60 +538,168 @@ export function StatusCreator({
           )}
         </div>
 
-        {/* Bottom bar */}
-        <div className="flex items-center gap-3 px-4 py-4 shrink-0">
-          {/* Caption input */}
-          <div className="flex-1 flex items-center gap-3 bg-white/10 rounded-full h-11 px-4 border border-white/15">
-            <input
-              type="text"
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              placeholder="Add a caption..."
-              className="flex-1 bg-transparent border-none outline-none text-[13.5px] text-white placeholder:text-white/50"
-              maxLength={500}
-            />
-            <Smile className="w-5 h-5 text-white/50 shrink-0" />
-          </div>
-
-          {/* Thumbnail + add-more */}
-          <div className="flex items-center gap-2 shrink-0">
-            {mediaPreview && (
-              <div className="w-11 h-11 rounded-lg overflow-hidden border-2 border-accent shrink-0">
-                {mediaType === "video" ? (
-                  <video
-                    src={mediaPreview}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
+        {/* Filter strip */}
+        {activeTool === "filter" && mediaPreview && mediaType === "image" && (
+          <div className="flex gap-3 px-4 py-3 overflow-x-auto shrink-0 bg-black/70">
+            {CSS_FILTERS.map((f, i) => (
+              <button
+                key={i}
+                onClick={() => setFilterIdx(i)}
+                className={`flex flex-col items-center gap-1.5 shrink-0 transition-transform ${
+                  filterIdx === i ? "scale-110" : "hover:scale-105"
+                }`}
+              >
+                <div
+                  className={`w-16 h-16 rounded-xl overflow-hidden ${
+                    filterIdx === i
+                      ? "ring-2 ring-white"
+                      : "ring-1 ring-white/20"
+                  }`}
+                >
                   <img
                     src={mediaPreview}
-                    alt="thumb"
+                    alt={FILTER_NAMES[i]}
                     className="w-full h-full object-cover"
+                    style={{ filter: f }}
                   />
-                )}
+                </div>
+                <span className="text-[10px] text-white/70 font-medium">
+                  {FILTER_NAMES[i]}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Text input bar */}
+        {activeTool === "text" && (
+          <div className="flex flex-col gap-2 px-4 py-3 bg-black/80 shrink-0">
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                placeholder="Type overlay text..."
+                autoFocus
+                className="flex-1 bg-white/10 rounded-full px-4 py-2.5 text-[14px] text-white placeholder:text-white/40 outline-none border border-white/15"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") addTextOverlay();
+                }}
+              />
+              <button
+                className="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-white hover:bg-accent-hover transition-colors disabled:opacity-40"
+                disabled={!textInput.trim()}
+                onClick={addTextOverlay}
+              >
+                <Check className="w-4 h-4" />
+              </button>
+            </div>
+            {/* Text color picker */}
+            <div className="flex items-center gap-2">
+              {TEXT_COLORS.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setTextColor(c)}
+                  className={`w-7 h-7 rounded-full border-2 transition-transform ${
+                    textColor === c
+                      ? "border-white scale-125"
+                      : "border-white/30 hover:scale-110"
+                  }`}
+                  style={{ background: c }}
+                />
+              ))}
+            </div>
+            {/* Existing text overlays with delete */}
+            {textOverlays.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {textOverlays.map((t) => (
+                  <div
+                    key={t.id}
+                    className="flex items-center gap-1 bg-white/10 rounded-full px-3 py-1"
+                  >
+                    <span className="text-[12px]" style={{ color: t.color }}>
+                      {t.text}
+                    </span>
+                    <button
+                      onClick={() =>
+                        setTextOverlays((prev) =>
+                          prev.filter((x) => x.id !== t.id),
+                        )
+                      }
+                    >
+                      <X className="w-3 h-3 text-white/60 hover:text-white" />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Emoji picker panel */}
+        {activeTool === "emoji" && (
+          <div className="shrink-0 z-20">
+            <EmojiPicker
+              onSelect={addEmojiOverlay}
+              onClose={() => setActiveTool("none")}
+              position="bottom"
+              align="left"
+            />
+          </div>
+        )}
+
+        {/* Bottom bar (default / no active tool) */}
+        {activeTool === "none" && (
+          <div className="flex items-center gap-3 px-4 py-4 shrink-0">
+            <div className="flex-1 flex items-center gap-3 bg-white/10 rounded-full h-11 px-4 border border-white/15">
+              <input
+                type="text"
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                placeholder="Add a caption..."
+                className="flex-1 bg-transparent border-none outline-none text-[13.5px] text-white placeholder:text-white/50"
+                maxLength={500}
+              />
+              <Smile className="w-5 h-5 text-white/50 shrink-0" />
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {mediaPreview && (
+                <div className="w-11 h-11 rounded-lg overflow-hidden border-2 border-accent shrink-0">
+                  {mediaType === "video" ? (
+                    <video
+                      src={mediaPreview}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <img
+                      src={mediaPreview}
+                      alt="thumb"
+                      className="w-full h-full object-cover"
+                      style={{ filter: CSS_FILTERS[filterIdx] }}
+                    />
+                  )}
+                </div>
+              )}
+              <button
+                className="w-11 h-11 rounded-lg border-2 border-white/30 flex items-center justify-center text-white/70 hover:text-white hover:border-white/60 transition-colors shrink-0"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+            </div>
             <button
-              className="w-11 h-11 rounded-lg border-2 border-white/30 flex items-center justify-center text-white/70 hover:text-white hover:border-white/60 transition-colors shrink-0"
-              onClick={() => fileInputRef.current?.click()}
+              className="w-12 h-12 rounded-full bg-accent hover:bg-accent-hover flex items-center justify-center text-white shrink-0 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-lg"
+              onClick={handlePublishMedia}
+              disabled={!mediaPreview || isUploading}
             >
-              <Plus className="w-5 h-5" />
+              {isUploading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
             </button>
           </div>
-
-          {/* Send */}
-          <button
-            className="w-12 h-12 rounded-full bg-green-500 hover:bg-green-400 flex items-center justify-center text-white shrink-0 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-lg"
-            onClick={handlePublishMedia}
-            disabled={!mediaPreview || isUploading}
-          >
-            {isUploading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Send className="w-5 h-5" />
-            )}
-          </button>
-        </div>
+        )}
 
         {/* Hidden file input */}
         <input
