@@ -9,6 +9,7 @@ import { registerMessageHandlers } from "./message.handler.js";
 import { registerPresenceHandlers } from "./presence.handler.js";
 import { registerTypingHandlers } from "./typing.handler.js";
 import { registerCallHandlers } from "./call.handler.js";
+import { registerCommunityHandlers } from "./community.handler.js";
 
 export type TypedServer = Server<
   ClientToServerEvents,
@@ -34,5 +35,6 @@ export function initSocket(io: TypedServer): void {
     registerMessageHandlers(io, socket);
     registerTypingHandlers(io, socket);
     registerCallHandlers(io, socket);
+    registerCommunityHandlers(io, socket);
   });
 }

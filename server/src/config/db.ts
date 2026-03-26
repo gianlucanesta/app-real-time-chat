@@ -113,6 +113,46 @@ export async function initSchema(): Promise<void> {
       followed_at TIMESTAMPTZ DEFAULT now(),
       PRIMARY KEY (channel_id, user_id)
     );
+
+    -- Idempotent migration: communities
+    CREATE TABLE IF NOT EXISTS communities (
+      id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+      name          TEXT        NOT NULL,
+      description   TEXT        NOT NULL DEFAULT '',
+      icon_url      TEXT,
+      created_by    UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      member_count  INT         NOT NULL DEFAULT 0,
+      created_at    TIMESTAMPTZ DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS community_members (
+      id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+      community_id  UUID        NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
+      user_id       UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      role          TEXT        NOT NULL DEFAULT 'member',
+      muted_until   TIMESTAMPTZ,
+      joined_at     TIMESTAMPTZ DEFAULT now(),
+      UNIQUE (community_id, user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS community_groups (
+      id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+      community_id  UUID        NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
+      name          TEXT        NOT NULL,
+      description   TEXT        NOT NULL DEFAULT '',
+      icon_url      TEXT,
+      created_by    UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      member_count  INT         NOT NULL DEFAULT 0,
+      created_at    TIMESTAMPTZ DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS announcements (
+      id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+      community_id  UUID        NOT NULL REFERENCES communities(id) ON DELETE CASCADE,
+      author_id     UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      content       TEXT        NOT NULL,
+      created_at    TIMESTAMPTZ DEFAULT now()
+    );
   `);
   console.log("[pg] schema ready");
 }

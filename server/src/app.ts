@@ -16,6 +16,7 @@ import { messageRouter } from "./routes/message.routes.js";
 import { conversationRouter } from "./routes/conversation.routes.js";
 import { uploadRouter } from "./routes/upload.routes.js";
 import { statusRouter } from "./routes/status.routes.js";
+import { communityRouter } from "./routes/community.routes.js";
 
 /**
  * Express app factory.
@@ -86,6 +87,7 @@ export function createApp(): express.Express {
   app.use("/api/conversations", conversationRouter);
   app.use("/api/upload", uploadRouter);
   app.use("/api/status", statusRouter);
+  app.use("/api/communities", communityRouter);
 
   // ── Error handler (must be last) ───────────────────────────────────────────
   app.use(errorHandler);

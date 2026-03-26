@@ -97,9 +97,26 @@ export interface ServerToClientEvents {
     avatarUrl: string | null;
   }) => void;
   /** Sent to the status owner whenever someone views one of their items */
-  "status:viewed": (data: {
-    itemId: string;
-    viewerCount: number;
+  "status:viewed": (data: { itemId: string; viewerCount: number }) => void;
+
+  // ── Community events ──
+  "community:created": (data: { community: unknown }) => void;
+  "community:updated": (data: { community: unknown }) => void;
+  "community:announcement": (data: {
+    communityId: string;
+    announcement: unknown;
+  }) => void;
+  "community:memberJoined": (data: {
+    communityId: string;
+    userId: string;
+  }) => void;
+  "community:memberLeft": (data: {
+    communityId: string;
+    userId: string;
+  }) => void;
+  "community:groupAdded": (data: {
+    communityId: string;
+    group: unknown;
   }) => void;
 }
 
@@ -157,6 +174,10 @@ export interface ClientToServerEvents {
   "call:end": (data: { to: string }) => void;
   "call:reject": (data: { to: string }) => void;
   "call:screenshare": (data: { to: string; active: boolean }) => void;
+
+  // ── Community rooms ──
+  "join:community": (communityId: string) => void;
+  "leave:community": (communityId: string) => void;
 }
 
 export interface SocketData {
