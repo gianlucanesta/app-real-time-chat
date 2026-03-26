@@ -133,6 +133,7 @@ interface ChatContextType {
   reactions: Record<string, Reaction[]>;
   reactToMessage: (messageId: string, emoji: string) => void;
   feedStatusUserIds: Set<string>;
+  removeFeedStatusUserId: (userId: string) => void;
   sendStatusReplyMessage: (
     recipientId: string,
     conversationId: string,
@@ -259,10 +260,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (user) {
       void loadConversations();
-      // Fetch status feed to know which contacts have active statuses (for blue border)
-      apiFetch<{ statuses: Array<{ contactId: string }> }>("/status/feed")
+      // Fetch status feed to know which contacts have UNSEEN statuses (for blue border)
+      apiFetch<{
+        statuses: Array<{ contactId: string; allViewed: boolean }>;
+      }>("/status/feed")
         .then(({ statuses }) => {
-          setFeedStatusUserIds(new Set(statuses.map((s) => s.contactId)));
+          setFeedStatusUserIds(
+            new Set(
+              statuses
+                .filter((s) => !s.allViewed)
+                .map((s) => s.contactId),
+            ),
+          );
         })
         .catch(() => {});
     } else {
@@ -1526,6 +1535,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         reactions,
         reactToMessage,
         feedStatusUserIds,
+        removeFeedStatusUserId: (userId: string) => {
+          setFeedStatusUserIds((prev) => {
+            const next = new Set(prev);
+            next.delete(userId);
+            return next;
+          });
+        },
         sendStatusReplyMessage,
         webrtc,
       }}

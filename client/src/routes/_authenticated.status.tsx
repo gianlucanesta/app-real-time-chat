@@ -53,6 +53,7 @@ function StatusPage() {
     sendStatusReplyMessage,
     setActiveConversation,
     addOrUpdateConversation,
+    removeFeedStatusUserId,
     socket,
   } = useChat();
   const navigate = useNavigate();
@@ -260,14 +261,19 @@ function StatusPage() {
         const updatedItems = cs.items.map((i) =>
           i.id === itemId ? { ...i, viewed: true } : i,
         );
+        const allViewed = updatedItems.every((i) => i.viewed);
+        // Remove blue ring from chat sidebar when all items are viewed
+        if (allViewed) {
+          removeFeedStatusUserId(cs.contactId);
+        }
         return {
           ...cs,
           items: updatedItems,
-          allViewed: updatedItems.every((i) => i.viewed),
+          allViewed,
         };
       }),
     );
-  }, []);
+  }, [removeFeedStatusUserId]);
 
   // Real-time: update viewer count when someone views my status
   useEffect(() => {

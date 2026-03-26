@@ -684,6 +684,46 @@ export function ChatArea({
         contactInitials={contactInitials}
         contactGradient={contactGradient}
         contactAvatarUrl={contactAvatarUrl}
+        contactEmail={user?.email}
+        isOnline={isContactOnline}
+        mediaCount={
+          activeMessages.filter(
+            (m) =>
+              m.mediaType === "image" ||
+              m.mediaType === "video" ||
+              m.mediaType === "document",
+          ).length
+        }
+        starredCount={0}
+        onAudioCall={() => {
+          const target = activeConversation?.participants.find(
+            (p) => p !== user?.id,
+          );
+          if (target) void webrtc.startCall(target, false);
+        }}
+        onVideoCall={() => {
+          const target = activeConversation?.participants.find(
+            (p) => p !== user?.id,
+          );
+          if (target) void webrtc.startCall(target, true);
+        }}
+        onClearChat={() => {
+          setIsContactInfoOpen(false);
+          setActiveModal("clear-chat");
+        }}
+        onDeleteChat={() => {
+          setIsContactInfoOpen(false);
+          setActiveModal("delete-chat");
+        }}
+        onBlockContact={() => {
+          toast.show("Contact blocked", "info");
+        }}
+        onReportContact={() => {
+          toast.show("Contact reported", "info");
+        }}
+        onAddToFavorites={() => {
+          toast.show("Added to favorites", "info");
+        }}
       />
       <EditContactPanel
         isOpen={isEditContactOpen}
