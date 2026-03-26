@@ -1186,22 +1186,51 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setPendingRemoteDeletions((prev) => prev.filter((id) => !ids.includes(id)));
   }, []);
 
-  const markAllAsRead = useCallback(async (conversationIds?: string[]) => {
-    setConversations((prev) =>
-      prev.map((c) => {
-        if (conversationIds && !conversationIds.includes(c.id)) return c;
-        return { ...c, unreadCount: 0 };
-      }),
-    );
-    try {
-      await apiFetch("/messages/mark-all-read", {
-        method: "PATCH",
-        body: JSON.stringify(conversationIds ? { conversationIds } : {}),
-      });
-    } catch (err) {
-      console.warn("[chat] markAllAsRead failed:", (err as Error).message);
-    }
-  }, []);
+  const markAllAsRead = useCallback(
+    async (conversationIds?: string[]) => {
+      // Zero unread counts optimistically
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (conversationIds && !conversationIds.includes(c.id)) return c;
+          return { ...c, unreadCount: 0 };
+        }),
+      );
+
+      // If the currently open conversation is included, also update its messages
+      const activeId = activeConvRef.current?.id;
+      if (
+        activeId &&
+        (!conversationIds || conversationIds.includes(activeId))
+      ) {
+        const unreadIds = activeMessagesRef.current
+          .filter((m) => !m.isMe && m.status !== "read")
+          .map((m) => m.id);
+
+        // Update local message status immediately
+        setActiveMessages((prev) =>
+          prev.map((m) => (!m.isMe ? { ...m, status: "read" as const } : m)),
+        );
+
+        // Notify senders via socket so they see blue double-ticks
+        if (unreadIds.length > 0 && socket) {
+          socket.emit("message:read", {
+            messageIds: unreadIds,
+            conversationId: activeId,
+          });
+        }
+      }
+
+      try {
+        await apiFetch("/messages/mark-all-read", {
+          method: "PATCH",
+          body: JSON.stringify(conversationIds ? { conversationIds } : {}),
+        });
+      } catch (err) {
+        console.warn("[chat] markAllAsRead failed:", (err as Error).message);
+      }
+    },
+    [socket],
+  );
 
   const clearConversationById = useCallback((convId: string) => {
     if (activeConvRef.current?.id === convId) {
@@ -1222,7 +1251,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       ),
     );
     apiFetch(`/messages/${convId}`, { method: "DELETE" }).catch((err) =>
-      console.warn("[chat] clearConversationById failed:", (err as Error).message),
+      console.warn(
+        "[chat] clearConversationById failed:",
+        (err as Error).message,
+      ),
     );
   }, []);
 

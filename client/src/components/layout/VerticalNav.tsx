@@ -3,7 +3,7 @@ import {
   MessageSquare,
   Phone,
   Megaphone,
-  Star,
+  Users,
   Archive,
   CircleDashed,
 } from "lucide-react";
@@ -35,7 +35,7 @@ export function VerticalNav() {
     { icon: Phone, path: "/calls", label: "Calls" },
     { icon: CircleDashed, path: "/status", label: "Status" },
     { icon: Megaphone, path: "/channels", label: "Channels" },
-    { icon: Star, path: "/favorites", label: "Favorites" },
+    { icon: Users, path: "/community", label: "Community" },
     { icon: Archive, path: "/archive", label: "Archive" },
   ];
 

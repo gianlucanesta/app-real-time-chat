@@ -101,7 +101,7 @@ export function NewGroupPanel({ isOpen, onClose }: NewGroupPanelProps) {
 
   return (
     <div
-      className={`absolute inset-0 z-[21] bg-card flex flex-col transition-transform duration-300 ease-in-out border-r border-border ${isOpen ? "translate-x-0" : "translate-x-full"}`}
+      className={`absolute inset-0 z-[21] bg-card flex flex-col transition-transform duration-300 ease-in-out border-l border-r border-border ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       aria-hidden={!isOpen}
     >
       {/* ── STEP 1: Select participants ── */}

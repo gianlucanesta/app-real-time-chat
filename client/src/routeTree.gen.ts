@@ -22,6 +22,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
 import { Route as AuthenticatedStatusRouteImport } from './routes/_authenticated.status'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
+import { Route as AuthenticatedCommunityRouteImport } from './routes/_authenticated.community'
 import { Route as AuthenticatedChannelsRouteImport } from './routes/_authenticated.channels'
 import { Route as AuthenticatedCallsRouteImport } from './routes/_authenticated.calls'
 
@@ -89,6 +90,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCommunityRoute = AuthenticatedCommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedChannelsRoute = AuthenticatedChannelsRouteImport.update({
   id: '/channels',
   path: '/channels',
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/verify-email': typeof VerifyEmailRoute
   '/calls': typeof AuthenticatedCallsRoute
   '/channels': typeof AuthenticatedChannelsRoute
+  '/community': typeof AuthenticatedCommunityRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/status': typeof AuthenticatedStatusRoute
 }
@@ -128,6 +135,7 @@ export interface FileRoutesByTo {
   '/verify-email': typeof VerifyEmailRoute
   '/calls': typeof AuthenticatedCallsRoute
   '/channels': typeof AuthenticatedChannelsRoute
+  '/community': typeof AuthenticatedCommunityRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/status': typeof AuthenticatedStatusRoute
   '/': typeof AuthenticatedIndexRoute
@@ -146,6 +154,7 @@ export interface FileRoutesById {
   '/verify-email': typeof VerifyEmailRoute
   '/_authenticated/calls': typeof AuthenticatedCallsRoute
   '/_authenticated/channels': typeof AuthenticatedChannelsRoute
+  '/_authenticated/community': typeof AuthenticatedCommunityRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/status': typeof AuthenticatedStatusRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -165,6 +174,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/calls'
     | '/channels'
+    | '/community'
     | '/settings'
     | '/status'
   fileRoutesByTo: FileRoutesByTo
@@ -180,6 +190,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/calls'
     | '/channels'
+    | '/community'
     | '/settings'
     | '/status'
     | '/'
@@ -197,6 +208,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/_authenticated/calls'
     | '/_authenticated/channels'
+    | '/_authenticated/community'
     | '/_authenticated/settings'
     | '/_authenticated/status'
     | '/_authenticated/'
@@ -308,6 +320,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/community': {
+      id: '/_authenticated/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof AuthenticatedCommunityRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/channels': {
       id: '/_authenticated/channels'
       path: '/channels'
@@ -328,6 +347,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedCallsRoute: typeof AuthenticatedCallsRoute
   AuthenticatedChannelsRoute: typeof AuthenticatedChannelsRoute
+  AuthenticatedCommunityRoute: typeof AuthenticatedCommunityRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStatusRoute: typeof AuthenticatedStatusRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -336,6 +356,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCallsRoute: AuthenticatedCallsRoute,
   AuthenticatedChannelsRoute: AuthenticatedChannelsRoute,
+  AuthenticatedCommunityRoute: AuthenticatedCommunityRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStatusRoute: AuthenticatedStatusRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

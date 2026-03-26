@@ -90,7 +90,7 @@ export function NewChatPanel({
 
   return (
     <div
-      className={`absolute inset-0 z-20 bg-bg md:bg-card flex flex-col transition-transform duration-200 ease-in-out ${isOpen ? "translate-x-0" : "translate-x-full"}`}
+      className={`absolute inset-0 z-20 bg-bg md:bg-card flex flex-col transition-transform duration-200 ease-in-out border-l border-r border-border ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       aria-hidden={!isOpen}
     >
       <div className="flex items-center gap-3 p-4 border-b border-border bg-card shrink-0 h-[64px]">
@@ -184,7 +184,12 @@ export function NewChatPanel({
             role="button"
             tabIndex={0}
             onClick={() => handleSelectUser(u)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectUser(u); } }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleSelectUser(u);
+              }
+            }}
             className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-input/50 transition-colors"
           >
             <div className="relative inline-block shrink-0">
