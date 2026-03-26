@@ -91,47 +91,43 @@ export function ContactProfilePanel({
       className={`absolute inset-0 z-[30] bg-bg md:bg-card flex flex-col transition-transform duration-200 ease-in-out ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       aria-hidden={!isOpen}
     >
-      {/* Panel Header */}
-      <div className="flex items-center gap-3 p-4 border-b border-border bg-card shrink-0 h-[64px]">
-        <button
-          type="button"
-          className="w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors shrink-0"
-          onClick={onClose}
-          aria-label="Close"
-        >
-          <X className="w-5 h-5" />
-        </button>
-        <h2 className="flex-1 text-[17px] font-semibold text-text-main">
-          Contact info
-        </h2>
-        <button
-          type="button"
-          className="w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors shrink-0"
-          onClick={onEditClick}
-          aria-label="Edit contact"
-        >
-          <Edit3 className="w-5 h-5" />
-        </button>
-      </div>
-
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border bg-bg pb-6">
-        {/* Hero: large avatar + name + contact info */}
+        {/* Hero: close/edit buttons flanking avatar + name + contact info */}
         <div className="flex flex-col items-center justify-center pt-8 pb-6 px-4">
-          {contactAvatarUrl ? (
-            <img
-              src={contactAvatarUrl}
-              alt={contactName}
-              className="w-24 h-24 rounded-full object-cover mb-4 shadow-sm"
-            />
-          ) : (
-            <div
-              className="w-24 h-24 rounded-full text-3xl font-bold flex items-center justify-center mb-4 shadow-sm"
-              style={{ background: contactGradient, color: "#fff" }}
+          {/* Avatar row with X on left, Edit on right */}
+          <div className="flex items-center justify-center gap-6 w-full max-w-xs mb-4">
+            <button
+              type="button"
+              className="w-10 h-10 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors shrink-0"
+              onClick={onClose}
+              aria-label="Close"
             >
-              {contactInitials}
-            </div>
-          )}
+              <X className="w-5 h-5" />
+            </button>
+            {contactAvatarUrl ? (
+              <img
+                src={contactAvatarUrl}
+                alt={contactName}
+                className="w-24 h-24 rounded-full object-cover shadow-sm shrink-0"
+              />
+            ) : (
+              <div
+                className="w-24 h-24 rounded-full text-3xl font-bold flex items-center justify-center shadow-sm shrink-0"
+                style={{ background: contactGradient, color: "#fff" }}
+              >
+                {contactInitials}
+              </div>
+            )}
+            <button
+              type="button"
+              className="w-10 h-10 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors shrink-0"
+              onClick={onEditClick}
+              aria-label="Edit contact"
+            >
+              <Edit3 className="w-5 h-5" />
+            </button>
+          </div>
           <div className="text-xl font-bold text-text-main mb-0.5">
             {contactName}
           </div>
