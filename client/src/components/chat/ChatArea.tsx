@@ -150,7 +150,10 @@ export function ChatArea({
   const handleOpenContactInfo = () => setIsContactInfoOpen(true);
   const handleCloseContactInfo = () => setIsContactInfoOpen(false);
 
-  const handleOpenEditContact = () => setIsEditContactOpen(true);
+  const handleOpenEditContact = () => {
+    setIsContactInfoOpen(false);
+    setIsEditContactOpen(true);
+  };
   const handleCloseEditContact = () => setIsEditContactOpen(false);
 
   // Select Mode State
@@ -716,7 +719,6 @@ export function ChatArea({
         contactInitials={contactInitials}
         contactGradient={contactGradient}
         contactAvatarUrl={contactAvatarUrl}
-        contactEmail={user?.email}
         mediaCount={
           activeMessages.filter(
             (m) =>

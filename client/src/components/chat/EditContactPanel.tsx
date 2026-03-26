@@ -37,7 +37,7 @@ export function EditContactPanel({
 
   return (
     <div
-      className={`absolute inset-0 z-[51] bg-card flex flex-col transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0" : "translate-x-full"}`}
+      className={`absolute inset-0 z-[80] bg-card flex flex-col transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       aria-hidden={!isOpen}
     >
       {/* Header */}
@@ -83,7 +83,7 @@ export function EditContactPanel({
         </div>
 
         {/* Fields Section — constrained width, centered */}
-        <div className="px-5 max-w-md mx-auto">
+        <div className="px-5 max-w-md md:max-w-2xl mx-auto">
           {/* Name fields */}
           <div className="flex items-start gap-5 mb-8">
             <div className="w-6 flex justify-center pt-[30px] text-text-secondary">

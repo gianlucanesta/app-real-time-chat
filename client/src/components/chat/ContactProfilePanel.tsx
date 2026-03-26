@@ -137,14 +137,11 @@ export function ContactProfilePanel({
           {contactPhone && (
             <div className="text-sm text-text-secondary">{contactPhone}</div>
           )}
-          {contactEmail && (
-            <div className="text-sm text-text-secondary">{contactEmail}</div>
-          )}
         </div>
 
         {/* Quick action buttons: Audio | Video | Search */}
         <div className="flex items-center justify-center mb-6 px-4">
-          <div className="flex items-center gap-2 w-full max-w-xs">
+          <div className="flex items-center gap-2 w-full max-w-xs md:max-w-xl">
             <button
               type="button"
               className="flex flex-col items-center justify-center flex-1 py-3 bg-card rounded-xl hover:bg-input transition-colors border border-border/50 text-accent"
@@ -174,7 +171,7 @@ export function ContactProfilePanel({
 
         {/* Bio / Info section */}
         {contactBio && (
-          <div className="bg-card mb-2 mx-auto w-full max-w-xs rounded-xl border border-border/50 overflow-hidden shadow-sm px-4 py-3.5">
+          <div className="bg-card mb-2 mx-auto w-full max-w-xs md:max-w-xl rounded-xl border border-border/50 overflow-hidden shadow-sm px-4 py-3.5">
             <div className="text-xs font-semibold text-text-secondary mb-1">
               Info
             </div>
@@ -183,7 +180,7 @@ export function ContactProfilePanel({
         )}
 
         {/* Group 1: Media + Important */}
-        <div className="bg-card mb-2 mx-auto w-full max-w-xs rounded-xl border border-border/50 overflow-hidden shadow-sm">
+        <div className="bg-card mb-2 mx-auto w-full max-w-xs md:max-w-xl rounded-xl border border-border/50 overflow-hidden shadow-sm">
           <button
             type="button"
             className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-input transition-colors text-text-main text-sm"
@@ -214,7 +211,7 @@ export function ContactProfilePanel({
         </div>
 
         {/* Group 2: Notifications + Chat theme */}
-        <div className="bg-card mb-2 mx-auto w-full max-w-xs rounded-xl border border-border/50 overflow-hidden shadow-sm">
+        <div className="bg-card mb-2 mx-auto w-full max-w-xs md:max-w-xl rounded-xl border border-border/50 overflow-hidden shadow-sm">
           <button
             type="button"
             className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-input transition-colors text-text-main text-sm"
@@ -239,7 +236,7 @@ export function ContactProfilePanel({
         </div>
 
         {/* Group 3: Disappearing messages + Encryption */}
-        <div className="bg-card mb-2 mx-auto w-full max-w-xs rounded-xl border border-border/50 overflow-hidden shadow-sm">
+        <div className="bg-card mb-2 mx-auto w-full max-w-xs md:max-w-xl rounded-xl border border-border/50 overflow-hidden shadow-sm">
           <button
             type="button"
             className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-input transition-colors text-text-main text-sm"
@@ -275,7 +272,7 @@ export function ContactProfilePanel({
 
         {/* Groups in common */}
         {groupsInCommon.length > 0 && (
-          <div className="bg-card mb-2 mx-auto w-full max-w-xs rounded-xl border border-border/50 overflow-hidden shadow-sm">
+          <div className="bg-card mb-2 mx-auto w-full max-w-xs md:max-w-xl rounded-xl border border-border/50 overflow-hidden shadow-sm">
             <div className="px-4 pt-3.5 pb-2">
               <div className="flex items-center gap-2 text-xs font-semibold text-text-secondary">
                 <Users2 className="w-4 h-4" />
@@ -318,7 +315,7 @@ export function ContactProfilePanel({
         )}
 
         {/* Add to favorites */}
-        <div className="bg-card mb-2 mx-auto w-full max-w-xs rounded-xl border border-border/50 overflow-hidden shadow-sm">
+        <div className="bg-card mb-2 mx-auto w-full max-w-xs md:max-w-xl rounded-xl border border-border/50 overflow-hidden shadow-sm">
           <button
             type="button"
             className="w-full flex items-center gap-4 px-4 py-3.5 hover:bg-input transition-colors text-sm font-medium text-text-main"
@@ -334,7 +331,7 @@ export function ContactProfilePanel({
         </div>
 
         {/* Danger actions: Clear chat + Block + Report + Delete */}
-        <div className="bg-card mx-auto w-full max-w-xs rounded-xl border border-border/50 overflow-hidden shadow-sm">
+        <div className="bg-card mx-auto w-full max-w-xs md:max-w-xl rounded-xl border border-border/50 overflow-hidden shadow-sm">
           <button
             type="button"
             className="w-full flex items-center gap-4 px-4 py-3.5 hover:bg-danger/10 text-danger transition-colors text-sm font-medium"
