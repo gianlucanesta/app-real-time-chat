@@ -1,4 +1,11 @@
-import { ChevronLeft, Trash2, Phone, Save } from "lucide-react";
+import { useState } from "react";
+import {
+  ArrowLeft,
+  User,
+  Phone as PhoneIcon,
+  Trash2,
+  Save,
+} from "lucide-react";
 
 interface EditContactPanelProps {
   isOpen: boolean;
@@ -17,25 +24,36 @@ export function EditContactPanel({
   contactGradient,
   contactAvatarUrl,
 }: EditContactPanelProps) {
+  const [firstName, setFirstName] = useState(contactName.split(" ")[0] ?? "");
+  const [lastName, setLastName] = useState(
+    contactName.split(" ").slice(1).join(" "),
+  );
+  const [phone, setPhone] = useState("340 822 4072");
+  const [country, setCountry] = useState("+39");
+
+  const avatarInitials =
+    `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() ||
+    contactInitials;
+
   return (
     <div
-      className={`edit-contact-panel ${isOpen ? "open" : ""}`}
+      className={`absolute inset-0 z-[51] bg-card flex flex-col transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       aria-hidden={!isOpen}
     >
       {/* Header */}
-      <div className="edit-contact-header">
+      <div className="flex items-center gap-3 px-4 h-[60px] border-b border-border shrink-0">
         <button
-          type="button"
-          className="icon-btn"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-text-secondary hover:bg-bg transition-colors"
           onClick={onClose}
           aria-label="Back"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ArrowLeft className="w-6 h-6" />
         </button>
-        <h2>Edit contact</h2>
+        <h2 className="flex-1 text-[19px] font-semibold text-text-main">
+          Edit contact
+        </h2>
         <button
-          type="button"
-          className="icon-btn ecp-delete-btn-icon"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-red-500 hover:bg-red-500/10 transition-colors"
           aria-label="Delete contact"
         >
           <Trash2 className="w-5 h-5" />
@@ -43,91 +61,90 @@ export function EditContactPanel({
       </div>
 
       {/* Body */}
-      <div className="edit-contact-body">
-        {/* Avatar */}
-        <div className="ecp-avatar-section">
-          {contactAvatarUrl ? (
-            <img
-              src={contactAvatarUrl}
-              alt={contactName}
-              className="ecp-avatar rounded-full object-cover"
-            />
-          ) : (
-            <div
-              className="ecp-avatar"
-              style={{
-                background: contactGradient,
-                color: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              {contactInitials}
-            </div>
-          )}
+      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border bg-bg pb-6">
+        {/* Avatar Section */}
+        <div className="flex flex-col items-center justify-center pt-8 pb-8">
+          <div className="w-[100px] h-[100px] rounded-full overflow-hidden border border-border">
+            {contactAvatarUrl ? (
+              <img
+                src={contactAvatarUrl}
+                alt={contactName}
+                className="w-full h-full rounded-full object-cover"
+              />
+            ) : (
+              <div
+                className="w-full h-full flex items-center justify-center text-4xl font-semibold text-white"
+                style={{ background: contactGradient }}
+              >
+                {avatarInitials}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Fields */}
-        <div className="ecp-fields-section">
+        {/* Fields Section — constrained width, centered */}
+        <div className="px-5 max-w-md mx-auto">
           {/* Name fields */}
-          <div className="ecp-field-row">
-            <div className="ecp-field-icon">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-[18px] h-[18px]"
-              >
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
+          <div className="flex items-start gap-5 mb-8">
+            <div className="w-6 flex justify-center pt-[30px] text-text-secondary">
+              <User className="w-[22px] h-[22px]" />
             </div>
-            <div className="ecp-field-inputs">
-              <div className="ecp-field">
-                <label className="ecp-field-label" htmlFor="ecp-first-name">
-                  Name
+            <div className="flex-1 flex flex-col gap-6">
+              <div className="flex flex-col">
+                <label
+                  className="text-[13px] text-text-secondary mb-1"
+                  htmlFor="ecp-first-name"
+                >
+                  First name
                 </label>
                 <input
                   type="text"
                   id="ecp-first-name"
-                  className="ecp-input"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full bg-transparent text-text-main px-0 py-1.5 border-b border-border focus:border-accent outline-none text-[15px] transition-colors placeholder:text-text-secondary/50"
                   placeholder="First name"
-                  defaultValue={contactName.split(" ")[0]}
+                  autoComplete="off"
                 />
               </div>
-              <div className="ecp-field">
-                <label className="ecp-field-label" htmlFor="ecp-last-name">
+              <div className="flex flex-col">
+                <label
+                  className="text-[13px] text-text-secondary mb-1"
+                  htmlFor="ecp-last-name"
+                >
                   Last name
                 </label>
                 <input
                   type="text"
                   id="ecp-last-name"
-                  className="ecp-input"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="w-full bg-transparent text-text-main px-0 py-1.5 border-b border-border focus:border-accent outline-none text-[15px] transition-colors placeholder:text-text-secondary/50"
                   placeholder="Last name"
-                  defaultValue={contactName.split(" ").slice(1).join(" ")}
+                  autoComplete="off"
                 />
               </div>
             </div>
           </div>
 
           {/* Phone row */}
-          <div className="ecp-field-row">
-            <div className="ecp-field-icon ecp-phone-icon">
-              <Phone className="w-[18px] h-[18px]" />
+          <div className="flex items-start gap-5 mb-2">
+            <div className="w-6 flex justify-center pt-[30px] text-text-secondary">
+              <PhoneIcon className="w-[22px] h-[22px]" />
             </div>
-            <div className="ecp-phone-fields">
-              <div className="ecp-field">
-                <label className="ecp-field-label" htmlFor="ecp-country">
+            <div className="flex-1 flex gap-4">
+              <div className="flex flex-col w-[110px] shrink-0">
+                <label
+                  className="text-[13px] text-text-secondary mb-1"
+                  htmlFor="ecp-country"
+                >
                   Country code
                 </label>
                 <select
                   id="ecp-country"
-                  className="ecp-select"
-                  defaultValue="+39"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  className="w-full bg-transparent text-text-main px-0 py-1.5 border-b border-border focus:border-accent outline-none text-[15px] transition-colors appearance-none cursor-pointer"
                 >
                   <option value="+1">US +1</option>
                   <option value="+39">IT +39</option>
@@ -137,65 +154,67 @@ export function EditContactPanel({
                   <option value="+34">ES +34</option>
                 </select>
               </div>
-              <div className="ecp-field">
-                <label className="ecp-field-label" htmlFor="ecp-phone">
+              <div className="flex flex-col flex-1">
+                <label
+                  className="text-[13px] text-text-secondary mb-1"
+                  htmlFor="ecp-phone"
+                >
                   Phone number
                 </label>
-                <div className="ecp-phone-input-row">
-                  <input
-                    type="tel"
-                    id="ecp-phone"
-                    className="ecp-input"
-                    placeholder="Phone number"
-                    defaultValue="340 822 4072"
-                  />
-                </div>
+                <input
+                  type="tel"
+                  id="ecp-phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full bg-transparent text-text-main px-0 py-1.5 border-b border-border focus:border-accent outline-none text-[15px] transition-colors placeholder:text-text-secondary/50"
+                  placeholder="Phone number"
+                  autoComplete="off"
+                />
               </div>
             </div>
           </div>
 
-          <p className="ecp-phone-hint">This phone number is on Ephemeral.</p>
+          {/* Phone hint */}
+          <div className="ml-[44px] min-h-[20px] mb-8">
+            <div className="text-success text-[13px] font-medium">
+              This phone number is on Ephemeral.
+            </div>
+          </div>
 
           {/* Sync toggle */}
-          <div className="ecp-sync-row">
-            <div className="ecp-field-icon">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-[18px] h-[18px]"
-              >
-                <polyline points="23 4 23 10 17 10" />
-                <polyline points="1 20 1 14 7 14" />
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-              </svg>
-            </div>
-            <div className="ecp-sync-text">
-              <span className="ecp-sync-label">Sync contact with phone</span>
-              <span className="ecp-sync-sub">
+          <div className="flex items-center justify-between gap-4 ml-[44px]">
+            <div className="flex flex-col">
+              <span className="text-[15px] font-medium text-text-main mb-0.5">
+                Sync contact with phone
+              </span>
+              <span className="text-[13px] text-text-secondary mt-1">
                 This contact will be added to your phone contacts
               </span>
             </div>
-            <label className="ecp-toggle" aria-label="Sync contact">
-              <input type="checkbox" id="ecp-sync-toggle" defaultChecked />
-              <span className="ecp-toggle-slider"></span>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                id="ecp-sync-toggle"
+                className="sr-only peer"
+                defaultChecked
+              />
+              <div className="w-[36px] h-[20px] bg-toggle-off peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-[16px] after:w-[16px] after:transition-all peer-checked:bg-accent shadow-inner opacity-80 peer-checked:opacity-100"></div>
             </label>
           </div>
         </div>
       </div>
 
       {/* Save FAB */}
-      <button
-        type="button"
-        className="ecp-save-fab"
-        aria-label="Save contact"
-        onClick={onClose}
-      >
-        <Save className="w-[20px] h-[20px]" />
-      </button>
+      <div className="absolute bottom-6 right-6 z-10">
+        <button
+          type="button"
+          className="w-[56px] h-[56px] rounded-full bg-accent text-white flex items-center justify-center shadow-lg hover:brightness-110 active:scale-95 transition-all"
+          aria-label="Save contact"
+          onClick={onClose}
+        >
+          <Save className="w-6 h-6" />
+        </button>
+      </div>
     </div>
   );
 }
