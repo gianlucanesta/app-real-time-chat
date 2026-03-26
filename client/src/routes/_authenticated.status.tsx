@@ -257,6 +257,34 @@ function StatusPage() {
     );
   }, []);
 
+  // Delete a single status item
+  const handleDeleteStatus = useCallback(
+    async (itemId: string) => {
+      try {
+        await apiFetch(`/status/item/${itemId}`, { method: "DELETE" });
+      } catch (err) {
+        console.warn("[status] delete failed:", err);
+      }
+      setMyStatus((prev) => {
+        const remaining = prev.items.filter((i) => i.id !== itemId);
+        return { ...prev, items: remaining };
+      });
+      // Update the viewer's ContactStatus so it stays in sync
+      setViewingStatus((prev) => {
+        if (!prev) return null;
+        const remaining = prev.items.filter((i) => i.id !== itemId);
+        if (remaining.length === 0) {
+          // No items left — close the viewer
+          setTimeout(() => handleCloseViewer(), 0);
+          return null;
+        }
+        return { ...prev, items: remaining };
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
   const handlePublishStatus = useCallback(
     async (status: {
       mediaType: "text" | "image" | "video";
@@ -425,6 +453,8 @@ function StatusPage() {
           onClose={handleCloseViewer}
           onMarkViewed={handleMarkViewed}
           onReply={viewingMyStatus ? undefined : handleStatusReply}
+          viewerCount={viewingMyStatus ? 0 : undefined}
+          onDeleteStatus={viewingMyStatus ? handleDeleteStatus : undefined}
         />
       )}
     </div>

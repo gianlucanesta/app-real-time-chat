@@ -13,6 +13,9 @@ import {
   Reply,
   Flag,
   BellOff,
+  Eye,
+  Download,
+  Trash2,
 } from "lucide-react";
 import type { ContactStatus, StatusItem } from "../../types";
 import { EmojiPicker } from "./EmojiPicker";
@@ -36,6 +39,10 @@ interface StatusViewerProps {
   onReply?: (contactId: string, text: string, statusItemId: string) => void;
   onMuteNotifications?: (contactId: string) => void;
   onReport?: (contactId: string) => void;
+  /** Total number of unique viewers (only shown for my own status) */
+  viewerCount?: number;
+  /** Called to permanently delete a status item (only for my own status) */
+  onDeleteStatus?: (itemId: string) => void;
 }
 
 export function StatusViewer({
@@ -50,6 +57,8 @@ export function StatusViewer({
   onReply,
   onMuteNotifications,
   onReport,
+  viewerCount = 0,
+  onDeleteStatus,
 }: StatusViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -58,6 +67,7 @@ export function StatusViewer({
   const [replyText, setReplyText] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const replyInputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef(Date.now());
@@ -143,6 +153,19 @@ export function StatusViewer({
   const handlePauseToggle = useCallback(() => {
     setIsPaused((p) => !p);
   }, []);
+
+  // Download current status item
+  const handleDownload = useCallback(() => {
+    if (!currentItem?.mediaUrl) return;
+    const a = document.createElement("a");
+    a.href = currentItem.mediaUrl;
+    a.download = `status-${currentItem.id}.${currentItem.mediaType === "video" ? "mp4" : "jpg"}`;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }, [currentItem]);
 
   // Send reply
   const handleSendReply = useCallback(() => {
@@ -310,28 +333,56 @@ export function StatusViewer({
               </button>
               {showMenu && (
                 <div className="absolute right-0 top-full mt-2 w-52 bg-card border border-border/80 rounded-xl shadow-xl py-2 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
-                  <button
-                    onClick={() => {
-                      setShowMenu(false);
-                      const id = contactStatus?.contactId ?? "";
-                      onReport?.(id);
-                    }}
-                    className="flex items-center gap-3 w-full px-4 py-3 text-[14px] text-text-main hover:bg-input/50 transition-colors"
-                  >
-                    <Flag className="w-4 h-4 text-text-secondary" />
-                    Report
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowMenu(false);
-                      const id = contactStatus?.contactId ?? "";
-                      onMuteNotifications?.(id);
-                    }}
-                    className="flex items-center gap-3 w-full px-4 py-3 text-[14px] text-text-main hover:bg-input/50 transition-colors"
-                  >
-                    <BellOff className="w-4 h-4 text-text-secondary" />
-                    Mute notifications
-                  </button>
+                  {isMyStatus ? (
+                    <>
+                      <button
+                        onClick={() => {
+                          setShowMenu(false);
+                          handleDownload();
+                        }}
+                        className="flex items-center gap-3 w-full px-4 py-3 text-[14px] text-text-main hover:bg-input/50 transition-colors"
+                      >
+                        <Download className="w-4 h-4 text-text-secondary" />
+                        Scarica
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowMenu(false);
+                          setIsPaused(true);
+                          setShowDeleteConfirm(true);
+                        }}
+                        className="flex items-center gap-3 w-full px-4 py-3 text-[14px] text-red-500 hover:bg-input/50 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Elimina
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => {
+                          setShowMenu(false);
+                          const id = contactStatus?.contactId ?? "";
+                          onReport?.(id);
+                        }}
+                        className="flex items-center gap-3 w-full px-4 py-3 text-[14px] text-text-main hover:bg-input/50 transition-colors"
+                      >
+                        <Flag className="w-4 h-4 text-text-secondary" />
+                        Report
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowMenu(false);
+                          const id = contactStatus?.contactId ?? "";
+                          onMuteNotifications?.(id);
+                        }}
+                        className="flex items-center gap-3 w-full px-4 py-3 text-[14px] text-text-main hover:bg-input/50 transition-colors"
+                      >
+                        <BellOff className="w-4 h-4 text-text-secondary" />
+                        Mute notifications
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -380,6 +431,16 @@ export function StatusViewer({
             <p className="text-white/90 text-[14px] text-center">
               {currentItem.caption}
             </p>
+          </div>
+        )}
+
+        {/* View count bar (only for my own status) */}
+        {isMyStatus && (
+          <div className="flex items-center justify-center gap-2 px-4 py-3 z-10">
+            <Eye className="w-5 h-5 text-white/60" />
+            <span className="text-[15px] font-semibold text-white/80">
+              {viewerCount}
+            </span>
           </div>
         )}
 
@@ -443,6 +504,42 @@ export function StatusViewer({
           </div>
         )}
       </div>
+
+      {/* Delete confirmation modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70">
+          <div className="bg-card border border-border rounded-2xl shadow-2xl p-6 w-80 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex flex-col gap-1">
+              <p className="text-[16px] font-semibold text-text-main">
+                Elimina stato?
+              </p>
+              <p className="text-[13px] text-text-secondary">
+                Questo elemento verrà rimosso definitivamente dal tuo stato.
+              </p>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                className="px-4 py-2 rounded-xl text-[14px] font-medium text-text-main hover:bg-input/60 transition-colors"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setIsPaused(false);
+                }}
+              >
+                Annulla
+              </button>
+              <button
+                className="px-4 py-2 rounded-xl text-[14px] font-semibold bg-red-500 hover:bg-red-600 text-white transition-colors"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  if (currentItem) onDeleteStatus?.(currentItem.id);
+                }}
+              >
+                Elimina
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
