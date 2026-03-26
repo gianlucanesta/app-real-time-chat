@@ -491,9 +491,7 @@ export function ChatMessage({
                 <div className="flex flex-col min-w-[260px]">
                   {/* Status card */}
                   <div className="relative">
-                    <p
-                      className="absolute top-3 left-4 right-4 z-10 text-[12px] font-semibold drop-shadow text-white/90 truncate"
-                    >
+                    <p className="absolute top-3 left-4 right-4 z-10 text-[12px] font-semibold drop-shadow text-white/90 truncate">
                       {statusReply.senderName}&apos;s status
                     </p>
                     {statusReply.mediaType === "text" ? (
