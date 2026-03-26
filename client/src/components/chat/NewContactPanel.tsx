@@ -92,7 +92,7 @@ export function NewContactPanel({
 
   return (
     <div
-      className={`absolute inset-0 z-[21] bg-card flex flex-col transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0" : "translate-x-full"}`}
+      className={`absolute inset-0 z-[21] bg-card flex flex-col transition-transform duration-300 ease-in-out border-r border-border ${isOpen ? "translate-x-0" : "translate-x-full"}`}
       aria-hidden={!isOpen}
     >
       <div className="flex items-center gap-3 px-4 h-[60px] border-b border-border shrink-0">

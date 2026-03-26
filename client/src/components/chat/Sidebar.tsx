@@ -122,6 +122,7 @@ export function Sidebar({
   onOpenNewContact,
   onCloseNewContact,
   isNewGroupOpen: isNewGroupOpenProp,
+  onOpenNewGroup,
   onCloseNewGroup,
 }: SidebarProps = {}) {
   const [activeFilter, setActiveFilter] = useState("All");
@@ -229,7 +230,13 @@ export function Sidebar({
             </button>
             {isMenuOpen && (
               <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border/80 rounded-xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2">
-                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors">
+                <button
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors"
+                  onClick={() => {
+                    onOpenNewGroup?.();
+                    setIsMenuOpen(false);
+                  }}
+                >
                   <Users className="w-4 h-4 text-text-secondary" /> New group
                 </button>
                 <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors">
