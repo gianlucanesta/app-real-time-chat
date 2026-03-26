@@ -13,6 +13,7 @@ import EphemeralBrand from "../components/ui/EphemeralBrand";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { PhoneSelect } from "../components/ui/PhoneSelect";
 import { apiFetch } from "../lib/api";
 import { validatePasswordStrength } from "../lib/validation";
 
@@ -102,7 +103,7 @@ function SignupPage() {
 
   return (
     <div className="absolute inset-0 overflow-y-auto auth-page-glow auth-page-scroll">
-      <div className="min-h-full flex flex-col items-center justify-center p-4 sm:p-5 pb-14 bg-bg text-text-main font-sans">
+      <div className="min-h-full flex flex-col items-center justify-center py-8 px-4 sm:px-5 bg-bg text-text-main font-sans">
       {signupSuccess ? (
         <div className="w-full max-w-[440px] bg-card rounded-[16px] px-6 sm:px-8 py-10 relative z-10 flex flex-col items-center text-center">
           <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mb-6">
@@ -220,22 +221,11 @@ function SignupPage() {
               <div
                 className={`flex gap-2 w-full${phoneShake ? " field-shake" : ""}`}
               >
-                <select
+                <PhoneSelect
                   value={countryCode}
-                  onChange={(e) => setCountryCode(e.target.value)}
-                  className="phone-select h-[44px] px-2 rounded-[10px] bg-input border border-border text-text-main text-[14px] focus:outline-none focus:border-accent transition-colors flex-shrink-0 cursor-pointer"
-                  style={{ minWidth: 88, maxWidth: 100 }}
-                >
-                  {COUNTRY_CODES.map((c) => (
-                    <option
-                      key={c.code}
-                      value={c.code}
-                      className="bg-card text-text-main"
-                    >
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setCountryCode}
+                  options={COUNTRY_CODES as unknown as { code: string; label: string }[]}
+                />
                 <div className="flex-1 min-w-0">
                   <Input
                     id="phone"
@@ -346,19 +336,19 @@ function SignupPage() {
               </div>
               <span className="text-[13px] text-text-secondary group-hover:text-text-main transition-colors leading-[1.3]">
                 I agree to{" "}
-                <a
-                  href="#"
+                <Link
+                  to="/terms-of-service"
                   className="text-accent hover:text-accent-hover transition-colors"
                 >
                   Terms of Service
-                </a>{" "}
+                </Link>{" "}
                 and{" "}
-                <a
-                  href="#"
+                <Link
+                  to="/privacy-policy"
                   className="text-accent hover:text-accent-hover transition-colors"
                 >
                   Privacy Policy
-                </a>
+                </Link>
               </span>
             </label>
 
@@ -506,19 +496,19 @@ function SignupPage() {
         </div>
       )}
 
-      </div>
       {/* Page Footer */}
-      <footer className="flex justify-center gap-4 sm:gap-5 text-[12px] text-text-secondary absolute bottom-4 sm:bottom-6 z-10 w-full">
-        <a href="#" className="hover:text-text-main transition-colors p-2 -m-2">
+      <footer className="flex justify-center gap-4 sm:gap-5 text-[12px] text-text-secondary mt-6 pb-4 w-full">
+        <Link to="/privacy-policy" className="hover:text-text-main transition-colors p-2 -m-2">
           Privacy Policy
-        </a>
-        <a href="#" className="hover:text-text-main transition-colors p-2 -m-2">
+        </Link>
+        <Link to="/terms-of-service" className="hover:text-text-main transition-colors p-2 -m-2">
           Terms of Service
-        </a>
-        <a href="#" className="hover:text-text-main transition-colors p-2 -m-2">
+        </Link>
+        <Link to="/support" className="hover:text-text-main transition-colors p-2 -m-2">
           Support
-        </a>
+        </Link>
       </footer>
+      </div>
     </div>
   );
 }

@@ -33,6 +33,7 @@ import { useSettings } from "../contexts/SettingsContext";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Select } from "../components/ui/select";
+import { PhoneSelect } from "../components/ui/PhoneSelect";
 import { apiFetch, normalizeUser, getAccessToken } from "../lib/api";
 import { VideoVoiceSettings } from "../components/settings/VideoVoiceSettings";
 import { NotificationSettings } from "../components/settings/NotificationSettings";
@@ -539,22 +540,11 @@ function SettingsPage() {
               Phone
             </Label>
             <div className="flex gap-2">
-              <select
+              <PhoneSelect
                 value={countryCode}
-                onChange={(e) => setCountryCode(e.target.value)}
-                className="h-11 px-2 rounded-[10px] bg-input border border-border/50 text-text-main text-[14px] focus:outline-none focus:border-accent transition-colors flex-shrink-0 cursor-pointer"
-                style={{ minWidth: 88, maxWidth: 100 }}
-              >
-                {COUNTRY_CODES.map((c) => (
-                  <option
-                    key={c.code}
-                    value={c.code}
-                    className="bg-card text-text-main"
-                  >
-                    {c.label}
-                  </option>
-                ))}
-              </select>
+                onChange={setCountryCode}
+                options={COUNTRY_CODES}
+              />
               <div className="flex-1 min-w-0">
                 <Input
                   type="tel"
@@ -1262,22 +1252,11 @@ function SettingsPageDesktop() {
                         Phone
                       </Label>
                       <div className="flex gap-2">
-                        <select
+                        <PhoneSelect
                           value={countryCode}
-                          onChange={(e) => setCountryCode(e.target.value)}
-                          className="h-11 px-2 rounded-[10px] bg-input border border-border/50 text-text-main text-[14px] focus:outline-none focus:border-accent transition-colors flex-shrink-0 cursor-pointer"
-                          style={{ minWidth: 88, maxWidth: 100 }}
-                        >
-                          {COUNTRY_CODES.map((c) => (
-                            <option
-                              key={c.code}
-                              value={c.code}
-                              className="bg-card text-text-main"
-                            >
-                              {c.label}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={setCountryCode}
+                          options={COUNTRY_CODES}
+                        />
                         <div className="flex-1 min-w-0">
                           <Input
                             type="tel"

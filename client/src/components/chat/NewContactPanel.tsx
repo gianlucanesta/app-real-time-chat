@@ -2,6 +2,27 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, User, Phone as PhoneIcon, Camera } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { apiFetch } from "../../lib/api";
+import { PhoneSelect } from "../ui/PhoneSelect";
+
+const COUNTRY_CODES = [
+  { code: "+1", label: "+1 US" },
+  { code: "+44", label: "+44 UK" },
+  { code: "+39", label: "+39 IT" },
+  { code: "+49", label: "+49 DE" },
+  { code: "+33", label: "+33 FR" },
+  { code: "+34", label: "+34 ES" },
+  { code: "+351", label: "+351 PT" },
+  { code: "+31", label: "+31 NL" },
+  { code: "+32", label: "+32 BE" },
+  { code: "+41", label: "+41 CH" },
+  { code: "+43", label: "+43 AT" },
+  { code: "+61", label: "+61 AU" },
+  { code: "+81", label: "+81 JP" },
+  { code: "+86", label: "+86 CN" },
+  { code: "+91", label: "+91 IN" },
+  { code: "+55", label: "+55 BR" },
+  { code: "+52", label: "+52 MX" },
+];
 import type { Conversation } from "../../contexts/ChatContext";
 
 interface LinkedUser {
@@ -183,19 +204,12 @@ export function NewContactPanel({
                 >
                   Country code
                 </label>
-                <select
-                  id="ncp-country"
+                <PhoneSelect
+                  variant="flat"
                   value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  className="w-full bg-transparent text-text-main px-0 py-1.5 border-b border-border focus:border-accent outline-none text-[15px] transition-colors appearance-none cursor-pointer"
-                >
-                  <option value="+1">US +1</option>
-                  <option value="+39">IT +39</option>
-                  <option value="+44">UK +44</option>
-                  <option value="+49">DE +49</option>
-                  <option value="+33">FR +33</option>
-                  <option value="+34">ES +34</option>
-                </select>
+                  onChange={setCountry}
+                  options={COUNTRY_CODES}
+                />
               </div>
               <div className="flex flex-col flex-1 relative">
                 <label

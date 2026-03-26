@@ -10,8 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as TermsOfServiceRouteImport } from './routes/terms-of-service'
+import { Route as SupportRouteImport } from './routes/support'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as OauthCallbackRouteImport } from './routes/oauth-callback'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
@@ -27,6 +30,16 @@ const VerifyEmailRoute = VerifyEmailRouteImport.update({
   path: '/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TermsOfServiceRoute = TermsOfServiceRouteImport.update({
+  id: '/terms-of-service',
+  path: '/terms-of-service',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -35,6 +48,11 @@ const SignupRoute = SignupRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OauthCallbackRoute = OauthCallbackRouteImport.update({
@@ -87,8 +105,11 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/oauth-callback': typeof OauthCallbackRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/support': typeof SupportRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
   '/verify-email': typeof VerifyEmailRoute
   '/calls': typeof AuthenticatedCallsRoute
   '/channels': typeof AuthenticatedChannelsRoute
@@ -99,8 +120,11 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/oauth-callback': typeof OauthCallbackRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/support': typeof SupportRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
   '/verify-email': typeof VerifyEmailRoute
   '/calls': typeof AuthenticatedCallsRoute
   '/channels': typeof AuthenticatedChannelsRoute
@@ -114,8 +138,11 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/oauth-callback': typeof OauthCallbackRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/support': typeof SupportRoute
+  '/terms-of-service': typeof TermsOfServiceRoute
   '/verify-email': typeof VerifyEmailRoute
   '/_authenticated/calls': typeof AuthenticatedCallsRoute
   '/_authenticated/channels': typeof AuthenticatedChannelsRoute
@@ -130,8 +157,11 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/oauth-callback'
+    | '/privacy-policy'
     | '/reset-password'
     | '/signup'
+    | '/support'
+    | '/terms-of-service'
     | '/verify-email'
     | '/calls'
     | '/channels'
@@ -142,8 +172,11 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/oauth-callback'
+    | '/privacy-policy'
     | '/reset-password'
     | '/signup'
+    | '/support'
+    | '/terms-of-service'
     | '/verify-email'
     | '/calls'
     | '/channels'
@@ -156,8 +189,11 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/oauth-callback'
+    | '/privacy-policy'
     | '/reset-password'
     | '/signup'
+    | '/support'
+    | '/terms-of-service'
     | '/verify-email'
     | '/_authenticated/calls'
     | '/_authenticated/channels'
@@ -171,8 +207,11 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   OauthCallbackRoute: typeof OauthCallbackRoute
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  SupportRoute: typeof SupportRoute
+  TermsOfServiceRoute: typeof TermsOfServiceRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
 }
 
@@ -183,6 +222,20 @@ declare module '@tanstack/react-router' {
       path: '/verify-email'
       fullPath: '/verify-email'
       preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms-of-service': {
+      id: '/terms-of-service'
+      path: '/terms-of-service'
+      fullPath: '/terms-of-service'
+      preLoaderRoute: typeof TermsOfServiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signup': {
@@ -197,6 +250,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/oauth-callback': {
@@ -290,8 +350,11 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   OauthCallbackRoute: OauthCallbackRoute,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  SupportRoute: SupportRoute,
+  TermsOfServiceRoute: TermsOfServiceRoute,
   VerifyEmailRoute: VerifyEmailRoute,
 }
 export const routeTree = rootRouteImport

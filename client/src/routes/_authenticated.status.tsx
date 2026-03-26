@@ -251,29 +251,32 @@ function StatusPage() {
   }, [myStatus, user, userInitials]);
 
   // Mark a status item as viewed and update allViewed on the feed entry
-  const handleMarkViewed = useCallback((itemId: string) => {
-    // Persist to server
-    apiFetch(`/status/${itemId}/view`, { method: "PATCH" }).catch(() => {});
+  const handleMarkViewed = useCallback(
+    (itemId: string) => {
+      // Persist to server
+      apiFetch(`/status/${itemId}/view`, { method: "PATCH" }).catch(() => {});
 
-    setFeedStatuses((prev) =>
-      prev.map((cs) => {
-        if (!cs.items.some((i) => i.id === itemId)) return cs;
-        const updatedItems = cs.items.map((i) =>
-          i.id === itemId ? { ...i, viewed: true } : i,
-        );
-        const allViewed = updatedItems.every((i) => i.viewed);
-        // Remove blue ring from chat sidebar when all items are viewed
-        if (allViewed) {
-          removeFeedStatusUserId(cs.contactId);
-        }
-        return {
-          ...cs,
-          items: updatedItems,
-          allViewed,
-        };
-      }),
-    );
-  }, [removeFeedStatusUserId]);
+      setFeedStatuses((prev) =>
+        prev.map((cs) => {
+          if (!cs.items.some((i) => i.id === itemId)) return cs;
+          const updatedItems = cs.items.map((i) =>
+            i.id === itemId ? { ...i, viewed: true } : i,
+          );
+          const allViewed = updatedItems.every((i) => i.viewed);
+          // Remove blue ring from chat sidebar when all items are viewed
+          if (allViewed) {
+            removeFeedStatusUserId(cs.contactId);
+          }
+          return {
+            ...cs,
+            items: updatedItems,
+            allViewed,
+          };
+        }),
+      );
+    },
+    [removeFeedStatusUserId],
+  );
 
   // Real-time: update viewer count when someone views my status
   useEffect(() => {
@@ -282,14 +285,16 @@ function StatusPage() {
       setMyStatusViewerCount(data.viewerCount);
     };
     socket.on("status:viewed", handler);
-    return () => { socket.off("status:viewed", handler); };
+    return () => {
+      socket.off("status:viewed", handler);
+    };
   }, [socket]);
 
   // Delete a single status item
   const handleDeleteStatus = useCallback(
     async (itemId: string) => {
       try {
-        await apiFetch(`/status/item/${itemId}`, { method: "DELETE" });
+        await apiFetch(`/status/${itemId}`, { method: "DELETE" });
       } catch (err) {
         console.warn("[status] delete failed:", err);
       }

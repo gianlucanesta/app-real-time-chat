@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { Status, STATUS_TTL_SECONDS } from "../models/status.model.js";
 import { deleteCloudinaryAsset } from "../services/cloudinary.service.js";
 import * as UserModel from "../models/user.model.js";
+import { pool } from "../config/db.js";
 
 const MAX_ITEMS_PER_STATUS = 30;
 
@@ -108,9 +109,60 @@ export async function getFeed(
       "items.0": { $exists: true }, // at least one item
     }).lean();
 
-    // Fetch user profiles for each status owner
+    if (statuses.length === 0) {
+      res.status(200).json({ statuses: [] });
+      return;
+    }
+
+    const ownerIds = statuses.map((s) => s.userId);
+
+    // Batch-fetch contacts for all status owners in one SQL query.
+    // This gives us: for each owner, the set of user IDs they have saved as contacts.
+    const { rows: contactRows } = await pool.query<{
+      owner_id: string;
+      linked_user_id: string;
+    }>(
+      `SELECT owner_id, linked_user_id
+       FROM contacts
+       WHERE owner_id = ANY($1) AND linked_user_id IS NOT NULL`,
+      [ownerIds],
+    );
+
+    // Map: ownerId → Set of linked_user_ids (i.e. their contacts)
+    const ownerContacts = new Map<string, Set<string>>();
+    for (const row of contactRows) {
+      if (!ownerContacts.has(row.owner_id)) {
+        ownerContacts.set(row.owner_id, new Set());
+      }
+      ownerContacts.get(row.owner_id)!.add(row.linked_user_id);
+    }
+
+    // Apply privacy rules: can the requesting user (userId) see each status?
+    const visibleStatuses = statuses.filter((s) => {
+      const privacy = (s.privacy as string) || "contacts";
+      const contacts = ownerContacts.get(s.userId) ?? new Set<string>();
+
+      if (privacy === "contacts") {
+        // Requester must be in the owner's contact list
+        return contacts.has(userId);
+      }
+      if (privacy === "contacts_except") {
+        // Must be a contact but NOT in the exception list
+        const exceptIds: string[] = (s.exceptIds as string[]) ?? [];
+        return contacts.has(userId) && !exceptIds.includes(userId);
+      }
+      if (privacy === "only_share_with") {
+        // Must be explicitly listed
+        const onlyShareIds: string[] = (s.onlyShareIds as string[]) ?? [];
+        return onlyShareIds.includes(userId);
+      }
+      // Fallback: contacts only
+      return contacts.has(userId);
+    });
+
+    // Fetch user profiles for each visible status owner
     const enriched = await Promise.all(
-      statuses.map(async (s) => {
+      visibleStatuses.map(async (s) => {
         const user = await UserModel.findById(s.userId).catch(() => null);
         return {
           contactId: s.userId,
