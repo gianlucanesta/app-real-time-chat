@@ -716,13 +716,13 @@ export function ChatArea({
           setActiveModal("delete-chat");
         }}
         onBlockContact={() => {
-          toast.show("Contact blocked", "info");
+          toast.showToast("Contact blocked", "info");
         }}
         onReportContact={() => {
-          toast.show("Contact reported", "info");
+          toast.showToast("Contact reported", "info");
         }}
         onAddToFavorites={() => {
-          toast.show("Added to favorites", "info");
+          toast.showToast("Added to favorites", "info");
         }}
       />
       <EditContactPanel

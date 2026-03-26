@@ -30,7 +30,6 @@ interface ContactProfilePanelProps {
   contactEmail?: string;
   contactPhone?: string;
   contactBio?: string;
-  isOnline?: boolean;
   mediaCount?: number;
   starredCount?: number;
   groupsInCommon?: Array<{
@@ -63,7 +62,6 @@ export function ContactProfilePanel({
   contactEmail,
   contactPhone,
   contactBio,
-  isOnline,
   mediaCount = 0,
   starredCount = 0,
   groupsInCommon = [],
