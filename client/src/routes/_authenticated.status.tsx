@@ -109,10 +109,13 @@ function StatusPage() {
         }>("/status/me");
 
         if (myData.status) {
-          // Compute initial viewer count from viewedBy arrays
+          // Compute initial viewer count from viewedBy arrays (exclude self)
+          const myId = user?.id;
           const allViewers = new Set<string>();
           for (const item of myData.status.items) {
-            for (const v of (item as any).viewedBy ?? []) allViewers.add(v);
+            for (const v of (item as any).viewedBy ?? []) {
+              if (v !== myId) allViewers.add(v);
+            }
           }
           setMyStatusViewerCount(allViewers.size);
 
@@ -484,7 +487,7 @@ function StatusPage() {
           userGradient={user?.avatarGradient}
           userInitials={userInitials}
           onClose={handleCloseViewer}
-          onMarkViewed={handleMarkViewed}
+          onMarkViewed={viewingMyStatus ? undefined : handleMarkViewed}
           onReply={viewingMyStatus ? undefined : handleStatusReply}
           viewerCount={viewingMyStatus ? myStatusViewerCount : undefined}
           onDeleteStatus={viewingMyStatus ? handleDeleteStatus : undefined}

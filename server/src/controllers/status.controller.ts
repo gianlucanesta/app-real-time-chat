@@ -207,7 +207,45 @@ export async function markViewed(
     const userId = req.user!.sub;
     const { itemId } = req.params;
 
-    // Add viewer to the item's viewedBy set
+    // Find the status document that contains this item
+    const status = await Status.findOne({ "items._id": itemId }).lean();
+    if (!status) {
+      res.status(404).json({ error: "Status item not found" });
+      return;
+    }
+
+    // Owner cannot count as a viewer of their own status
+    if (status.userId === userId) {
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    // Enforce privacy: viewer must be allowed to see this status
+    const { rows: contactRows } = await pool.query<{ linked_user_id: string }>(
+      `SELECT linked_user_id FROM contacts
+       WHERE owner_id = $1 AND linked_user_id = $2`,
+      [status.userId, userId],
+    );
+    const isContact = contactRows.length > 0;
+    const privacy = (status.privacy as string) || "contacts";
+
+    let allowed = false;
+    if (privacy === "contacts") {
+      allowed = isContact;
+    } else if (privacy === "contacts_except") {
+      const exceptIds: string[] = (status.exceptIds as string[]) ?? [];
+      allowed = isContact && !exceptIds.includes(userId);
+    } else if (privacy === "only_share_with") {
+      const onlyShareIds: string[] = (status.onlyShareIds as string[]) ?? [];
+      allowed = onlyShareIds.includes(userId);
+    }
+
+    if (!allowed) {
+      res.status(403).json({ error: "Not allowed to view this status" });
+      return;
+    }
+
+    // Add viewer to the item's viewedBy set (idempotent per user)
     const updated = await Status.findOneAndUpdate(
       { "items._id": itemId },
       { $addToSet: { "items.$.viewedBy": userId } },
@@ -215,11 +253,12 @@ export async function markViewed(
     );
 
     if (updated) {
-      // Compute total unique viewers across all items so the owner sees
-      // a single aggregated counter.
+      // Compute total unique viewers across all items (excluding owner)
       const allViewers = new Set<string>();
       for (const item of updated.items) {
-        for (const v of (item as any).viewedBy ?? []) allViewers.add(v);
+        for (const v of (item as any).viewedBy ?? []) {
+          if (v !== updated.userId) allViewers.add(v);
+        }
       }
       // Emit real-time update to the status owner
       const io = req.app.get("io");

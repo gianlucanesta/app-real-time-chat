@@ -155,7 +155,7 @@ export function StatusViewer({
   useEffect(() => {
     elapsedRef.current = 0;
     setProgress(0);
-    if (currentItem && !currentItem.viewed) {
+    if (currentItem && !currentItem.viewed && !isMyStatus) {
       onMarkViewed?.(currentItem.id);
     }
   }, [currentIndex]); // eslint-disable-line react-hooks/exhaustive-deps
