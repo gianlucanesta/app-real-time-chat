@@ -1,11 +1,68 @@
 import type { Request, Response, NextFunction } from "express";
 import { Status, STATUS_TTL_SECONDS } from "../models/status.model.js";
 import { StatusView } from "../models/status-view.model.js";
+import { Message } from "../models/message.model.js";
 import { deleteCloudinaryAsset } from "../services/cloudinary.service.js";
 import * as UserModel from "../models/user.model.js";
 import { pool } from "../config/db.js";
 
 const MAX_ITEMS_PER_STATUS = 30;
+
+/**
+ * Build a map of effective contacts for each owner, combining:
+ * 1. PostgreSQL contacts (linked_user_id IS NOT NULL)
+ * 2. MongoDB conversation partners (from Message collection)
+ *
+ * The viewerId's conversations are queried once; if viewerId has chatted
+ * with an owner, viewerId is added to that owner's effective contacts set.
+ */
+async function getEffectiveContactsMap(
+  ownerIds: string[],
+  viewerId: string,
+): Promise<Map<string, Set<string>>> {
+  // 1. PostgreSQL contacts
+  const { rows: contactRows } = await pool.query<{
+    owner_id: string;
+    linked_user_id: string;
+  }>(
+    `SELECT owner_id, linked_user_id
+     FROM contacts
+     WHERE owner_id = ANY($1) AND linked_user_id IS NOT NULL`,
+    [ownerIds],
+  );
+
+  const ownerContacts = new Map<string, Set<string>>();
+  for (const row of contactRows) {
+    if (!ownerContacts.has(row.owner_id))
+      ownerContacts.set(row.owner_id, new Set());
+    ownerContacts.get(row.owner_id)!.add(row.linked_user_id);
+  }
+
+  // 2. Conversation partners — one query for the viewer
+  const safeId = viewerId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const convIds: string[] = await Message.distinct("conversationId", {
+    conversationId: { $regex: safeId },
+    expires_at: { $gt: new Date() },
+  });
+
+  const convPartners = new Set<string>();
+  for (const cid of convIds) {
+    for (const p of cid.split("___")) {
+      if (p !== viewerId) convPartners.add(p);
+    }
+  }
+
+  // For each owner that the viewer has chatted with, add viewer to their set
+  for (const ownerId of ownerIds) {
+    if (convPartners.has(ownerId)) {
+      if (!ownerContacts.has(ownerId))
+        ownerContacts.set(ownerId, new Set());
+      ownerContacts.get(ownerId)!.add(viewerId);
+    }
+  }
+
+  return ownerContacts;
+}
 
 /** POST /api/status — add an item to the current user's status */
 export async function addItem(
@@ -127,26 +184,8 @@ export async function getFeed(
 
     const ownerIds = statuses.map((s) => s.userId);
 
-    // Batch-fetch contacts for all status owners in one SQL query.
-    // This gives us: for each owner, the set of user IDs they have saved as contacts.
-    const { rows: contactRows } = await pool.query<{
-      owner_id: string;
-      linked_user_id: string;
-    }>(
-      `SELECT owner_id, linked_user_id
-       FROM contacts
-       WHERE owner_id = ANY($1) AND linked_user_id IS NOT NULL`,
-      [ownerIds],
-    );
-
-    // Map: ownerId → Set of linked_user_ids (i.e. their contacts)
-    const ownerContacts = new Map<string, Set<string>>();
-    for (const row of contactRows) {
-      if (!ownerContacts.has(row.owner_id)) {
-        ownerContacts.set(row.owner_id, new Set());
-      }
-      ownerContacts.get(row.owner_id)!.add(row.linked_user_id);
-    }
+    // Batch-fetch effective contacts (PostgreSQL + conversation partners)
+    const ownerContacts = await getEffectiveContactsMap(ownerIds, userId);
 
     // Apply privacy rules: can the requesting user (userId) see each status?
     const visibleStatuses = statuses.filter((s) => {
@@ -241,12 +280,8 @@ export async function markViewed(
     }
 
     // Enforce privacy: viewer must be allowed to see this status
-    const { rows: contactRows } = await pool.query<{ linked_user_id: string }>(
-      `SELECT linked_user_id FROM contacts
-       WHERE owner_id = $1 AND linked_user_id = $2`,
-      [status.userId, userId],
-    );
-    const isContact = contactRows.length > 0;
+    const contactsMap = await getEffectiveContactsMap([status.userId], userId);
+    const isContact = (contactsMap.get(status.userId) ?? new Set<string>()).has(userId);
     const privacy = (status.privacy as string) || "contacts";
 
     let allowed = false;
