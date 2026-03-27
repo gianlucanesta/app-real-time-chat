@@ -119,3 +119,17 @@ statusRouter.delete("/:itemId", authMiddleware, ctrl.deleteItem);
  *         description: Privacy settings updated
  */
 statusRouter.patch("/privacy", authMiddleware, ctrl.updatePrivacy);
+
+/**
+ * @openapi
+ * /api/status/viewers:
+ *   get:
+ *     tags: [Status]
+ *     summary: Get users who have viewed my status
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of viewer profiles with viewedAt timestamp
+ */
+statusRouter.get("/viewers", authMiddleware, ctrl.getViewers);

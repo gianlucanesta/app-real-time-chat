@@ -13,8 +13,6 @@ const statusItemSchema = new mongoose.Schema(
     text: { type: String, default: null, maxlength: 700 },
     textBgGradient: { type: String, default: null },
     caption: { type: String, default: null, maxlength: 500 },
-    /** Who has viewed this item */
-    viewedBy: { type: [String], default: [] },
     createdAt: { type: Date, default: Date.now },
   },
   { _id: true },

@@ -106,18 +106,12 @@ function StatusPage() {
             }>;
             updatedAt?: string;
           } | null;
+          viewerCount: number;
         }>("/status/me");
 
         if (myData.status) {
-          // Compute initial viewer count from viewedBy arrays (exclude self)
-          const myId = user?.id;
-          const allViewers = new Set<string>();
-          for (const item of myData.status.items) {
-            for (const v of (item as any).viewedBy ?? []) {
-              if (v !== myId) allViewers.add(v);
-            }
-          }
-          setMyStatusViewerCount(allViewers.size);
+          // viewerCount comes directly from the server (StatusView collection)
+          setMyStatusViewerCount(myData.viewerCount ?? 0);
 
           setMyStatus({
             items: myData.status.items.map((item) => ({

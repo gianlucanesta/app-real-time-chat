@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { Status, STATUS_TTL_SECONDS } from "../models/status.model.js";
+import { StatusView } from "../models/status-view.model.js";
 import { deleteCloudinaryAsset } from "../services/cloudinary.service.js";
 import * as UserModel from "../models/user.model.js";
 import { pool } from "../config/db.js";
@@ -74,7 +75,7 @@ export async function addItem(
   }
 }
 
-/** GET /api/status/me — get my own status */
+/** GET /api/status/me — get my own status with viewer count */
 export async function getMyStatus(
   req: Request,
   res: Response,
@@ -87,7 +88,17 @@ export async function getMyStatus(
       expires_at: { $gt: new Date() },
     }).lean();
 
-    res.status(200).json({ status: status || null });
+    if (!status) {
+      res.status(200).json({ status: null, viewerCount: 0 });
+      return;
+    }
+
+    // Count unique users who have viewed at least one item of this status
+    const uniqueViewers = await StatusView.distinct("viewerId", {
+      statusId: status._id,
+    });
+
+    res.status(200).json({ status, viewerCount: uniqueViewers.length });
   } catch (err) {
     next(err);
   }
@@ -160,10 +171,31 @@ export async function getFeed(
       return contacts.has(userId);
     });
 
+    // Batch-fetch which items the requesting user has already viewed
+    const visibleStatusIds = visibleStatuses.map((s) => s._id);
+    const viewRecords = await StatusView.find({
+      viewerId: userId,
+      statusId: { $in: visibleStatusIds },
+    })
+      .select("itemId")
+      .lean();
+    const viewedItemIds = new Set(viewRecords.map((v) => v.itemId));
+
     // Fetch user profiles for each visible status owner
     const enriched = await Promise.all(
       visibleStatuses.map(async (s) => {
         const user = await UserModel.findById(s.userId).catch(() => null);
+        const items = s.items.map((item: any) => ({
+          id: String(item._id),
+          mediaType: item.mediaType,
+          mediaUrl: item.mediaUrl,
+          text: item.text,
+          textBgGradient: item.textBgGradient,
+          caption: item.caption,
+          timestamp:
+            item.createdAt?.toISOString?.() || new Date().toISOString(),
+          viewed: viewedItemIds.has(String(item._id)),
+        }));
         return {
           contactId: s.userId,
           contactName: user?.display_name || "Unknown",
@@ -172,21 +204,9 @@ export async function getFeed(
             user?.avatar_gradient ||
             "linear-gradient(135deg, #6366f1, #a855f7)",
           contactInitials: user?.initials || "?",
-          items: s.items.map((item: any) => ({
-            id: String(item._id),
-            mediaType: item.mediaType,
-            mediaUrl: item.mediaUrl,
-            text: item.text,
-            textBgGradient: item.textBgGradient,
-            caption: item.caption,
-            timestamp:
-              item.createdAt?.toISOString?.() || new Date().toISOString(),
-            viewed: (item.viewedBy || []).includes(userId),
-          })),
+          items,
           lastUpdated: s.updatedAt?.toISOString?.() || new Date().toISOString(),
-          allViewed: s.items.every((item: any) =>
-            (item.viewedBy || []).includes(userId),
-          ),
+          allViewed: items.every((i) => i.viewed),
         };
       }),
     );
@@ -245,32 +265,88 @@ export async function markViewed(
       return;
     }
 
-    // Add viewer to the item's viewedBy set (idempotent per user)
-    const updated = await Status.findOneAndUpdate(
-      { "items._id": itemId },
-      { $addToSet: { "items.$.viewedBy": userId } },
-      { new: true },
+    // Upsert a StatusView record — unique index on (itemId, viewerId) ensures
+    // exactly 1 view is recorded per user per item, at the database level.
+    await StatusView.updateOne(
+      { itemId, viewerId: userId },
+      {
+        $setOnInsert: {
+          statusId: status._id,
+          ownerId: status.userId,
+          viewedAt: new Date(),
+        },
+      },
+      { upsert: true },
     );
 
-    if (updated) {
-      // Compute total unique viewers across all items (excluding owner)
-      const allViewers = new Set<string>();
-      for (const item of updated.items) {
-        for (const v of (item as any).viewedBy ?? []) {
-          if (v !== updated.userId) allViewers.add(v);
-        }
-      }
-      // Emit real-time update to the status owner
-      const io = req.app.get("io");
-      if (io) {
-        io.to(`user:${updated.userId}`).emit("status:viewed", {
-          itemId,
-          viewerCount: allViewers.size,
-        });
-      }
+    // Count unique viewers across the whole status and notify the owner
+    const uniqueViewers = await StatusView.distinct("viewerId", {
+      statusId: status._id,
+    });
+    const io = req.app.get("io");
+    if (io) {
+      io.to(`user:${status.userId}`).emit("status:viewed", {
+        itemId,
+        viewerCount: uniqueViewers.length,
+      });
     }
 
     res.status(200).json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** GET /api/status/viewers — list users who have viewed my status */
+export async function getViewers(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const userId = req.user!.sub;
+    const status = await Status.findOne({
+      userId,
+      expires_at: { $gt: new Date() },
+    }).lean();
+
+    if (!status) {
+      res.status(200).json({ viewers: [] });
+      return;
+    }
+
+    const views = await StatusView.find({ statusId: status._id }).lean();
+
+    // Deduplicate: keep the earliest viewedAt per viewer
+    const viewerMap = new Map<string, Date>();
+    for (const v of views) {
+      if (!viewerMap.has(v.viewerId) || v.viewedAt < viewerMap.get(v.viewerId)!) {
+        viewerMap.set(v.viewerId, v.viewedAt);
+      }
+    }
+
+    const viewers = await Promise.all(
+      Array.from(viewerMap.entries()).map(async ([viewerId, viewedAt]) => {
+        const profile = await UserModel.findById(viewerId).catch(() => null);
+        return {
+          userId: viewerId,
+          displayName: profile?.display_name || "Unknown",
+          avatar: profile?.avatar_url || null,
+          gradient:
+            profile?.avatar_gradient ||
+            "linear-gradient(135deg, #6366f1, #a855f7)",
+          initials: profile?.initials || "?",
+          viewedAt: viewedAt.toISOString(),
+        };
+      }),
+    );
+
+    // Sort: most recent first
+    viewers.sort(
+      (a, b) => new Date(b.viewedAt).getTime() - new Date(a.viewedAt).getTime(),
+    );
+
+    res.status(200).json({ viewers });
   } catch (err) {
     next(err);
   }
@@ -307,8 +383,12 @@ export async function deleteItem(
 
     if (status.items.length === 0) {
       await Status.deleteOne({ _id: status._id });
+      // Clean up all view records for this status
+      await StatusView.deleteMany({ statusId: status._id });
     } else {
       await status.save();
+      // Clean up view records for the deleted item only
+      await StatusView.deleteMany({ itemId });
     }
 
     res.status(200).json({ ok: true });
