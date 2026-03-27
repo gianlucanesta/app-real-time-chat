@@ -7,7 +7,6 @@ import {
   Send,
   Trash2,
   Plus,
-  ChevronRight,
   LayoutGrid,
   UserPlus,
 } from "lucide-react";

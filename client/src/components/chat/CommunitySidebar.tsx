@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Search, Plus, Users, Megaphone } from "lucide-react";
+import { Search, Plus, Users } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import type { Community } from "../../types";
 
