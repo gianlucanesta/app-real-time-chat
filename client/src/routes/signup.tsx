@@ -10,7 +10,6 @@ import {
   ChevronDown,
 } from "lucide-react";
 import EphemeralBrand from "../components/ui/EphemeralBrand";
-import { DottedGlowBackground } from "../components/ui/dotted-glow-background";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -107,18 +106,6 @@ function SignupPage() {
 
   return (
     <div className="absolute inset-0 overflow-y-auto auth-page-glow auth-page-scroll relative">
-      <DottedGlowBackground
-        className="pointer-events-none"
-        colorLightVar="--color-text-secondary"
-        colorDarkVar="--color-text-secondary"
-        glowColorLightVar="--color-accent"
-        glowColorDarkVar="--color-accent"
-        gap={18}
-        radius={1.5}
-        opacity={0.6}
-        speedMin={0.3}
-        speedMax={1.2}
-      />
       <div className="min-h-full flex flex-col items-center justify-center py-8 px-4 sm:px-5 bg-bg text-text-main font-sans">
         {signupSuccess ? (
           <div className="w-full max-w-[440px] bg-card rounded-[16px] px-6 sm:px-8 py-10 relative z-10 flex flex-col items-center text-center">

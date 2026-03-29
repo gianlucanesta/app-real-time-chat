@@ -5,7 +5,6 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import EphemeralBrand from "../components/ui/EphemeralBrand";
-import { DottedGlowBackground } from "../components/ui/dotted-glow-background";
 import { useAuth } from "../contexts/AuthContext";
 import { apiFetch } from "../lib/api";
 import type { AuthResponse } from "../types";
@@ -76,18 +75,6 @@ function LoginPage() {
 
   return (
     <div className="absolute inset-0 overflow-y-auto auth-page-glow relative">
-      <DottedGlowBackground
-        className="pointer-events-none"
-        colorLightVar="--color-text-secondary"
-        colorDarkVar="--color-text-secondary"
-        glowColorLightVar="--color-accent"
-        glowColorDarkVar="--color-accent"
-        gap={18}
-        radius={1.5}
-        opacity={0.6}
-        speedMin={0.3}
-        speedMax={1.2}
-      />
       <div className="min-h-full flex flex-col items-center justify-center py-8 px-4 sm:px-5 bg-bg text-text-main font-sans">
         {loginSuccess && (
           <div className="fixed inset-0 z-50 flex items-center justify-center success-modal-overlay">
