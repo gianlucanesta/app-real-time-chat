@@ -385,7 +385,7 @@ export function VideoVoiceSettings() {
           <div className="flex items-center justify-between">
             <span className="text-text-secondary">Model</span>
             <span className="text-text-main font-medium text-[12px]">
-              LFM2.5-Audio-1.5B
+              Whisper Small
             </span>
           </div>
           <div className="flex items-center justify-between">

@@ -3,9 +3,8 @@
  * Lazy-loads the library to avoid bundling it in the initial chunk.
  */
 
-const MODEL_ID = "LiquidAI/LFM2.5-Audio-1.5B-transformers-js";
+const MODEL_ID = "onnx-community/whisper-small";
 const CACHE_NAME = "transformers-cache";
-const HF_TOKEN = import.meta.env.VITE_HF_TOKEN as string | undefined;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let transcriber: any = null;
@@ -26,36 +25,7 @@ export type ProgressCallback = (progress: DownloadProgress) => void;
 
 /** Lazy-import of @huggingface/transformers to keep initial bundle small. */
 async function getTransformers() {
-  const transformers = await import("@huggingface/transformers");
-
-  // Override env.fetch to inject Authorization header for HuggingFace requests.
-  // transformers.js strips auth headers in browser environments for security,
-  // but we need them to access gated models like LiquidAI.
-  if (HF_TOKEN) {
-    const nativeFetch = globalThis.fetch.bind(globalThis);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (transformers.env as any).fetch = (
-      input: RequestInfo | URL,
-      init?: RequestInit,
-    ) => {
-      const url =
-        input instanceof Request
-          ? input.url
-          : input instanceof URL
-            ? input.href
-            : input;
-      if (url.includes("huggingface.co")) {
-        const headers = new Headers(init?.headers);
-        if (!headers.has("Authorization")) {
-          headers.set("Authorization", `Bearer ${HF_TOKEN}`);
-        }
-        return nativeFetch(input, { ...init, headers });
-      }
-      return nativeFetch(input, init);
-    };
-  }
-
-  return transformers;
+  return import("@huggingface/transformers");
 }
 
 /**
@@ -92,7 +62,7 @@ export async function loadTranscriptionModel(
       device,
       dtype: "q4",
       progress_callback: progressCb,
-      ...(HF_TOKEN ? { token: HF_TOKEN } : {}),
+
     });
 
   loadingPromise = (async () => {
@@ -146,7 +116,7 @@ export async function isModelCached(): Promise<boolean> {
   try {
     const cache = await caches.open(CACHE_NAME);
     const keys = await cache.keys();
-    return keys.some((r) => r.url.includes("LiquidAI"));
+    return keys.some((r) => r.url.includes("whisper-small"));
   } catch {
     return false;
   }
@@ -159,7 +129,7 @@ export async function getModelCacheSize(): Promise<number> {
     const keys = await cache.keys();
     let total = 0;
     for (const req of keys) {
-      if (!req.url.includes("LiquidAI")) continue;
+      if (!req.url.includes("whisper-small")) continue;
       const resp = await cache.match(req);
       if (resp) {
         const blob = await resp.clone().blob();
@@ -179,7 +149,7 @@ export async function clearModelCache(): Promise<void> {
     const cache = await caches.open(CACHE_NAME);
     const keys = await cache.keys();
     for (const req of keys) {
-      if (req.url.includes("LiquidAI")) {
+      if (req.url.includes("whisper-small")) {
         await cache.delete(req);
       }
     }
