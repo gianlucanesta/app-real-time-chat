@@ -20,6 +20,14 @@ export interface UserSettings {
   notifGroups: boolean;
   notifStatus: boolean;
   notifCalls: boolean;
+  notifMessagesReactions: boolean;
+  notifGroupsReactions: boolean;
+  notifStatusReactions: boolean;
+  notifMessagesTone: string;
+  notifGroupsTone: string;
+  notifStatusTone: string;
+  notifCallsIncoming: boolean;
+  notifCallsSound: boolean;
   notifPreview: boolean;
   notifSendSound: boolean;
   cameraId: string;
@@ -60,6 +68,14 @@ const DEFAULTS: UserSettings = {
   notifGroups: true,
   notifStatus: true,
   notifCalls: true,
+  notifMessagesReactions: false,
+  notifGroupsReactions: false,
+  notifStatusReactions: false,
+  notifMessagesTone: "default",
+  notifGroupsTone: "default",
+  notifStatusTone: "default",
+  notifCallsIncoming: true,
+  notifCallsSound: true,
   notifPreview: true,
   notifSendSound: false,
   cameraId: "",
@@ -102,6 +118,14 @@ const LS_MAP: Record<keyof UserSettings, string> = {
   notifGroups: "ephemeral-notif-groups",
   notifStatus: "ephemeral-notif-status",
   notifCalls: "ephemeral-notif-calls",
+  notifMessagesReactions: "ephemeral-notif-messages-reactions",
+  notifGroupsReactions: "ephemeral-notif-groups-reactions",
+  notifStatusReactions: "ephemeral-notif-status-reactions",
+  notifMessagesTone: "ephemeral-notif-messages-tone",
+  notifGroupsTone: "ephemeral-notif-groups-tone",
+  notifStatusTone: "ephemeral-notif-status-tone",
+  notifCallsIncoming: "ephemeral-notif-calls-incoming",
+  notifCallsSound: "ephemeral-notif-calls-sound",
   notifPreview: "ephemeral-notif-preview",
   notifSendSound: "ephemeral-notif-send-sound",
   cameraId: "ephemeral-camera-id",

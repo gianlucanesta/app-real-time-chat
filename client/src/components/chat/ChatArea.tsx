@@ -35,6 +35,7 @@ import { VoiceRecorder } from "./VoiceRecorder";
 import { MediaPreviewScreen } from "./MediaPreviewScreen";
 import { MediaViewer, type MediaItem } from "./MediaViewer";
 import { EmojiPicker } from "./EmojiPicker";
+import { MuteConversationModal, type MuteDuration } from "./MuteConversationModal";
 import { useChat, type Message } from "../../contexts/ChatContext";
 import type { LinkPreview } from "../../types";
 import { useAuth } from "../../contexts/AuthContext";
@@ -115,6 +116,8 @@ export function ChatArea({
     confirmRemoteDeletion,
     reactions,
     reactToMessage,
+    muteConversation,
+    unmuteConversation,
   } = useChat();
   const toast = useToast();
   const chatSettings = useChatSettings();
@@ -299,7 +302,7 @@ export function ChatArea({
   // Call & Modal State
   const webrtc = useChat().webrtc;
   const [activeModal, setActiveModal] = useState<
-    "delete-messages" | "clear-chat" | "delete-chat" | null
+    "delete-messages" | "clear-chat" | "delete-chat" | "mute-notifications" | null
   >(null);
 
   const contactName = activeConversation?.name || "";
@@ -836,6 +839,12 @@ export function ChatArea({
             >
               {contactName}
             </h2>
+            {liveConv?.isMuted && !isContactTyping && (
+              <div className="flex items-center gap-1 text-[11px] md:text-[12px] text-text-secondary mt-0.5">
+                <BellOff className="w-3 h-3" />
+                <span>Muted</span>
+              </div>
+            )}
             {isContactTyping ? (
               <div className="flex items-center gap-1.5 text-[11px] md:text-[12px] text-accent mt-0.5 transition-all duration-300 ease-in-out">
                 <span className="flex gap-0.5">
@@ -985,9 +994,15 @@ export function ChatArea({
                   <CheckSquare className="w-4 h-4 text-text-secondary" /> Select
                   messages
                 </button>
-                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors">
-                  <BellOff className="w-4 h-4 text-text-secondary" /> Mute
-                  notifications
+                <button
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors"
+                  onClick={() => {
+                    setIsMoreMenuOpen(false);
+                    setActiveModal("mute-notifications");
+                  }}
+                >
+                  <BellOff className="w-4 h-4 text-text-secondary" />
+                  {liveConv?.isMuted ? "Unmute notifications" : "Mute notifications"}
                 </button>
                 <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors">
                   <Timer className="w-4 h-4 text-text-secondary" /> Disappearing
@@ -1506,6 +1521,22 @@ export function ChatArea({
           toast.showToast("Chat deleted", "success");
         }}
         onCancel={() => setActiveModal(null)}
+      />
+      <MuteConversationModal
+        isOpen={activeModal === "mute-notifications"}
+        conversationName={contactName}
+        isMuted={liveConv?.isMuted ?? false}
+        onCancel={() => setActiveModal(null)}
+        onMute={(duration: MuteDuration) => {
+          if (activeConversation) muteConversation(activeConversation.id, duration);
+          setActiveModal(null);
+          toast.showToast("Notifications muted", "success");
+        }}
+        onUnmute={() => {
+          if (activeConversation) unmuteConversation(activeConversation.id);
+          setActiveModal(null);
+          toast.showToast("Notifications unmuted", "success");
+        }}
       />
     </main>
   );

@@ -92,6 +92,8 @@ export interface Conversation {
   lastName?: string;
   isTyping?: boolean;
   typingName?: string;
+  isMuted?: boolean;
+  mutedUntil?: string;
 }
 
 interface ChatContextType {
@@ -134,6 +136,8 @@ interface ChatContextType {
   markAllAsRead: (conversationIds?: string[]) => Promise<void>;
   markAsUnread: (conversationIds: string[]) => Promise<void>;
   clearConversationById: (convId: string) => void;
+  muteConversation: (convId: string, duration: "8h" | "1w" | "always") => void;
+  unmuteConversation: (convId: string) => void;
   pendingRemoteDeletions: string[];
   confirmRemoteDeletion: (ids: string[]) => void;
   reactions: Record<string, Reaction[]>;
@@ -242,15 +246,34 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         "/conversations",
       );
       setConversations(
-        data.conversations.map((c) => ({
-          ...c,
-          lastMessageTimestamp: c.lastMessageTime || undefined,
-          lastMessageTime: c.lastMessageTime
-            ? fmtTime(c.lastMessageTime)
-            : undefined,
-          // Apply cached presence info (presence:list may have arrived before this API response)
-          isOnline: c.participants.some((p) => onlineUserIdsRef.current.has(p)),
-        })),
+        data.conversations.map((c) => {
+          const mutedRaw = localStorage.getItem(`muted_${c.id}`);
+          let isMuted = false;
+          let mutedUntil: string | undefined;
+          if (mutedRaw) {
+            if (mutedRaw === "always") {
+              isMuted = true;
+              mutedUntil = "always";
+            } else if (new Date(mutedRaw) > new Date()) {
+              isMuted = true;
+              mutedUntil = mutedRaw;
+            } else {
+              // Expired — clean up
+              localStorage.removeItem(`muted_${c.id}`);
+            }
+          }
+          return {
+            ...c,
+            lastMessageTimestamp: c.lastMessageTime || undefined,
+            lastMessageTime: c.lastMessageTime
+              ? fmtTime(c.lastMessageTime)
+              : undefined,
+            // Apply cached presence info
+            isOnline: c.participants.some((p) => onlineUserIdsRef.current.has(p)),
+            isMuted,
+            mutedUntil,
+          };
+        }),
       );
     } catch (err) {
       console.warn(
@@ -715,6 +738,22 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     // ── Browser notifications for incoming messages ─────────────────────
     const handleBrowserNotification = (msg: MessagePayload) => {
       if (msg.sender === user.id) return;
+
+      // Check if the conversation is muted
+      const mutedUntilRaw = localStorage.getItem(`muted_${msg.conversationId}`);
+      if (mutedUntilRaw) {
+        if (mutedUntilRaw === "always") return;
+        if (new Date(mutedUntilRaw) > new Date()) return;
+        // Expired — clean up
+        localStorage.removeItem(`muted_${msg.conversationId}`);
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === msg.conversationId
+              ? { ...c, isMuted: false, mutedUntil: undefined }
+              : c,
+          ),
+        );
+      }
 
       // Check if messages notifications are enabled
       const messagesOn =
@@ -1645,6 +1684,40 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         markAllAsRead,
         markAsUnread,
         clearConversationById,
+        muteConversation: (convId: string, duration: "8h" | "1w" | "always") => {
+          let mutedUntil: string;
+          if (duration === "8h") {
+            mutedUntil = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
+          } else if (duration === "1w") {
+            mutedUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+          } else {
+            mutedUntil = "always";
+          }
+          localStorage.setItem(`muted_${convId}`, mutedUntil);
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === convId ? { ...c, isMuted: true, mutedUntil } : c,
+            ),
+          );
+          if (activeConversation?.id === convId) {
+            setActiveConversation((prev) =>
+              prev ? { ...prev, isMuted: true, mutedUntil } : prev,
+            );
+          }
+        },
+        unmuteConversation: (convId: string) => {
+          localStorage.removeItem(`muted_${convId}`);
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === convId ? { ...c, isMuted: false, mutedUntil: undefined } : c,
+            ),
+          );
+          if (activeConversation?.id === convId) {
+            setActiveConversation((prev) =>
+              prev ? { ...prev, isMuted: false, mutedUntil: undefined } : prev,
+            );
+          }
+        },
         pendingRemoteDeletions,
         confirmRemoteDeletion,
         reactions,

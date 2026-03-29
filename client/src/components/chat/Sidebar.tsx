@@ -33,6 +33,7 @@ import { SidebarSkeleton } from "../ui/Skeleton";
 import { NewChatPanel } from "./NewChatPanel";
 import { NewContactPanel } from "./NewContactPanel";
 import { NewGroupPanel } from "./NewGroupPanel";
+import { MuteConversationModal, type MuteDuration } from "./MuteConversationModal";
 
 interface SidebarProps {
   onOpenNewChat?: () => void;
@@ -183,7 +184,11 @@ export function Sidebar({
     markAllAsRead,
     markAsUnread,
     clearConversationById,
+    muteConversation,
+    unmuteConversation,
   } = useChat();
+
+  const [mutingConvId, setMutingConvId] = useState<string | null>(null);
 
   const exitSelectMode = () => {
     setIsSelectMode(false);
@@ -611,12 +616,13 @@ export function Sidebar({
                         <div
                           onClick={(e) => {
                             e.stopPropagation();
+                            setMutingConvId(chat.id);
                             setOpenConvMenuId(null);
                           }}
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-text-main hover:bg-input/80 transition-colors cursor-pointer"
                         >
                           <BellOff className="w-4 h-4 text-text-secondary" />{" "}
-                          Mute notifications
+                          {chat.isMuted ? "Unmute notifications" : "Mute notifications"}
                         </div>
                         <div
                           onClick={(e) => {
@@ -813,6 +819,9 @@ export function Sidebar({
                     {chat.unreadCount}
                   </span>
                 )}
+                {chat.isMuted && chat.unreadCount === 0 && (
+                  <BellOff className="w-3.5 h-3.5 text-text-secondary shrink-0" />
+                )}
               </div>
             </div>
           </div>
@@ -831,6 +840,27 @@ export function Sidebar({
       </div>
       {/* Bottom spacing for mobile nav bar */}
       <div className="h-[4px] md:hidden shrink-0"></div>
+
+      {/* Mute modal (triggered from per-conversation context menu) */}
+      {mutingConvId && (() => {
+        const conv = conversations.find((c) => c.id === mutingConvId);
+        return (
+          <MuteConversationModal
+            isOpen={true}
+            conversationName={conv?.name ?? ""}
+            isMuted={conv?.isMuted ?? false}
+            onCancel={() => setMutingConvId(null)}
+            onMute={(duration: MuteDuration) => {
+              muteConversation(mutingConvId, duration);
+              setMutingConvId(null);
+            }}
+            onUnmute={() => {
+              unmuteConversation(mutingConvId);
+              setMutingConvId(null);
+            }}
+          />
+        );
+      })()}
     </aside>
   );
 }

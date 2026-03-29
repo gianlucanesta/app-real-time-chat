@@ -6,10 +6,13 @@ import {
   Activity,
   Phone,
   ChevronRight,
+  ChevronLeft,
+  Play,
 } from "lucide-react";
 import { Select } from "../ui/select";
 import { Label } from "../ui/label";
 import { useSettings } from "../../contexts/SettingsContext";
+import { TONE_OPTIONS, previewTone } from "../../lib/notificationTones";
 
 // ── Toggle switch ───────────────────────────────────────────────────────
 function Toggle({
@@ -29,7 +32,7 @@ function Toggle({
       aria-label={label}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-[26px] w-[46px] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
-        checked ? "bg-[#2563eb]" : "bg-[var(--color-border)]"
+        checked ? "bg-accent" : "bg-[var(--color-border)]"
       }`}
     >
       <span
@@ -54,16 +57,8 @@ const BADGE_OPTIONS = [
   { value: "never", label: "Never" },
 ];
 
-// ── Category row ────────────────────────────────────────────────────────
+// ── Category config ─────────────────────────────────────────────────────
 type CategoryId = "messages" | "groups" | "status" | "calls";
-
-/** Maps CategoryId → the corresponding key in UserSettings. */
-const CATEGORY_SETTINGS_KEY: Record<CategoryId, "notifMessages" | "notifGroups" | "notifStatus" | "notifCalls"> = {
-  messages: "notifMessages",
-  groups: "notifGroups",
-  status: "notifStatus",
-  calls: "notifCalls",
-};
 
 interface CategoryConfig {
   id: CategoryId;
@@ -78,6 +73,175 @@ const CATEGORIES: CategoryConfig[] = [
   { id: "calls", icon: Phone, label: "Calls" },
 ];
 
+// ── Row component shared across sub-screens ─────────────────────────────
+function SettingRow({
+  label,
+  description,
+  children,
+  border = true,
+}: {
+  label: string;
+  description?: string;
+  children: React.ReactNode;
+  border?: boolean;
+}) {
+  return (
+    <div
+      className={`flex items-center justify-between gap-4 px-4 py-4 ${
+        border ? "border-b border-border" : ""
+      }`}
+    >
+      <div className="flex flex-col gap-0.5 min-w-0">
+        <span className="text-[14px] font-medium text-text-main">{label}</span>
+        {description && (
+          <span className="text-[12px] text-text-secondary">{description}</span>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ── Sub-screen: Messages / Groups / Status ──────────────────────────────
+function CategorySubScreen({
+  cat,
+  onBack,
+}: {
+  cat: CategoryConfig;
+  onBack: () => void;
+}) {
+  const { settings, updateSetting } = useSettings();
+
+  type OnKey = "notifMessages" | "notifGroups" | "notifStatus";
+  type ReactKey =
+    | "notifMessagesReactions"
+    | "notifGroupsReactions"
+    | "notifStatusReactions";
+  type ToneKey = "notifMessagesTone" | "notifGroupsTone" | "notifStatusTone";
+
+  const onKey = `notif${cat.label}` as OnKey;
+  const reactKey = `notif${cat.label}Reactions` as ReactKey;
+  const toneKey = `notif${cat.label}Tone` as ToneKey;
+
+  const isOn = settings[onKey];
+  const hasReactions = settings[reactKey];
+  const tone = settings[toneKey];
+
+  return (
+    <div className="flex flex-col animate-in slide-in-from-right-4 duration-200">
+      {/* Sub-screen header */}
+      <div className="flex items-center gap-2 px-2 py-3 border-b border-border">
+        <button
+          type="button"
+          onClick={onBack}
+          className="w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors"
+          aria-label="Back"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <span className="text-[15px] font-semibold text-text-main">
+          {cat.label}
+        </span>
+      </div>
+
+      <SettingRow label="Show notifications">
+        <Toggle
+          checked={isOn}
+          onChange={(v) => updateSetting(onKey, v)}
+          label={`Toggle ${cat.label} notifications`}
+        />
+      </SettingRow>
+
+      <SettingRow label="Show reaction notifications">
+        <Toggle
+          checked={hasReactions}
+          onChange={(v) => updateSetting(reactKey, v)}
+          label={`Toggle ${cat.label} reaction notifications`}
+        />
+      </SettingRow>
+
+      {/* Tone select */}
+      <div className="flex flex-col gap-2 px-4 py-4">
+        <span className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
+          Notification tone
+        </span>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <Select
+              options={TONE_OPTIONS}
+              value={tone}
+              onChange={(v) => {
+                updateSetting(toneKey, v);
+                previewTone(v);
+              }}
+              icon={
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-[17px] h-[17px]"
+                >
+                  <path d="M9 18V5l12-2v13" />
+                  <circle cx="6" cy="18" r="3" />
+                  <circle cx="18" cy="16" r="3" />
+                </svg>
+              }
+            />
+          </div>
+          <button
+            type="button"
+            aria-label="Preview tone"
+            onClick={() => previewTone(tone)}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-accent border border-accent/30 hover:bg-accent/10 transition-colors shrink-0"
+          >
+            <Play className="w-4 h-4 fill-accent" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Sub-screen: Calls ───────────────────────────────────────────────────
+function CallsSubScreen({ onBack }: { onBack: () => void }) {
+  const { settings, updateSetting } = useSettings();
+
+  return (
+    <div className="flex flex-col animate-in slide-in-from-right-4 duration-200">
+      <div className="flex items-center gap-2 px-2 py-3 border-b border-border">
+        <button
+          type="button"
+          onClick={onBack}
+          className="w-9 h-9 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors"
+          aria-label="Back"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <span className="text-[15px] font-semibold text-text-main">Calls</span>
+      </div>
+
+      <SettingRow label="Show notifications for incoming calls">
+        <Toggle
+          checked={settings.notifCallsIncoming}
+          onChange={(v) => updateSetting("notifCallsIncoming", v)}
+          label="Toggle incoming call notifications"
+        />
+      </SettingRow>
+
+      <SettingRow label="Play sounds for incoming calls" border={false}>
+        <Toggle
+          checked={settings.notifCallsSound}
+          onChange={(v) => updateSetting("notifCallsSound", v)}
+          label="Toggle incoming call sounds"
+        />
+      </SettingRow>
+    </div>
+  );
+}
+
 // ── Main component ──────────────────────────────────────────────────────
 export function NotificationSettings() {
   const { settings, updateSetting } = useSettings();
@@ -85,8 +249,10 @@ export function NotificationSettings() {
   const [permissionState, setPermissionState] =
     useState<NotificationPermission>("default");
 
-  // ── Expand panel state (per-category advanced) ────────────────────────
-  const [expandedCat, setExpandedCat] = useState<CategoryId | null>(null);
+  // null = main screen, else = open sub-screen
+  const [activeSubScreen, setActiveSubScreen] = useState<CategoryId | null>(
+    null,
+  );
 
   // ── Check browser permission ──────────────────────────────────────────
   useEffect(() => {
@@ -100,6 +266,17 @@ export function NotificationSettings() {
     const result = await Notification.requestPermission();
     setPermissionState(result);
   }, []);
+
+  // ── Sub-screen routing ────────────────────────────────────────────────
+  if (activeSubScreen === "calls") {
+    return <CallsSubScreen onBack={() => setActiveSubScreen(null)} />;
+  }
+  if (activeSubScreen) {
+    const cat = CATEGORIES.find((c) => c.id === activeSubScreen)!;
+    return (
+      <CategorySubScreen cat={cat} onBack={() => setActiveSubScreen(null)} />
+    );
+  }
 
   // ── Permission banner ─────────────────────────────────────────────────
   if (permissionState === "denied") {
@@ -116,6 +293,17 @@ export function NotificationSettings() {
       </div>
     );
   }
+
+  // ── Category status label ─────────────────────────────────────────────
+  const catStatus = (id: CategoryId): string => {
+    const map: Record<CategoryId, keyof typeof settings> = {
+      messages: "notifMessages",
+      groups: "notifGroups",
+      status: "notifStatus",
+      calls: "notifCalls",
+    };
+    return settings[map[id]] ? "On" : "Off";
+  };
 
   return (
     <div className="flex flex-col gap-0">
@@ -166,73 +354,43 @@ export function NotificationSettings() {
         />
       </div>
 
-      {/* ── Category toggles ─────────────────────────────────── */}
+      {/* ── Category rows → navigate to sub-screen ───────────── */}
       <div className="flex flex-col border-b border-border">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
-          const settingsKey = CATEGORY_SETTINGS_KEY[cat.id];
-          const isOn = settings[settingsKey];
-          const isExpanded = expandedCat === cat.id;
-
           return (
-            <div key={cat.id}>
-              <button
-                type="button"
-                onClick={() => setExpandedCat(isExpanded ? null : cat.id)}
-                className="w-full flex items-center gap-3.5 px-4 py-3.5 hover:bg-input/50 transition-colors"
-              >
-                <Icon className="w-[18px] h-[18px] text-text-secondary shrink-0" />
-                <div className="flex-1 text-left min-w-0">
-                  <span className="block text-[14px] font-medium text-text-main">
-                    {cat.label}
-                  </span>
-                  <span className="block text-[12px] text-text-secondary">
-                    {isOn ? "On" : "Off"}
-                  </span>
-                </div>
-                <ChevronRight
-                  className={`w-4 h-4 text-text-secondary transition-transform ${
-                    isExpanded ? "rotate-90" : ""
-                  }`}
-                />
-              </button>
-
-              {/* Expanded sub-panel */}
-              {isExpanded && (
-                <div className="px-4 pb-4 pl-12 flex flex-col gap-3 animate-in fade-in slide-in-from-top-1 duration-150">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[13px] text-text-main">
-                      Enable {cat.label.toLowerCase()} notifications
-                    </span>
-                    <Toggle
-                      checked={isOn}
-                      onChange={(v) => updateSetting(settingsKey, v)}
-                      label={`Toggle ${cat.label} notifications`}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setActiveSubScreen(cat.id)}
+              className="w-full flex items-center gap-3.5 px-4 py-3.5 hover:bg-input/50 transition-colors"
+            >
+              <Icon className="w-[18px] h-[18px] text-text-secondary shrink-0" />
+              <div className="flex-1 text-left min-w-0">
+                <span className="block text-[14px] font-medium text-text-main">
+                  {cat.label}
+                </span>
+                <span className="block text-[12px] text-text-secondary">
+                  {catStatus(cat.id)}
+                </span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-text-secondary shrink-0" />
+            </button>
           );
         })}
       </div>
 
       {/* ── Show Previews toggle ─────────────────────────────── */}
-      <div className="flex items-center justify-between gap-4 px-4 py-4 border-b border-border">
-        <div className="flex flex-col gap-0.5 min-w-0">
-          <span className="text-[14px] font-medium text-text-main">
-            Show Previews
-          </span>
-          <span className="text-[12px] text-text-secondary">
-            Show message text preview in notification banners.
-          </span>
-        </div>
+      <SettingRow
+        label="Show Previews"
+        description="Show message text preview in notification banners."
+      >
         <Toggle
           checked={settings.notifPreview}
           onChange={(v) => updateSetting("notifPreview", v)}
           label="Show previews"
         />
-      </div>
+      </SettingRow>
 
       {/* ── Send sound toggle ────────────────────────────────── */}
       <div className="flex items-center justify-between gap-4 px-4 py-4">
