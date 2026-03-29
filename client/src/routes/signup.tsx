@@ -106,7 +106,7 @@ function SignupPage() {
   };
 
   return (
-    <div className="absolute inset-0 overflow-y-auto auth-page-glow auth-page-scroll relative">
+    <div className="absolute inset-0 overflow-y-auto auth-page-glow auth-page-scroll">
       <DottedGlowBackground
         color="rgba(255,255,255,0.18)"
         glowColor="rgba(255,255,255,0.5)"

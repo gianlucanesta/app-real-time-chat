@@ -75,7 +75,7 @@ function LoginPage() {
   };
 
   return (
-    <div className="absolute inset-0 overflow-y-auto auth-page-glow relative">
+    <div className="absolute inset-0 overflow-y-auto auth-page-glow">
       <DottedGlowBackground
         color="rgba(255,255,255,0.18)"
         glowColor="rgba(255,255,255,0.5)"
