@@ -2,6 +2,19 @@
    Auth pages — login / signup shared styles
    ══════════════════════════════════════════════════════════ */
 
+/* ── Dotted background edge vignette ─────────────────────── */
+.auth-bg-vignette {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 90% 90% at center,
+    transparent 35%,
+    var(--color-bg) 82%
+  );
+  z-index: 1;
+}
+
 /* ── Ephemeral brand animation letters ───────────────────── */
 .ephemeral-letter {
   display: inline-block;
