@@ -388,6 +388,74 @@ export async function upsertFacebookUser({
   return rows[0];
 }
 
+// ── Microsoft OAuth ─────────────────────────────────────────────────────────
+
+/** Find a user by their Microsoft OID. */
+export async function findByMicrosoftId(
+  microsoftId: string,
+): Promise<IUser | null> {
+  const { rows } = await pool.query<IUser>(
+    `SELECT ${SAFE_COLUMNS} FROM users WHERE microsoft_id = $1`,
+    [microsoftId],
+  );
+  return rows[0] ?? null;
+}
+
+/**
+ * Find-or-create a Microsoft OAuth user.
+ * - If the microsoft_id already exists → return existing user.
+ * - If the email exists but microsoft_id is NULL → link and return.
+ * - Otherwise → create new user (email pre-verified, no password).
+ */
+export async function upsertMicrosoftUser({
+  microsoftId,
+  email,
+  displayName,
+  firstName,
+  lastName,
+  avatarUrl,
+}: {
+  microsoftId: string;
+  email: string;
+  displayName: string;
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string;
+}): Promise<IUser> {
+  const existing = await findByMicrosoftId(microsoftId);
+  if (existing) return existing;
+
+  const initials = displayName
+    .trim()
+    .split(/\s+/)
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  const { rows } = await pool.query<IUser>(
+    `INSERT INTO users (email, password_hash, display_name, first_name, last_name, initials, avatar_url, microsoft_id, email_verified)
+     VALUES ($1, '', $2, $3, $4, $5, $6, $7, true)
+     ON CONFLICT (email) DO UPDATE
+       SET microsoft_id    = EXCLUDED.microsoft_id,
+           email_verified  = true,
+           first_name      = COALESCE(NULLIF(users.first_name, ''), EXCLUDED.first_name),
+           last_name       = COALESCE(NULLIF(users.last_name, ''), EXCLUDED.last_name),
+           avatar_url      = COALESCE(users.avatar_url, EXCLUDED.avatar_url)
+     RETURNING ${SAFE_COLUMNS}`,
+    [
+      email.toLowerCase().trim(),
+      displayName.trim(),
+      firstName ?? null,
+      lastName ?? null,
+      initials,
+      avatarUrl ?? null,
+      microsoftId,
+    ],
+  );
+  return rows[0];
+}
+
 /** Update password and clear reset token. */
 export async function updatePassword(
   userId: string,

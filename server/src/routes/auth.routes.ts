@@ -257,3 +257,35 @@ authRouter.get("/facebook", ctrl.facebookAuth);
  *         description: Redirect to client with auth tokens
  */
 authRouter.get("/facebook/callback", ctrl.facebookCallback);
+
+/**
+ * @openapi
+ * /api/auth/microsoft:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Start Microsoft OAuth2 flow
+ *     description: Redirects the user to Microsoft's consent screen.
+ *     responses:
+ *       302:
+ *         description: Redirect to Microsoft
+ */
+authRouter.get("/microsoft", ctrl.microsoftAuth);
+
+/**
+ * @openapi
+ * /api/auth/microsoft/callback:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Microsoft OAuth2 callback
+ *     description: Handles the redirect from Microsoft after authentication.
+ *     parameters:
+ *       - in: query
+ *         name: code
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       302:
+ *         description: Redirect to client with auth tokens
+ */
+authRouter.get("/microsoft/callback", ctrl.microsoftCallback);

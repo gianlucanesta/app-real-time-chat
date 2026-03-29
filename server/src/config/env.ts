@@ -37,4 +37,10 @@ export const env = {
   FACEBOOK_CALLBACK_URL:
     process.env.FACEBOOK_CALLBACK_URL ||
     "http://localhost:3001/api/auth/facebook/callback",
+  // Microsoft OAuth2
+  MICROSOFT_CLIENT_ID: process.env.MICROSOFT_CLIENT_ID || "",
+  MICROSOFT_CLIENT_SECRET: process.env.MICROSOFT_CLIENT_SECRET || "",
+  MICROSOFT_CALLBACK_URL:
+    process.env.MICROSOFT_CALLBACK_URL ||
+    "http://localhost:3001/api/auth/microsoft/callback",
 } as const;

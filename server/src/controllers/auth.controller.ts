@@ -664,3 +664,141 @@ export async function facebookCallback(
     res.redirect(failRedirect);
   }
 }
+
+// ── Microsoft OAuth2 ────────────────────────────────────────────────────────
+
+/**
+ * GET /api/auth/microsoft
+ * Redirect the browser to Microsoft's OAuth2 consent screen.
+ * Uses "common" tenant so both personal and work/school accounts can sign in.
+ */
+export function microsoftAuth(_req: Request, res: Response): void {
+  if (!env.MICROSOFT_CLIENT_ID) {
+    res.status(503).json({ error: "Microsoft OAuth not configured" });
+    return;
+  }
+
+  const params = new URLSearchParams({
+    client_id: env.MICROSOFT_CLIENT_ID,
+    redirect_uri: env.MICROSOFT_CALLBACK_URL,
+    response_type: "code",
+    scope: "openid email profile User.Read",
+    response_mode: "query",
+    prompt: "select_account",
+  });
+
+  res.redirect(
+    `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params}`,
+  );
+}
+
+/**
+ * GET /api/auth/microsoft/callback
+ * Exchange the authorization code, upsert user, issue tokens.
+ */
+export async function microsoftCallback(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const { code, error: oauthError } = req.query as {
+    code?: string;
+    error?: string;
+  };
+
+  const failRedirect = `${env.CLIENT_URL}/login?error=microsoft_failed`;
+
+  if (oauthError || !code) {
+    res.redirect(failRedirect);
+    return;
+  }
+
+  try {
+    // 1. Exchange code for tokens
+    const tokenRes = await fetch(
+      "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          client_id: env.MICROSOFT_CLIENT_ID,
+          client_secret: env.MICROSOFT_CLIENT_SECRET,
+          redirect_uri: env.MICROSOFT_CALLBACK_URL,
+          code,
+          grant_type: "authorization_code",
+        }),
+      },
+    );
+
+    if (!tokenRes.ok) {
+      console.error(
+        "[microsoft] token exchange failed:",
+        await tokenRes.text(),
+      );
+      res.redirect(failRedirect);
+      return;
+    }
+
+    const tokenData = (await tokenRes.json()) as { access_token: string };
+
+    // 2. Fetch user profile from Microsoft Graph
+    const userInfoRes = await fetch("https://graph.microsoft.com/v1.0/me", {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+
+    if (!userInfoRes.ok) {
+      console.error("[microsoft] userinfo failed:", await userInfoRes.text());
+      res.redirect(failRedirect);
+      return;
+    }
+
+    const profile = (await userInfoRes.json()) as {
+      id: string;
+      displayName?: string;
+      givenName?: string;
+      surname?: string;
+      mail?: string;
+      userPrincipalName?: string;
+    };
+
+    if (!profile.id) {
+      res.redirect(failRedirect);
+      return;
+    }
+
+    // Microsoft may use userPrincipalName as fallback when mail is null
+    const email = profile.mail ?? profile.userPrincipalName;
+    if (!email) {
+      res.redirect(failRedirect);
+      return;
+    }
+
+    // 3. Upsert user in PostgreSQL
+    const user = await UserModel.upsertMicrosoftUser({
+      microsoftId: profile.id,
+      email,
+      displayName: profile.displayName || email.split("@")[0],
+      firstName: profile.givenName,
+      lastName: profile.surname,
+    });
+
+    // 4. Issue access + refresh tokens
+    const accessToken = signAccessToken(user);
+    const refreshRaw = generateRefreshToken();
+    const refreshHash = hashRefreshToken(refreshRaw);
+    await UserModel.saveRefreshToken(
+      user.id,
+      refreshHash,
+      new Date(Date.now() + env.REFRESH_EXPIRES_MS),
+    );
+
+    setRefreshCookie(res, refreshRaw);
+
+    // 5. Redirect frontend to the OAuth callback route with accessToken
+    res.redirect(
+      `${env.CLIENT_URL}/oauth-callback?accessToken=${encodeURIComponent(accessToken)}`,
+    );
+  } catch (err) {
+    console.error("[microsoft] callback error:", (err as Error).message);
+    res.redirect(failRedirect);
+  }
+}
