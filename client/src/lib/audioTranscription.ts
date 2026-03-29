@@ -33,7 +33,11 @@ async function getTransformers() {
   // but we need them to access gated models like LiquidAI.
   if (HF_TOKEN) {
     const nativeFetch = globalThis.fetch.bind(globalThis);
-    transformers.env.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (transformers.env as any).fetch = (
+      input: RequestInfo | URL,
+      init?: RequestInit,
+    ) => {
       const url =
         input instanceof Request
           ? input.url
