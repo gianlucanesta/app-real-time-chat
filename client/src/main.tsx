@@ -36,6 +36,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ToastProvider } from "./contexts/ToastContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { SettingsProvider } from "./contexts/SettingsContext";
+import { TranscriptionProvider } from "./contexts/TranscriptionContext";
 
 // Create a new router instance
 const router = createRouter({
@@ -62,7 +63,9 @@ createRoot(document.getElementById("root")!).render(
       <ThemeProvider>
         <ToastProvider>
           <AuthProvider>
-            <App />
+            <TranscriptionProvider>
+              <App />
+            </TranscriptionProvider>
           </AuthProvider>
         </ToastProvider>
       </ThemeProvider>

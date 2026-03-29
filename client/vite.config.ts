@@ -10,6 +10,9 @@ export default defineConfig({
     react(),
     tailwindcss()
   ],
+  optimizeDeps: {
+    exclude: ["@huggingface/transformers"],
+  },
   test: {
     globals: true,
     environment: "jsdom",

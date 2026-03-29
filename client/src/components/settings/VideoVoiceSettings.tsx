@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Video, Mic, Volume2, Play } from "lucide-react";
+import { Video, Mic, Volume2, Play, Download, Trash2, Cpu } from "lucide-react";
 import { Select } from "../ui/select";
 import { Label } from "../ui/label";
 import { useSettings } from "../../contexts/SettingsContext";
+import { useTranscription } from "../../contexts/TranscriptionContext";
 
 interface DeviceInfo {
   deviceId: string;
@@ -11,6 +12,16 @@ interface DeviceInfo {
 
 export function VideoVoiceSettings() {
   const { settings, updateSetting } = useSettings();
+  const {
+    modelStatus,
+    downloadProgress,
+    webGPUSupported,
+    loadModel,
+    clearModelCache,
+    cacheSize,
+    isModelCached,
+    refreshCacheInfo,
+  } = useTranscription();
 
   const [cameras, setCameras] = useState<DeviceInfo[]>([]);
   const [mics, setMics] = useState<DeviceInfo[]>([]);
@@ -356,6 +367,136 @@ export function VideoVoiceSettings() {
           Test Speakers
         </button>
       </div>
+
+      {/* ── Speech Transcription ──────────────────────────────── */}
+      <div className="flex flex-col gap-2.5">
+        <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
+          Speech Transcription
+        </Label>
+
+        <p className="text-[13px] text-text-secondary">
+          Transcribe received voice messages using an AI model that runs
+          entirely in your browser. The model is downloaded once and cached
+          locally.
+        </p>
+
+        {/* Model info */}
+        <div className="flex flex-col gap-1.5 px-3 py-2.5 rounded-xl bg-input text-[13px]">
+          <div className="flex items-center justify-between">
+            <span className="text-text-secondary">Model</span>
+            <span className="text-text-main font-medium text-[12px]">
+              LFM2.5-Audio-1.5B
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-text-secondary">Runtime</span>
+            <span className="text-text-main font-medium text-[12px] flex items-center gap-1.5">
+              <span
+                className={`w-2 h-2 rounded-full ${webGPUSupported ? "bg-green-500" : "bg-yellow-500"}`}
+              />
+              {webGPUSupported ? "WebGPU" : "WASM (CPU)"}
+            </span>
+          </div>
+          {isModelCached && cacheSize > 0 && (
+            <div className="flex items-center justify-between">
+              <span className="text-text-secondary">Cache size</span>
+              <span className="text-text-main font-medium text-[12px]">
+                {formatBytes(cacheSize)}
+              </span>
+            </div>
+          )}
+          <div className="flex items-center justify-between">
+            <span className="text-text-secondary">Status</span>
+            <span className="flex items-center gap-1.5 font-medium text-[12px]">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  modelStatus === "ready"
+                    ? "bg-green-500"
+                    : modelStatus === "loading"
+                      ? "bg-blue-400 animate-pulse"
+                      : modelStatus === "error"
+                        ? "bg-red-500"
+                        : "bg-zinc-500"
+                }`}
+              />
+              <span className="text-text-main">
+                {modelStatus === "ready"
+                  ? "Loaded"
+                  : modelStatus === "loading"
+                    ? "Loading…"
+                    : modelStatus === "error"
+                      ? "Error"
+                      : isModelCached
+                        ? "Cached"
+                        : "Not downloaded"}
+              </span>
+            </span>
+          </div>
+        </div>
+
+        {/* Download progress */}
+        {modelStatus === "loading" && downloadProgress && (
+          <div className="flex flex-col gap-1">
+            <div className="h-2 bg-input rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-500 rounded-full transition-all duration-200"
+                style={{
+                  width: `${Math.round(downloadProgress.progress)}%`,
+                }}
+              />
+            </div>
+            <span className="text-[11px] text-text-secondary">
+              {downloadProgress.file
+                ? `${downloadProgress.file} — ${Math.round(downloadProgress.progress)}%`
+                : `${Math.round(downloadProgress.progress)}%`}
+            </span>
+          </div>
+        )}
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-2">
+          {modelStatus !== "ready" && modelStatus !== "loading" && (
+            <button
+              type="button"
+              onClick={() => {
+                loadModel().then(() => refreshCacheInfo());
+              }}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-[13px] font-medium hover:bg-blue-500 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              {isModelCached ? "Load Model" : "Download Model"}
+            </button>
+          )}
+
+          {isModelCached && modelStatus !== "loading" && (
+            <button
+              type="button"
+              onClick={() => {
+                clearModelCache().then(() => refreshCacheInfo());
+              }}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-input border border-border text-[13px] font-medium text-text-main hover:bg-input/80 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete Cache
+            </button>
+          )}
+        </div>
+
+        {!webGPUSupported && (
+          <p className="text-[12px] text-yellow-500 flex items-center gap-1.5">
+            <Cpu className="w-3.5 h-3.5 shrink-0" />
+            WebGPU not available — transcription will use CPU (slower).
+          </p>
+        )}
+      </div>
     </div>
   );
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
 }

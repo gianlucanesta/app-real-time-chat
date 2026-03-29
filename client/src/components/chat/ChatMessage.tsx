@@ -22,6 +22,7 @@ import { createPortal } from "react-dom";
 import { useClickOutside } from "../../hooks/useClickOutside";
 import { AudioPlayer } from "./AudioPlayer";
 import { EmojiPicker } from "./EmojiPicker";
+import { TranscribeButton } from "./TranscribeButton";
 import type { Reaction } from "../../contexts/ChatContext";
 import type { LinkPreview } from "../../types";
 import { LinkPreviewCard } from "./LinkPreviewCard";
@@ -401,6 +402,9 @@ export function ChatMessage({
                               : undefined
                           }
                         />
+                      )}
+                      {!isSent && mediaUrl && (
+                        <TranscribeButton messageId={id} audioUrl={mediaUrl} />
                       )}
                       {isUploading && !mediaUrl && (
                         <div
