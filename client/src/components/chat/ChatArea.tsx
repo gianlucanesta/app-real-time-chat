@@ -101,6 +101,7 @@ export function ChatArea({
   const {
     conversations,
     activeConversation,
+    setActiveConversation,
     activeMessages,
     sendMessage,
     sendMediaMessage,
@@ -1016,7 +1017,17 @@ export function ChatArea({
                   <CheckSquare className="w-4 h-4 text-text-secondary" /> Add to
                   list
                 </button>
-                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors">
+                <button
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors"
+                  onClick={() => {
+                    setIsMoreMenuOpen(false);
+                    if (onMobileBack) {
+                      onMobileBack();
+                    } else {
+                      setActiveConversation(null);
+                    }
+                  }}
+                >
                   <Trash2 className="w-4 h-4 text-text-secondary" /> Close chat
                 </button>
                 <div className="w-full h-px bg-border/50 my-1"></div>
