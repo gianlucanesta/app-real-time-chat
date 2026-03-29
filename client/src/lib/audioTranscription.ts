@@ -5,6 +5,7 @@
 
 const MODEL_ID = "LiquidAI/LFM2.5-Audio-1.5B-transformers-js";
 const CACHE_NAME = "transformers-cache";
+const HF_TOKEN = import.meta.env.VITE_HF_TOKEN as string | undefined;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let transcriber: any = null;
@@ -62,6 +63,7 @@ export async function loadTranscriptionModel(
       device,
       dtype: "q4",
       progress_callback: progressCb,
+      ...(HF_TOKEN ? { token: HF_TOKEN } : {}),
     });
 
   loadingPromise = (async () => {
