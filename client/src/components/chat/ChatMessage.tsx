@@ -255,7 +255,7 @@ export function ChatMessage({
 
   return (
     <div
-      className={`flex flex-col mb-4 group relative ${isSelectMode ? "w-full max-w-full cursor-pointer rounded-md p-1 " + (isSelected ? "bg-accent/10" : "") : isSent ? "items-end self-end max-w-[75%]" : "items-start max-w-[75%]"}`}
+      className={`flex flex-col mb-4 group relative ${isSelectMode ? "w-full max-w-full cursor-pointer rounded-md p-1 " + (isSelected ? "bg-accent/10" : "") : isSent ? "items-end self-end max-w-[82.5%]" : "items-start max-w-[82.5%]"}`}
       onClick={isSelectMode ? onToggleSelect : undefined}
       data-id={id}
     >
@@ -341,7 +341,7 @@ export function ChatMessage({
                       <img
                         src={mediaUrl}
                         alt={mediaFileName || "Shared image"}
-                        className={`w-[300px] h-[200px] object-cover${isUploading ? " opacity-60" : ""}`}
+                        className={`w-[330px] h-[220px] object-cover${isUploading ? " opacity-60" : ""}`}
                         loading="lazy"
                       />
                       {isUploading && (
@@ -362,7 +362,7 @@ export function ChatMessage({
                     >
                       <video
                         src={mediaUrl}
-                        className="w-full max-w-[320px]"
+                        className="w-full max-w-[352px]"
                         preload="metadata"
                       />
                       {/* Play overlay (hidden while uploading) */}
@@ -387,7 +387,7 @@ export function ChatMessage({
                     </div>
                   )}
                   {(mediaUrl || isUploading) && mediaType === "audio" && (
-                    <div className="min-w-[280px] w-full relative">
+                    <div className="min-w-[308px] w-full relative overflow-hidden">
                       {mediaUrl && (
                         <AudioPlayer
                           src={mediaUrl}
@@ -424,7 +424,7 @@ export function ChatMessage({
                   )}
                   {(mediaUrl || isUploading) && mediaType === "document" && (
                     <div
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl min-w-[220px] max-w-[280px] ${
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl min-w-[242px] max-w-[308px] ${
                         isSent
                           ? "bg-blue-700/30 text-white"
                           : "bg-input text-text-main"
@@ -494,7 +494,7 @@ export function ChatMessage({
 
               {/* Status reply — media-card style */}
               {statusReply && (
-                <div className="flex flex-col min-w-[220px] max-w-[280px]">
+                <div className="flex flex-col min-w-[242px] max-w-[308px]">
                   {/* Status card */}
                   <div className="relative">
                     <p className="absolute top-3 left-4 right-4 z-10 text-[12px] font-semibold drop-shadow text-white/90 truncate">
@@ -502,7 +502,7 @@ export function ChatMessage({
                     </p>
                     {statusReply.mediaType === "text" ? (
                       <div
-                        className="w-full h-[180px] flex items-center justify-center text-white text-[17px] font-medium text-center px-8"
+                        className="w-full h-[198px] flex items-center justify-center text-white text-[17px] font-medium text-center px-8"
                         style={{
                           background:
                             statusReply.textBgGradient ||
@@ -512,7 +512,7 @@ export function ChatMessage({
                         <span className="line-clamp-4">{statusReply.text}</span>
                       </div>
                     ) : statusReply.mediaUrl ? (
-                      <div className="w-full h-[180px] overflow-hidden bg-black/10">
+                      <div className="w-full h-[198px] overflow-hidden bg-black/10">
                         {statusReply.mediaType === "image" ? (
                           <img
                             src={statusReply.mediaUrl}

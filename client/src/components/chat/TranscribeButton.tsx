@@ -9,7 +9,10 @@ interface TranscribeButtonProps {
 /** Session-level cache so a message is never re-transcribed. */
 const transcriptionCache = new Map<string, string>();
 
-export function TranscribeButton({ messageId, audioUrl }: TranscribeButtonProps) {
+export function TranscribeButton({
+  messageId,
+  audioUrl,
+}: TranscribeButtonProps) {
   const { transcribe, modelStatus, downloadProgress } = useTranscription();
 
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">(
@@ -85,7 +88,7 @@ export function TranscribeButton({ messageId, audioUrl }: TranscribeButtonProps)
   /* ── Done: transcription text + hide toggle ───────────────── */
   return (
     <div className="mt-1.5">
-      <p className="text-[13px] text-text-main/80 leading-relaxed whitespace-pre-wrap">
+      <p className="text-[13px] text-text-main/80 leading-relaxed whitespace-pre-wrap break-words">
         {text}
       </p>
       <button
