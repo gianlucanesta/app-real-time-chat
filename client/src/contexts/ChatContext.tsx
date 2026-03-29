@@ -273,7 +273,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
               ? fmtTime(c.lastMessageTime)
               : undefined,
             // Apply cached presence info
-            isOnline: c.participants.some((p) => onlineUserIdsRef.current.has(p)),
+            isOnline: c.participants.some((p) =>
+              onlineUserIdsRef.current.has(p),
+            ),
             isMuted,
             mutedUntil,
           };
@@ -791,9 +793,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       const isGroup = conv?.type === "group";
 
       // Build notification title: "Sender in GroupName" for groups, just sender for DMs
-      const title = isGroup && conv?.name
-        ? `${senderName} in ${conv.name}`
-        : senderName;
+      const title =
+        isGroup && conv?.name ? `${senderName} in ${conv.name}` : senderName;
 
       // Build body with media-type hints or message preview
       let body: string;
@@ -1714,12 +1715,19 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         markAllAsRead,
         markAsUnread,
         clearConversationById,
-        muteConversation: (convId: string, duration: "8h" | "1w" | "always") => {
+        muteConversation: (
+          convId: string,
+          duration: "8h" | "1w" | "always",
+        ) => {
           let mutedUntil: string;
           if (duration === "8h") {
-            mutedUntil = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
+            mutedUntil = new Date(
+              Date.now() + 8 * 60 * 60 * 1000,
+            ).toISOString();
           } else if (duration === "1w") {
-            mutedUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+            mutedUntil = new Date(
+              Date.now() + 7 * 24 * 60 * 60 * 1000,
+            ).toISOString();
           } else {
             mutedUntil = "always";
           }
@@ -1739,7 +1747,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           localStorage.removeItem(`muted_${convId}`);
           setConversations((prev) =>
             prev.map((c) =>
-              c.id === convId ? { ...c, isMuted: false, mutedUntil: undefined } : c,
+              c.id === convId
+                ? { ...c, isMuted: false, mutedUntil: undefined }
+                : c,
             ),
           );
           if (activeConversation?.id === convId) {

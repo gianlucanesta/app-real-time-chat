@@ -55,4 +55,8 @@ export const env = {
   TIKTOK_CALLBACK_URL:
     process.env.TIKTOK_CALLBACK_URL ||
     "http://localhost:3001/api/auth/tiktok/callback",
+  // TURN relay for WebRTC calls (e.g. Metered.ca free tier)
+  TURN_URLS: process.env.TURN_URLS || "", // comma-separated, e.g. "turn:global.relay.metered.ca:443,turns:global.relay.metered.ca:443?transport=tcp"
+  TURN_USERNAME: process.env.TURN_USERNAME || "",
+  TURN_CREDENTIAL: process.env.TURN_CREDENTIAL || "",
 } as const;
