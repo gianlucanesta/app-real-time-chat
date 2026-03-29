@@ -26,7 +26,32 @@ export type ProgressCallback = (progress: DownloadProgress) => void;
 
 /** Lazy-import of @huggingface/transformers to keep initial bundle small. */
 async function getTransformers() {
-  return await import("@huggingface/transformers");
+  const transformers = await import("@huggingface/transformers");
+
+  // Override env.fetch to inject Authorization header for HuggingFace requests.
+  // transformers.js strips auth headers in browser environments for security,
+  // but we need them to access gated models like LiquidAI.
+  if (HF_TOKEN) {
+    const nativeFetch = globalThis.fetch.bind(globalThis);
+    transformers.env.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+      const url =
+        input instanceof Request
+          ? input.url
+          : input instanceof URL
+            ? input.href
+            : input;
+      if (url.includes("huggingface.co")) {
+        const headers = new Headers(init?.headers);
+        if (!headers.has("Authorization")) {
+          headers.set("Authorization", `Bearer ${HF_TOKEN}`);
+        }
+        return nativeFetch(input, { ...init, headers });
+      }
+      return nativeFetch(input, init);
+    };
+  }
+
+  return transformers;
 }
 
 /**
