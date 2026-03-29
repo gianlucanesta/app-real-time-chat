@@ -15,6 +15,7 @@ const GOOGLE_AUTH_URL = `${API_BASE}/auth/google`;
 const FACEBOOK_AUTH_URL = `${API_BASE}/auth/facebook`;
 const MICROSOFT_AUTH_URL = `${API_BASE}/auth/microsoft`;
 const GITHUB_AUTH_URL = `${API_BASE}/auth/github`;
+const TIKTOK_AUTH_URL = `${API_BASE}/auth/tiktok`;
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -393,6 +394,9 @@ function LoginPage() {
               <Button
                 variant="social"
                 className="w-full text-[14px] font-medium h-[40px]"
+                onClick={() => {
+                  window.location.href = TIKTOK_AUTH_URL;
+                }}
               >
                 <svg
                   viewBox="0 0 24 24"

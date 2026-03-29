@@ -981,3 +981,164 @@ export async function githubCallback(
     res.redirect(failRedirect);
   }
 }
+
+// ── TikTok OAuth ─────────────────────────────────────────────────────────────
+
+/**
+ * @openapi
+ * /api/auth/tiktok:
+ *   get:
+ *     summary: Redirect to TikTok for OAuth authorization
+ *     tags: [Auth]
+ *     responses:
+ *       302:
+ *         description: Redirect to TikTok auth page
+ */
+export function tiktokAuth(_req: Request, res: Response): void {
+  if (!env.TIKTOK_CLIENT_KEY) {
+    res.status(503).json({ message: "TikTok login is not configured." });
+    return;
+  }
+
+  const params = new URLSearchParams({
+    client_key: env.TIKTOK_CLIENT_KEY,
+    response_type: "code",
+    scope: "user.info.basic",
+    redirect_uri: env.TIKTOK_CALLBACK_URL,
+  });
+
+  res.redirect(`https://www.tiktok.com/v2/auth/authorize/?${params.toString()}`);
+}
+
+/**
+ * @openapi
+ * /api/auth/tiktok/callback:
+ *   get:
+ *     summary: TikTok OAuth callback — exchange code for tokens
+ *     tags: [Auth]
+ *     responses:
+ *       302:
+ *         description: Redirect to frontend with access token
+ */
+export async function tiktokCallback(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const { code, error: oauthError } = req.query as {
+    code?: string;
+    error?: string;
+  };
+
+  const failRedirect = `${env.CLIENT_URL}/login?error=tiktok_failed`;
+
+  if (oauthError || !code) {
+    res.redirect(failRedirect);
+    return;
+  }
+
+  try {
+    // 1. Exchange code for access token
+    const tokenRes = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Cache-Control": "no-cache",
+      },
+      body: new URLSearchParams({
+        client_key: env.TIKTOK_CLIENT_KEY,
+        client_secret: env.TIKTOK_CLIENT_SECRET,
+        code,
+        grant_type: "authorization_code",
+        redirect_uri: env.TIKTOK_CALLBACK_URL,
+      }),
+    });
+
+    if (!tokenRes.ok) {
+      console.error("[tiktok] token exchange failed:", await tokenRes.text());
+      res.redirect(failRedirect);
+      return;
+    }
+
+    const tokenData = (await tokenRes.json()) as {
+      access_token?: string;
+      open_id?: string;
+      error?: string;
+      error_description?: string;
+    };
+
+    if (tokenData.error || !tokenData.access_token) {
+      console.error("[tiktok] token error:", tokenData.error, tokenData.error_description);
+      res.redirect(failRedirect);
+      return;
+    }
+
+    const accessTokenTT = tokenData.access_token;
+
+    // 2. Fetch user profile
+    const userInfoRes = await fetch(
+      "https://open.tiktokapis.com/v2/user/info/?fields=open_id,union_id,avatar_url,display_name",
+      {
+        headers: {
+          Authorization: `Bearer ${accessTokenTT}`,
+        },
+      },
+    );
+
+    if (!userInfoRes.ok) {
+      console.error("[tiktok] userinfo failed:", await userInfoRes.text());
+      res.redirect(failRedirect);
+      return;
+    }
+
+    const profileRes = (await userInfoRes.json()) as {
+      data?: {
+        user?: {
+          open_id: string;
+          union_id?: string;
+          avatar_url?: string;
+          display_name?: string;
+        };
+      };
+      error?: { code: string; message: string };
+    };
+
+    const ttUser = profileRes.data?.user;
+    if (!ttUser?.open_id) {
+      console.error("[tiktok] missing open_id in profile:", profileRes);
+      res.redirect(failRedirect);
+      return;
+    }
+
+    // 3. Upsert user in PostgreSQL
+    const user = await UserModel.upsertTiktokUser({
+      tiktokOpenId: ttUser.open_id,
+      displayName: ttUser.display_name || `TikTok_${ttUser.open_id.slice(0, 8)}`,
+      avatarUrl: ttUser.avatar_url,
+    });
+
+    // 4. Issue access + refresh tokens
+    const accessToken = signAccessToken(user);
+    const refreshRaw = generateRefreshToken();
+    const refreshHash = hashRefreshToken(refreshRaw);
+    await UserModel.saveRefreshToken(
+      user.id,
+      refreshHash,
+      new Date(Date.now() + env.REFRESH_EXPIRES_MS),
+    );
+
+    setRefreshCookie(res, refreshRaw);
+
+    // 5. Redirect frontend to the OAuth callback route
+    res.redirect(
+      `${env.CLIENT_URL}/oauth-callback?accessToken=${encodeURIComponent(accessToken)}`,
+    );
+  } catch (err) {
+    const pgCode = (err as any).code;
+    console.error(
+      "[tiktok] callback error:",
+      (err as Error).message,
+      pgCode ? `(pg code: ${pgCode})` : "",
+    );
+    res.redirect(failRedirect);
+  }
+}

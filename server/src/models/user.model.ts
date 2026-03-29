@@ -522,6 +522,64 @@ export async function upsertGithubUser({
   return rows[0];
 }
 
+// ── TikTok OAuth ─────────────────────────────────────────────────────────────
+
+/** Find a user by their TikTok open_id. */
+export async function findByTiktokId(tiktokOpenId: string): Promise<IUser | null> {
+  const { rows } = await pool.query<IUser>(
+    `SELECT ${SAFE_COLUMNS} FROM users WHERE tiktok_open_id = $1`,
+    [tiktokOpenId],
+  );
+  return rows[0] ?? null;
+}
+
+/**
+ * Find-or-create a TikTok OAuth user.
+ * - If the tiktok_open_id already exists → return existing user.
+ * - Otherwise → create new user (no real email available, no password).
+ */
+export async function upsertTiktokUser({
+  tiktokOpenId,
+  displayName,
+  avatarUrl,
+}: {
+  tiktokOpenId: string;
+  displayName: string;
+  avatarUrl?: string;
+}): Promise<IUser> {
+  const existing = await findByTiktokId(tiktokOpenId);
+  if (existing) return existing;
+
+  // TikTok does not expose email — use a stable placeholder
+  const email = `tiktok_${tiktokOpenId}@tiktok.invalid`;
+
+  const initials = displayName
+    .trim()
+    .split(/\s+/)
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  const { rows } = await pool.query<IUser>(
+    `INSERT INTO users (email, password_hash, display_name, initials, avatar_url, tiktok_open_id, email_verified)
+     VALUES ($1, '', $2, $3, $4, $5, true)
+     ON CONFLICT (email) DO UPDATE
+       SET tiktok_open_id = EXCLUDED.tiktok_open_id,
+           email_verified = true,
+           avatar_url     = COALESCE(users.avatar_url, EXCLUDED.avatar_url)
+     RETURNING ${SAFE_COLUMNS}`,
+    [
+      email,
+      displayName.trim(),
+      initials,
+      avatarUrl ?? null,
+      tiktokOpenId,
+    ],
+  );
+  return rows[0];
+}
+
 /** Update password and clear reset token. */
 export async function updatePassword(
   userId: string,

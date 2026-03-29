@@ -321,3 +321,35 @@ authRouter.get("/github", ctrl.githubAuth);
  *         description: Redirect to client with auth tokens
  */
 authRouter.get("/github/callback", ctrl.githubCallback);
+
+/**
+ * @openapi
+ * /api/auth/tiktok:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Start TikTok OAuth2 flow
+ *     description: Redirects the user to TikTok's authorization page.
+ *     responses:
+ *       302:
+ *         description: Redirect to TikTok
+ */
+authRouter.get("/tiktok", ctrl.tiktokAuth);
+
+/**
+ * @openapi
+ * /api/auth/tiktok/callback:
+ *   get:
+ *     tags: [Auth]
+ *     summary: TikTok OAuth2 callback
+ *     description: Handles the redirect from TikTok after authentication.
+ *     parameters:
+ *       - in: query
+ *         name: code
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       302:
+ *         description: Redirect to client with auth tokens
+ */
+authRouter.get("/tiktok/callback", ctrl.tiktokCallback);

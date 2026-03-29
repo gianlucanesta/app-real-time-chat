@@ -49,4 +49,10 @@ export const env = {
   GITHUB_CALLBACK_URL:
     process.env.GITHUB_CALLBACK_URL ||
     "http://localhost:3001/api/auth/github/callback",
+  // TikTok OAuth2
+  TIKTOK_CLIENT_KEY: process.env.TIKTOK_CLIENT_KEY || "",
+  TIKTOK_CLIENT_SECRET: process.env.TIKTOK_CLIENT_SECRET || "",
+  TIKTOK_CALLBACK_URL:
+    process.env.TIKTOK_CALLBACK_URL ||
+    "http://localhost:3001/api/auth/tiktok/callback",
 } as const;

@@ -84,6 +84,8 @@ export async function initSchema(): Promise<void> {
     ALTER TABLE users ADD COLUMN IF NOT EXISTS microsoft_id TEXT UNIQUE;
     -- Idempotent migration: GitHub OAuth
     ALTER TABLE users ADD COLUMN IF NOT EXISTS github_id TEXT UNIQUE;
+    -- Idempotent migration: TikTok OAuth
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS tiktok_open_id TEXT UNIQUE;
     -- Allow social-only accounts to have no password hash
     ALTER TABLE users ALTER COLUMN password_hash SET DEFAULT '';
 
