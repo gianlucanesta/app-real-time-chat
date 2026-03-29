@@ -16,6 +16,7 @@ import {
 import { useWebRTC, type IncomingCallData } from "../hooks/useWebRTC";
 import type { CallStatus } from "../hooks/useWebRTC";
 import { apiFetch } from "../lib/api";
+import { playNotificationTone } from "../lib/notificationTones";
 
 // --- Types ---
 export interface LinkPreview {
@@ -226,6 +227,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const activeMessagesRef = useRef<Message[]>([]);
   activeMessagesRef.current = activeMessages;
+
+  const conversationsRef = useRef<Conversation[]>([]);
+  conversationsRef.current = conversations;
 
   const reactionsRef = useRef<Record<string, Reaction[]>>({});
   reactionsRef.current = reactions;
@@ -778,7 +782,20 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
       const showPreview =
         localStorage.getItem("ephemeral-notif-preview") !== "false";
-      const senderName = msg.senderDisplayName ?? "New message";
+      const senderName = msg.senderDisplayName ?? "Someone";
+
+      // Look up conversation to determine if it's a group chat
+      const conv = conversationsRef.current.find(
+        (c) => c.id === msg.conversationId,
+      );
+      const isGroup = conv?.type === "group";
+
+      // Build notification title: "Sender in GroupName" for groups, just sender for DMs
+      const title = isGroup && conv?.name
+        ? `${senderName} in ${conv.name}`
+        : senderName;
+
+      // Build body with media-type hints or message preview
       let body: string;
       if (showPreview) {
         if (msg.mediaType === "audio") body = "🎤 Voice message";
@@ -790,9 +807,22 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         body = "New message";
       }
 
-      const n = new Notification(senderName, { body, tag: msg._id });
+      const n = new Notification(title, {
+        body,
+        tag: msg._id,
+        icon: "/favicon.svg",
+      });
       // Auto-close after 5 seconds
       setTimeout(() => n.close(), 5000);
+
+      // Play notification tone
+      try {
+        const toneId =
+          localStorage.getItem("ephemeral-notif-messages-tone") || "default";
+        playNotificationTone(toneId);
+      } catch {
+        // AudioContext may be unavailable
+      }
     };
 
     socket.on("message:new", handleNewMessage);
