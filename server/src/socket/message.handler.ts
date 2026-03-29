@@ -127,6 +127,7 @@ export function registerMessageHandlers(
           senderGradient:
             senderProfile?.avatar_gradient ??
             "linear-gradient(135deg,#2563EB,#7C3AED)",
+          senderAvatarUrl: senderProfile?.avatar_url ?? null,
         };
 
         const parts = conversationId.split("___");

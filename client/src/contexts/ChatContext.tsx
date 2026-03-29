@@ -511,6 +511,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             id: msg.conversationId,
             type: "direct",
             name: msg.senderDisplayName ?? "Unknown",
+            avatar: msg.senderAvatarUrl || undefined,
             gradient:
               msg.senderGradient ?? "linear-gradient(135deg,#2563EB,#7C3AED)",
             initials: msg.senderInitials ?? "??",

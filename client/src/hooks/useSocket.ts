@@ -26,6 +26,7 @@ export interface MessagePayload {
   senderDisplayName?: string;
   senderInitials?: string;
   senderGradient?: string;
+  senderAvatarUrl?: string | null;
   linkPreview?: {
     url: string;
     title: string | null;
