@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { DottedGlowBackground } from "../components/ui/dotted-glow-background";
+// import { DottedGlowBackground } from "../components/ui/dotted-glow-background";
+import { EvervaultBackground } from "../components/ui/evervault-background";
 import {
   Mail,
   Lock,
@@ -107,7 +108,7 @@ function SignupPage() {
 
   return (
     <div className="absolute inset-0 overflow-y-auto auth-page-glow auth-page-scroll">
-      <DottedGlowBackground
+      {/* <DottedGlowBackground
         color="rgba(255,255,255,0.18)"
         glowColor="rgba(255,255,255,0.5)"
         gap={14}
@@ -115,8 +116,9 @@ function SignupPage() {
         opacity={0.45}
         speedMin={0.15}
         speedMax={0.5}
-      />
-      <div className="auth-bg-vignette" />
+      /> */}
+      <EvervaultBackground />
+      {/* <div className="auth-bg-vignette" /> */}
       <div className="min-h-full flex flex-col items-center justify-center py-8 px-4 sm:px-5 bg-bg text-text-main font-sans">
         {signupSuccess ? (
           <div className="w-full max-w-[440px] bg-card rounded-[16px] px-6 sm:px-8 py-10 relative z-10 flex flex-col items-center text-center">

@@ -2,6 +2,20 @@
    Auth pages — login / signup shared styles
    ══════════════════════════════════════════════════════════ */
 
+/* ── Evervault encrypted-text background ─────────────────── */
+.evervault-bg-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: auto;
+  z-index: 0;
+}
+.evervault-bg-canvas {
+  display: block;
+  position: absolute;
+  inset: 0;
+}
+
 /* ── Dotted background edge vignette ─────────────────────── */
 .auth-bg-vignette {
   pointer-events: none;

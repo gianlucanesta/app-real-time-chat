@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useCallback } from "react";
-import { DottedGlowBackground } from "../components/ui/dotted-glow-background";
+// import { DottedGlowBackground } from "../components/ui/dotted-glow-background";
+import { EvervaultBackground } from "../components/ui/evervault-background";
 import { Mail, Lock, Eye, EyeOff, ChevronDown } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -76,7 +77,7 @@ function LoginPage() {
 
   return (
     <div className="absolute inset-0 overflow-y-auto auth-page-glow">
-      <DottedGlowBackground
+      {/* <DottedGlowBackground
         color="rgba(255,255,255,0.18)"
         glowColor="rgba(255,255,255,0.5)"
         gap={14}
@@ -84,8 +85,9 @@ function LoginPage() {
         opacity={0.45}
         speedMin={0.15}
         speedMax={0.5}
-      />
-      <div className="auth-bg-vignette" />
+      /> */}
+      <EvervaultBackground />
+      {/* <div className="auth-bg-vignette" /> */}
       <div className="min-h-full flex flex-col items-center justify-center py-8 px-4 sm:px-5 bg-bg text-text-main font-sans">
         {loginSuccess && (
           <div className="fixed inset-0 z-50 flex items-center justify-center success-modal-overlay">
