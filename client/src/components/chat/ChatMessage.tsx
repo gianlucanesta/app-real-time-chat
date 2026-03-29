@@ -450,9 +450,11 @@ export function ChatMessage({
                           href={mediaUrl}
                           target="_blank"
                           rel="noopener noreferrer"
+                          aria-label={`Download ${mediaFileName || "document"}`}
                           onClick={(e) => e.stopPropagation()}
                         >
                           <Download
+                            aria-hidden="true"
                             className={`w-4 h-4 shrink-0 ${
                               isSent ? "text-blue-200" : "text-text-secondary"
                             }`}
@@ -601,6 +603,8 @@ export function ChatMessage({
               >
                 <div className="relative" ref={reactionMenuRef}>
                   <button
+                    type="button"
+                    aria-label="React to message"
                     className="w-7 h-7 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main transition-colors"
                     onClick={() => {
                       setIsReactionMenuOpen(!isReactionMenuOpen);
@@ -617,6 +621,8 @@ export function ChatMessage({
                       {EMOJIS.map((emoji) => (
                         <button
                           key={emoji}
+                          type="button"
+                          aria-label={`React with ${emoji}`}
                           className="w-8 h-8 rounded-full hover:bg-input flex items-center justify-center text-xl transition-transform hover:scale-125"
                           onClick={() => {
                             onReaction?.(emoji);
@@ -627,13 +633,20 @@ export function ChatMessage({
                         </button>
                       ))}
                       <button
+                        type="button"
+                        aria-label="More reactions"
                         className="w-8 h-8 rounded-full hover:bg-input flex items-center justify-center text-text-secondary transition-colors"
                         onClick={() => {
                           setIsReactionMenuOpen(false);
                           setShowFullEmojiPicker(true);
                         }}
                       >
-                        <span className="text-[18px] leading-none">+</span>
+                        <span
+                          className="text-[18px] leading-none"
+                          aria-hidden="true"
+                        >
+                          +
+                        </span>
                       </button>
                     </div>
                   )}
@@ -651,56 +664,106 @@ export function ChatMessage({
                   style={menuStyle}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
-                    <Info className="w-4 h-4 text-text-secondary" /> Message
-                    info
-                  </button>
-                  <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
-                    <Reply className="w-4 h-4 text-text-secondary" /> Reply
+                  <button
+                    type="button"
+                    className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
+                  >
+                    <Info
+                      className="w-4 h-4 text-text-secondary"
+                      aria-hidden="true"
+                    />{" "}
+                    Message info
                   </button>
                   <button
+                    type="button"
+                    className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
+                  >
+                    <Reply
+                      className="w-4 h-4 text-text-secondary"
+                      aria-hidden="true"
+                    />{" "}
+                    Reply
+                  </button>
+                  <button
+                    type="button"
                     className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
                     onClick={() => {
                       onCopy?.();
                       setIsContextMenuOpen(false);
                     }}
                   >
-                    <Copy className="w-4 h-4 text-text-secondary" /> Copy
-                  </button>
-                  <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
-                    <Forward className="w-4 h-4 text-text-secondary" /> Forward
-                  </button>
-                  <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
-                    <Pin className="w-4 h-4 text-text-secondary" /> Pin
-                  </button>
-                  <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
-                    <Star className="w-4 h-4 text-text-secondary" /> Star
+                    <Copy
+                      className="w-4 h-4 text-text-secondary"
+                      aria-hidden="true"
+                    />{" "}
+                    Copy
                   </button>
                   <button
+                    type="button"
+                    className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
+                  >
+                    <Forward
+                      className="w-4 h-4 text-text-secondary"
+                      aria-hidden="true"
+                    />{" "}
+                    Forward
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
+                  >
+                    <Pin
+                      className="w-4 h-4 text-text-secondary"
+                      aria-hidden="true"
+                    />{" "}
+                    Pin
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
+                  >
+                    <Star
+                      className="w-4 h-4 text-text-secondary"
+                      aria-hidden="true"
+                    />{" "}
+                    Star
+                  </button>
+                  <button
+                    type="button"
                     className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
                     onClick={() => {
                       onEnterSelectMode?.();
                       setIsContextMenuOpen(false);
                     }}
                   >
-                    <CheckSquare className="w-4 h-4 text-text-secondary" />{" "}
+                    <CheckSquare
+                      className="w-4 h-4 text-text-secondary"
+                      aria-hidden="true"
+                    />{" "}
                     Select
                   </button>
                   {!isSent && (
-                    <button className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors">
-                      <AlertTriangle className="w-4 h-4 text-text-secondary" />{" "}
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
+                    >
+                      <AlertTriangle
+                        className="w-4 h-4 text-text-secondary"
+                        aria-hidden="true"
+                      />{" "}
                       Report
                     </button>
                   )}
                   <div className="w-full h-px bg-border/50 my-1"></div>
                   <button
+                    type="button"
                     className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-danger hover:bg-danger/10 transition-colors font-medium"
                     onClick={() => {
                       onEnterSelectMode?.("delete");
                       setIsContextMenuOpen(false);
                     }}
                   >
-                    <Trash2 className="w-4 h-4" /> Delete
+                    <Trash2 className="w-4 h-4" aria-hidden="true" /> Delete
                   </button>
                 </div>,
                 document.body,
@@ -715,6 +778,8 @@ export function ChatMessage({
               {Object.entries(groupedReactions).map(([emoji, users]) => (
                 <button
                   key={emoji}
+                  type="button"
+                  aria-label={`${emoji} reaction${users.length > 1 ? `, ${users.length} people` : ""}`}
                   className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-card border border-border/50 text-[12px] hover:bg-input/80 transition-colors shadow-sm"
                   onClick={() => {
                     setReactionFilterEmoji(null);
@@ -723,7 +788,10 @@ export function ChatMessage({
                 >
                   {emoji}
                   {users.length > 1 && (
-                    <span className="text-text-secondary text-[10px]">
+                    <span
+                      className="text-text-secondary text-[10px]"
+                      aria-hidden="true"
+                    >
                       {users.length}
                     </span>
                   )}
@@ -745,19 +813,22 @@ export function ChatMessage({
                   {/* Emoji filter tabs */}
                   <div className="flex items-center gap-1 px-3 pb-2 border-b border-border/50">
                     <button
+                      type="button"
+                      aria-label="Add reaction"
                       className={`px-2 py-1 rounded-full transition-colors text-text-secondary hover:text-text-main hover:bg-input/60`}
                       onClick={() => {
                         setShowReactionPanel(false);
                         setShowPanelEmojiPicker(false);
                         setShowFullEmojiPicker(true);
                       }}
-                      title="Add reaction"
                     >
                       <SmilePlus className="w-[18px] h-[18px]" />
                     </button>
                     {Object.entries(groupedReactions).map(([emoji, users]) => (
                       <button
                         key={emoji}
+                        type="button"
+                        aria-label={`Filter by ${emoji}, ${users.length} ${users.length === 1 ? "person" : "people"}`}
                         className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[13px] transition-colors ${
                           reactionFilterEmoji === emoji
                             ? "bg-primary/20 text-primary"
@@ -766,7 +837,9 @@ export function ChatMessage({
                         onClick={() => setReactionFilterEmoji(emoji)}
                       >
                         {emoji}
-                        <span className="text-[11px]">{users.length}</span>
+                        <span className="text-[11px]" aria-hidden="true">
+                          {users.length}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -969,10 +1042,11 @@ export function ChatMessage({
           )}
           <button
             type="button"
+            aria-label="Close viewer"
             className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
             onClick={handleViewOnceViewerClose}
           >
-            <X className="w-6 h-6" />
+            <X className="w-6 h-6" aria-hidden="true" />
           </button>
           <p className="text-white/50 text-xs mt-4">
             View once — closes after viewing

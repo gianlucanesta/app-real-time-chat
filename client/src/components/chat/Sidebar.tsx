@@ -20,8 +20,13 @@ import {
   X,
   BellOff,
   Trash2,
+  Archive,
+  Star,
+  Pin,
+  List,
+  ShieldBan,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useClickOutside } from "../../hooks/useClickOutside";
 import { useChat } from "../../contexts/ChatContext";
 import { SidebarSkeleton } from "../ui/Skeleton";
@@ -136,6 +141,22 @@ export function Sidebar({
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isSelectMenuOpen, setIsSelectMenuOpen] = useState(false);
+  const [openConvMenuId, setOpenConvMenuId] = useState<string | null>(null);
+  const convMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!openConvMenuId) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        convMenuRef.current &&
+        !convMenuRef.current.contains(e.target as Node)
+      ) {
+        setOpenConvMenuId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [openConvMenuId]);
 
   // Panels controlled by parent (ChatIndex) so ChatArea can also open them
   const isNewContactOpen = isNewContactOpenProp ?? false;
@@ -540,13 +561,146 @@ export function Sidebar({
                 <span className="font-semibold text-[14px] text-text-main whitespace-nowrap overflow-hidden text-ellipsis">
                   {chat.name}
                 </span>
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1 shrink-0 relative">
                   <span
-                    className={`text-[11px] whitespace-nowrap ${chat.unreadCount > 0 ? "text-accent font-medium" : "text-text-secondary"}`}
+                    className={`text-[11px] whitespace-nowrap ${chat.unreadCount > 0 ? "text-accent font-medium" : "text-text-secondary"} ${openConvMenuId === chat.id ? "opacity-0" : ""}`}
                   >
                     {chat.lastMessageTime}
                   </span>
-                  <ChevronDown className="w-3.5 h-3.5 text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div
+                    ref={openConvMenuId === chat.id ? convMenuRef : null}
+                    className="relative"
+                  >
+                    <span
+                      tabIndex={0}
+                      aria-label="Conversation options"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.stopPropagation();
+                          setOpenConvMenuId((prev) =>
+                            prev === chat.id ? null : chat.id,
+                          );
+                        }
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenConvMenuId((prev) =>
+                          prev === chat.id ? null : chat.id,
+                        );
+                      }}
+                      className={`w-5 h-5 flex items-center justify-center rounded-full text-text-secondary hover:text-text-main cursor-pointer transition-opacity ${
+                        openConvMenuId === chat.id
+                          ? "opacity-100"
+                          : "opacity-0 group-hover:opacity-100"
+                      }`}
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </span>
+                    {openConvMenuId === chat.id && (
+                      <div className="absolute right-0 top-full mt-1 w-52 bg-card border border-border/80 rounded-xl shadow-xl py-2 z-50 animate-in fade-in slide-in-from-top-2">
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenConvMenuId(null);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-text-main hover:bg-input/80 transition-colors cursor-pointer"
+                        >
+                          <Archive className="w-4 h-4 text-text-secondary" />{" "}
+                          Archive chat
+                        </div>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenConvMenuId(null);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-text-main hover:bg-input/80 transition-colors cursor-pointer"
+                        >
+                          <BellOff className="w-4 h-4 text-text-secondary" />{" "}
+                          Mute notifications
+                        </div>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenConvMenuId(null);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-text-main hover:bg-input/80 transition-colors cursor-pointer"
+                        >
+                          <Pin className="w-4 h-4 text-text-secondary" /> Pin
+                          chat
+                        </div>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void markAsUnread([chat.id]);
+                            setOpenConvMenuId(null);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-text-main hover:bg-input/80 transition-colors cursor-pointer"
+                        >
+                          <Check className="w-4 h-4 text-text-secondary" /> Mark
+                          as read
+                        </div>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenConvMenuId(null);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-text-main hover:bg-input/80 transition-colors cursor-pointer"
+                        >
+                          <Star className="w-4 h-4 text-text-secondary" /> Add
+                          to favorites
+                        </div>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenConvMenuId(null);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-text-main hover:bg-input/80 transition-colors cursor-pointer"
+                        >
+                          <X className="w-4 h-4 text-text-secondary" /> Close
+                          chat
+                        </div>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenConvMenuId(null);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-text-main hover:bg-input/80 transition-colors cursor-pointer"
+                        >
+                          <List className="w-4 h-4 text-text-secondary" /> Add
+                          to list
+                        </div>
+                        <div className="w-full h-px bg-border/50 my-1" />
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenConvMenuId(null);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-danger hover:bg-danger/10 transition-colors cursor-pointer"
+                        >
+                          <ShieldBan className="w-4 h-4" /> Block
+                        </div>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            clearConversationById(chat.id);
+                            setOpenConvMenuId(null);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-danger hover:bg-danger/10 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" /> Clear chat
+                        </div>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenConvMenuId(null);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-danger hover:bg-danger/10 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" /> Delete chat
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center justify-between gap-2">
