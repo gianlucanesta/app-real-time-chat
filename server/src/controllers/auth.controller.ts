@@ -684,7 +684,6 @@ export function microsoftAuth(_req: Request, res: Response): void {
     response_type: "code",
     scope: "openid email profile User.Read",
     response_mode: "query",
-    prompt: "select_account",
   });
 
   res.redirect(
@@ -730,10 +729,8 @@ export async function microsoftCallback(
     );
 
     if (!tokenRes.ok) {
-      console.error(
-        "[microsoft] token exchange failed:",
-        await tokenRes.text(),
-      );
+      const body = await tokenRes.text();
+      console.error("[microsoft] token exchange failed:", tokenRes.status, body);
       res.redirect(failRedirect);
       return;
     }
@@ -746,7 +743,8 @@ export async function microsoftCallback(
     });
 
     if (!userInfoRes.ok) {
-      console.error("[microsoft] userinfo failed:", await userInfoRes.text());
+      const body = await userInfoRes.text();
+      console.error("[microsoft] userinfo failed:", userInfoRes.status, body);
       res.redirect(failRedirect);
       return;
     }
@@ -761,13 +759,15 @@ export async function microsoftCallback(
     };
 
     if (!profile.id) {
+      console.error("[microsoft] profile missing id:", JSON.stringify(profile));
       res.redirect(failRedirect);
       return;
     }
 
-    // Microsoft may use userPrincipalName as fallback when mail is null
-    const email = profile.mail ?? profile.userPrincipalName;
+    // Use || so empty-string mail also falls back to userPrincipalName
+    const email = profile.mail || profile.userPrincipalName;
     if (!email) {
+      console.error("[microsoft] no email in profile:", JSON.stringify(profile));
       res.redirect(failRedirect);
       return;
     }
@@ -798,7 +798,186 @@ export async function microsoftCallback(
       `${env.CLIENT_URL}/oauth-callback?accessToken=${encodeURIComponent(accessToken)}`,
     );
   } catch (err) {
-    console.error("[microsoft] callback error:", (err as Error).message);
+    const pgCode = (err as any).code;
+    console.error(
+      "[microsoft] callback error:",
+      (err as Error).message,
+      pgCode ? `(pg code: ${pgCode})` : "",
+    );
+    res.redirect(failRedirect);
+  }
+}
+
+// ── GitHub OAuth2 ────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/auth/github
+ * Redirect the browser to GitHub's OAuth2 authorization page.
+ */
+export function githubAuth(_req: Request, res: Response): void {
+  if (!env.GITHUB_CLIENT_ID) {
+    res.status(503).json({ error: "GitHub OAuth not configured" });
+    return;
+  }
+
+  const params = new URLSearchParams({
+    client_id: env.GITHUB_CLIENT_ID,
+    redirect_uri: env.GITHUB_CALLBACK_URL,
+    scope: "read:user user:email",
+  });
+
+  res.redirect(`https://github.com/login/oauth/authorize?${params}`);
+}
+
+/**
+ * GET /api/auth/github/callback
+ * Exchange the authorization code, upsert user, issue tokens.
+ */
+export async function githubCallback(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const { code, error: oauthError } = req.query as {
+    code?: string;
+    error?: string;
+  };
+
+  const failRedirect = `${env.CLIENT_URL}/login?error=github_failed`;
+
+  if (oauthError || !code) {
+    res.redirect(failRedirect);
+    return;
+  }
+
+  try {
+    // 1. Exchange code for access token
+    const tokenRes = await fetch(
+      "https://github.com/login/oauth/access_token",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+        body: new URLSearchParams({
+          client_id: env.GITHUB_CLIENT_ID,
+          client_secret: env.GITHUB_CLIENT_SECRET,
+          redirect_uri: env.GITHUB_CALLBACK_URL,
+          code,
+        }),
+      },
+    );
+
+    if (!tokenRes.ok) {
+      console.error("[github] token exchange failed:", await tokenRes.text());
+      res.redirect(failRedirect);
+      return;
+    }
+
+    const tokenData = (await tokenRes.json()) as {
+      access_token?: string;
+      error?: string;
+    };
+
+    if (tokenData.error || !tokenData.access_token) {
+      console.error("[github] token error:", tokenData.error);
+      res.redirect(failRedirect);
+      return;
+    }
+
+    const accessTokenGH = tokenData.access_token;
+
+    // 2. Fetch user profile from GitHub
+    const userInfoRes = await fetch("https://api.github.com/user", {
+      headers: {
+        Authorization: `Bearer ${accessTokenGH}`,
+        Accept: "application/vnd.github+json",
+      },
+    });
+
+    if (!userInfoRes.ok) {
+      console.error("[github] userinfo failed:", await userInfoRes.text());
+      res.redirect(failRedirect);
+      return;
+    }
+
+    const profile = (await userInfoRes.json()) as {
+      id: number;
+      login: string;
+      name?: string;
+      email?: string | null;
+      avatar_url?: string;
+    };
+
+    if (!profile.id) {
+      res.redirect(failRedirect);
+      return;
+    }
+
+    // 3. GitHub may not expose email publicly — fetch from /user/emails
+    let email = profile.email;
+    if (!email) {
+      const emailsRes = await fetch("https://api.github.com/user/emails", {
+        headers: {
+          Authorization: `Bearer ${accessTokenGH}`,
+          Accept: "application/vnd.github+json",
+        },
+      });
+      if (emailsRes.ok) {
+        const emails = (await emailsRes.json()) as Array<{
+          email: string;
+          primary: boolean;
+          verified: boolean;
+        }>;
+        const primary = emails.find((e) => e.primary && e.verified);
+        email = primary?.email ?? emails[0]?.email ?? null;
+      }
+    }
+
+    // Fall back to a stable placeholder when no email is available
+    if (!email) {
+      email = `gh_${profile.id}@github.invalid`;
+    }
+
+    // Parse display/first/last name
+    const fullName = profile.name || profile.login;
+    const nameParts = fullName.trim().split(/\s+/);
+    const firstName = nameParts[0];
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : undefined;
+
+    // 4. Upsert user in PostgreSQL
+    const user = await UserModel.upsertGithubUser({
+      githubId: String(profile.id),
+      email,
+      displayName: fullName,
+      firstName,
+      lastName,
+      avatarUrl: profile.avatar_url,
+    });
+
+    // 5. Issue access + refresh tokens
+    const accessToken = signAccessToken(user);
+    const refreshRaw = generateRefreshToken();
+    const refreshHash = hashRefreshToken(refreshRaw);
+    await UserModel.saveRefreshToken(
+      user.id,
+      refreshHash,
+      new Date(Date.now() + env.REFRESH_EXPIRES_MS),
+    );
+
+    setRefreshCookie(res, refreshRaw);
+
+    // 6. Redirect frontend to the OAuth callback route with accessToken
+    res.redirect(
+      `${env.CLIENT_URL}/oauth-callback?accessToken=${encodeURIComponent(accessToken)}`,
+    );
+  } catch (err) {
+    const pgCode = (err as any).code;
+    console.error(
+      "[github] callback error:",
+      (err as Error).message,
+      pgCode ? `(pg code: ${pgCode})` : "",
+    );
     res.redirect(failRedirect);
   }
 }

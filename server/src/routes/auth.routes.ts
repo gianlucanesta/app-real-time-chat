@@ -289,3 +289,35 @@ authRouter.get("/microsoft", ctrl.microsoftAuth);
  *         description: Redirect to client with auth tokens
  */
 authRouter.get("/microsoft/callback", ctrl.microsoftCallback);
+
+/**
+ * @openapi
+ * /api/auth/github:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Start GitHub OAuth2 flow
+ *     description: Redirects the user to GitHub's authorization page.
+ *     responses:
+ *       302:
+ *         description: Redirect to GitHub
+ */
+authRouter.get("/github", ctrl.githubAuth);
+
+/**
+ * @openapi
+ * /api/auth/github/callback:
+ *   get:
+ *     tags: [Auth]
+ *     summary: GitHub OAuth2 callback
+ *     description: Handles the redirect from GitHub after authentication.
+ *     parameters:
+ *       - in: query
+ *         name: code
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       302:
+ *         description: Redirect to client with auth tokens
+ */
+authRouter.get("/github/callback", ctrl.githubCallback);

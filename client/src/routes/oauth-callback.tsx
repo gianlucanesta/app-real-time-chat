@@ -20,7 +20,7 @@ function OAuthCallbackPage() {
     const error = params.get("error");
 
     if (error || !accessToken) {
-      navigate({ to: "/login", search: { error: "google_failed" } as any });
+      navigate({ to: "/login", search: { error: error ?? "oauth_failed" } as any });
       return;
     }
 
@@ -37,7 +37,7 @@ function OAuthCallbackPage() {
     if (isAuthenticated) {
       navigate({ to: "/" });
     } else {
-      navigate({ to: "/login", search: { error: "google_failed" } as any });
+      navigate({ to: "/login", search: { error: "oauth_failed" } as any });
     }
   }, [authAttempted, isAuthenticated, navigate]);
 

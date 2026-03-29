@@ -43,4 +43,10 @@ export const env = {
   MICROSOFT_CALLBACK_URL:
     process.env.MICROSOFT_CALLBACK_URL ||
     "http://localhost:3001/api/auth/microsoft/callback",
+  // GitHub OAuth2
+  GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID || "",
+  GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET || "",
+  GITHUB_CALLBACK_URL:
+    process.env.GITHUB_CALLBACK_URL ||
+    "http://localhost:3001/api/auth/github/callback",
 } as const;

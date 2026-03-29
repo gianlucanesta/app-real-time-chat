@@ -20,6 +20,7 @@ import { validatePasswordStrength } from "../lib/validation";
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api";
 const GOOGLE_AUTH_URL = `${API_BASE}/auth/google`;
 const MICROSOFT_AUTH_URL = `${API_BASE}/auth/microsoft`;
+const GITHUB_AUTH_URL = `${API_BASE}/auth/github`;
 
 const COUNTRY_CODES = [
   { code: "+1", label: "+1 US" },
@@ -481,6 +482,9 @@ function SignupPage() {
                 <Button
                   variant="social"
                   className="w-full text-[14px] font-medium h-[40px]"
+                  onClick={() => {
+                    window.location.href = GITHUB_AUTH_URL;
+                  }}
                 >
                   <svg
                     viewBox="0 0 24 24"
