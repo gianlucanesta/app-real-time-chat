@@ -57,7 +57,7 @@ export async function loadTranscriptionModel(
       }
     : undefined;
 
-  const createPipeline = (device: string) =>
+  const createPipeline = (device: "webgpu" | "wasm") =>
     pipeline("automatic-speech-recognition", MODEL_ID, {
       device,
       dtype: "q4",
