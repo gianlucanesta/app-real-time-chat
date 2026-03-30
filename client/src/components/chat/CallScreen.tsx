@@ -7,9 +7,23 @@ import {
   VideoOff,
   MonitorOff,
   RotateCw,
+  Copy,
+  Check,
+  UserPlus,
+  ChevronRight,
+  Users,
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { CallStatus } from "../../hooks/useWebRTC";
+
+function generateCallLinkId(): string {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  const seg = (len: number) =>
+    Array.from({ length: len }, () =>
+      chars[Math.floor(Math.random() * chars.length)],
+    ).join("");
+  return `${seg(3)}-${seg(4)}-${seg(3)}`;
+}
 
 interface CallScreenProps {
   status: CallStatus;
@@ -32,6 +46,8 @@ interface CallScreenProps {
   onToggleCamera: () => void;
   onToggleScreenShare: () => void;
   onRetry: () => void;
+  onAddPeople?: () => void;
+  contactPhone?: string;
 }
 
 export function CallScreen({
@@ -55,6 +71,8 @@ export function CallScreen({
   onToggleCamera,
   onToggleScreenShare,
   onRetry,
+  onAddPeople,
+  contactPhone,
 }: CallScreenProps) {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -64,6 +82,10 @@ export function CallScreen({
   localStreamRef.current = localStream;
   const [timer, setTimer] = useState(0);
   const [remoteCameraOff, setRemoteCameraOff] = useState(false);
+
+  // ── Call sidebar state ────────────────────────────────────────────────
+  const [callLinkId, setCallLinkId] = useState("");
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // ── Draggable PiP state ───────────────────────────────────────────────
   const [pipOffset, setPipOffset] = useState({ x: 0, y: 0 });
@@ -119,6 +141,14 @@ export function CallScreen({
     if (status === "calling" || status === "connecting") {
       setPipOffset({ x: 0, y: 0 });
       setPipExpanded(false);
+    }
+  }, [status]);
+
+  // Generate call link when call starts
+  useEffect(() => {
+    if (status === "calling" || status === "connecting") {
+      setCallLinkId(generateCallLinkId());
+      setLinkCopied(false);
     }
   }, [status]);
 
@@ -438,7 +468,35 @@ export function CallScreen({
     flashZoomBadge();
   }, [flashZoomBadge]);
 
+  const handleCopyLink = useCallback(() => {
+    const link = `${window.location.origin}/call/${callLinkId}`;
+    navigator.clipboard.writeText(link).then(
+      () => {
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 2000);
+      },
+      () => {
+        // Fallback for insecure contexts
+        const ta = document.createElement("textarea");
+        ta.value = link;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 2000);
+      },
+    );
+  }, [callLinkId]);
+
   if (!isOpen) return null;
+
+  const callLink = `${window.location.origin}/call/${callLinkId}`;
+  const callLinkDisplay =
+    callLink.length > 38 ? callLink.slice(0, 38) + "..." : callLink;
+  const isWaiting = status === "calling" || status === "connecting";
 
   const hasRemoteVideo =
     remoteStream && remoteStream.getVideoTracks().length > 0;
