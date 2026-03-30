@@ -233,7 +233,7 @@ function CallsPage() {
   const [showScheduleCall, setShowScheduleCall] = useState(false);
 
   // Scheduled calls list
-  const [scheduledCalls, setScheduledCalls] = useState<ScheduledCall[]>([]);
+  const [_scheduledCalls, setScheduledCalls] = useState<ScheduledCall[]>([]);
   const scheduledTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
   );
@@ -298,8 +298,7 @@ function CallsPage() {
     (scheduled: ScheduledCall) => {
       setScheduledCalls((prev) => [...prev, scheduled]);
 
-      const startMs =
-        new Date(scheduled.startDate).getTime() - Date.now();
+      const startMs = new Date(scheduled.startDate).getTime() - Date.now();
       const endMs = new Date(scheduled.endDate).getTime() - Date.now();
       // Warning: 5 min before end
       const warnMs = endMs - 5 * 60 * 1000;

@@ -1,14 +1,6 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import {
-  X,
-  Video,
-  Phone,
-  ChevronDown,
-  Search,
-  Send,
-  Smile,
-} from "lucide-react";
-import { useChat, type Conversation } from "../../contexts/ChatContext";
+import { useState, useMemo, useCallback } from "react";
+import { X, Video, Phone, ChevronDown, Search, Send } from "lucide-react";
+import { useChat } from "../../contexts/ChatContext";
 import { useAuth } from "../../contexts/AuthContext";
 
 interface ScheduleCallModalProps {
@@ -244,9 +236,7 @@ export function ScheduleCallModal({
               />
             </div>
             {errors.startDate && (
-              <p className="text-[12px] text-danger mt-1">
-                {errors.startDate}
-              </p>
+              <p className="text-[12px] text-danger mt-1">{errors.startDate}</p>
             )}
           </div>
 
@@ -273,9 +263,7 @@ export function ScheduleCallModal({
                 />
               </div>
               {errors.endDate && (
-                <p className="text-[12px] text-danger mt-1">
-                  {errors.endDate}
-                </p>
+                <p className="text-[12px] text-danger mt-1">{errors.endDate}</p>
               )}
             </div>
           )}
@@ -375,9 +363,7 @@ export function ScheduleCallModal({
                 </div>
                 <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-border">
                   {contacts.map((conv) => {
-                    const pid = conv.participants.find(
-                      (p) => p !== user?.id,
-                    );
+                    const pid = conv.participants.find((p) => p !== user?.id);
                     if (!pid) return null;
                     const isSelected = selectedParticipants.includes(pid);
                     return (

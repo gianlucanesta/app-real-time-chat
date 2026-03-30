@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { ArrowLeft, Phone, Delete, UserCheck, UserX } from "lucide-react";
+import { ArrowLeft, Phone, UserCheck, UserX } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 import { normalizeUser } from "../../lib/api";
 import type { User } from "../../types";
@@ -30,35 +30,29 @@ interface LookupResult {
   user?: User;
 }
 
-export function DialpadPanel({
-  open,
-  onClose,
-  onCallUser,
-}: DialpadPanelProps) {
+export function DialpadPanel({ open, onClose, onCallUser }: DialpadPanelProps) {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [lookupResult, setLookupResult] = useState<LookupResult | null>(null);
   const [isSearching, setIsSearching] = useState(false);
 
-  const handleKeyPress = useCallback(
-    (key: string) => {
-      if (key === "⌫") {
-        setPhoneNumber((prev) => prev.slice(0, -1));
-        setLookupResult(null);
-      } else {
-        setPhoneNumber((prev) => prev + key);
-        setLookupResult(null);
-      }
-    },
-    [],
-  );
+  const handleKeyPress = useCallback((key: string) => {
+    if (key === "⌫") {
+      setPhoneNumber((prev) => prev.slice(0, -1));
+      setLookupResult(null);
+    } else {
+      setPhoneNumber((prev) => prev + key);
+      setLookupResult(null);
+    }
+  }, []);
 
   const handleLookup = useCallback(async () => {
     if (phoneNumber.length < 4) return;
     setIsSearching(true);
     try {
-      const data = await apiFetch<{ found: boolean; user?: Record<string, any> }>(
-        `/users/lookup-phone?phone=${encodeURIComponent(phoneNumber)}`,
-      );
+      const data = await apiFetch<{
+        found: boolean;
+        user?: Record<string, any>;
+      }>(`/users/lookup-phone?phone=${encodeURIComponent(phoneNumber)}`);
       if (data.found && data.user) {
         setLookupResult({ found: true, user: normalizeUser(data.user) });
       } else {

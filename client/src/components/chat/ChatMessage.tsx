@@ -807,20 +807,22 @@ export function ChatMessage({
                     />{" "}
                     Reply
                   </button>
-                  <button
-                    type="button"
-                    className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
-                    onClick={() => {
-                      onCopy?.();
-                      setIsContextMenuOpen(false);
-                    }}
-                  >
-                    <Copy
-                      className="w-4 h-4 text-text-secondary"
-                      aria-hidden="true"
-                    />{" "}
-                    Copy
-                  </button>
+                  {text && (
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
+                      onClick={() => {
+                        onCopy?.();
+                        setIsContextMenuOpen(false);
+                      }}
+                    >
+                      <Copy
+                        className="w-4 h-4 text-text-secondary"
+                        aria-hidden="true"
+                      />{" "}
+                      Copy
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
