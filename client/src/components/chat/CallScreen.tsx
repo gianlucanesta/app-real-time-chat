@@ -76,7 +76,6 @@ export function CallScreen({
   onToggleCamera,
   onToggleScreenShare,
   onRetry,
-  onAddPeople: _onAddPeople,
   contactPhone,
   callRoomId,
   socket,
