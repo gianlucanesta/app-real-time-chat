@@ -18,9 +18,18 @@ function formatDetailDate(iso: string): string {
   const oneDay = 86_400_000;
 
   if (diff < oneDay && now.getDate() === d.getDate()) return "Today";
-  if (diff < 2 * oneDay && now.getDate() - d.getDate() === 1) return "Yesterday";
+  if (diff < 2 * oneDay && now.getDate() - d.getDate() === 1)
+    return "Yesterday";
 
-  const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const dayNames = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
   if (diff < 7 * oneDay) return dayNames[d.getDay()];
 
   return d.toLocaleDateString("en-GB", {
@@ -48,9 +57,12 @@ function callResultLabel(call: CallRecord): string {
   const dir = call.direction === "incoming" ? "Incoming" : "Outgoing";
   const type = call.callType === "video" ? "video" : "voice";
 
-  if (call.result === "missed") return `Missed ${type} call at ${formatTime(call.timestamp)}`;
-  if (call.result === "declined") return `Declined ${type} call at ${formatTime(call.timestamp)}`;
-  if (call.result === "no_answer") return `No answer ${type} call at ${formatTime(call.timestamp)}`;
+  if (call.result === "missed")
+    return `Missed ${type} call at ${formatTime(call.timestamp)}`;
+  if (call.result === "declined")
+    return `Declined ${type} call at ${formatTime(call.timestamp)}`;
+  if (call.result === "no_answer")
+    return `No answer ${type} call at ${formatTime(call.timestamp)}`;
   if (call.result === "accepted_elsewhere")
     return `${dir} ${type} call at ${formatTime(call.timestamp)}`;
 
@@ -59,7 +71,8 @@ function callResultLabel(call: CallRecord): string {
 
 function callResultDetail(call: CallRecord): string | null {
   if (call.result === "accepted_elsewhere") return "Accepted on another device";
-  if (call.result === "accepted" && call.duration) return `Duration: ${formatDuration(call.duration)}`;
+  if (call.result === "accepted" && call.duration)
+    return `Duration: ${formatDuration(call.duration)}`;
   if (call.result === "missed") return "Missed";
   if (call.result === "declined") return "Declined";
   if (call.result === "no_answer") return "No answer";
@@ -80,7 +93,9 @@ function CallIcon({ call }: { call: CallRecord }) {
 
 /* ── Group calls by date ─────────────────────────────────── */
 
-function groupCallsByDate(calls: CallRecord[]): { label: string; calls: CallRecord[] }[] {
+function groupCallsByDate(
+  calls: CallRecord[],
+): { label: string; calls: CallRecord[] }[] {
   const map = new Map<string, CallRecord[]>();
   for (const call of calls) {
     const label = formatDetailDate(call.timestamp);
@@ -113,7 +128,9 @@ export function CallInfoPanel({
       <div className="flex-1 flex flex-col items-center justify-center bg-bg min-h-0">
         <div className="flex flex-col items-center gap-3 text-text-secondary">
           <Phone className="w-12 h-12 opacity-30" />
-          <p className="text-[15px] font-medium">Select a call to view details</p>
+          <p className="text-[15px] font-medium">
+            Select a call to view details
+          </p>
           <p className="text-[13px] opacity-70">
             Your call history will appear here
           </p>
@@ -127,7 +144,7 @@ export function CallInfoPanel({
   return (
     <div className="flex-1 flex flex-col bg-bg min-h-0 h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 h-[72px] shrink-0 border-b border-border">
+      <div className="flex items-center justify-between px-6 h-[64px] shrink-0 border-b border-border">
         <h2 className="text-[17px] font-semibold text-text-main">Call info</h2>
         <button
           onClick={onClose}

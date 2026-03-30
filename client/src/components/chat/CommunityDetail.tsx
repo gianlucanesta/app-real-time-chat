@@ -234,7 +234,7 @@ export function CommunityDetail({
   return (
     <div className="flex-1 flex flex-col h-full bg-bg overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 h-[60px] border-b border-border bg-card shrink-0">
+      <div className="flex items-center gap-3 px-4 h-[64px] border-b border-border bg-card shrink-0">
         <button
           onClick={onBack}
           className="w-8 h-8 rounded-full flex items-center justify-center text-text-secondary hover:bg-input md:hidden transition-colors"
