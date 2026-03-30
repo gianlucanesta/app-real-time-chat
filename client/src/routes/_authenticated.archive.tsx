@@ -29,7 +29,7 @@ function ArchivePage() {
       >
         <ArchiveSidebar
           onSelectChat={(conv) => {
-            setActiveConversation(conv.id);
+            setActiveConversation(conv);
           }}
         />
       </div>
