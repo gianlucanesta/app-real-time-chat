@@ -22,7 +22,10 @@ import { SCHEDULED_CALL_PREFIX } from "../components/chat/ScheduleCallModal";
 /** Replace raw scheduled-call wire text with a human-friendly sidebar label. */
 function sanitizeLastMessage(text: string | undefined): string | undefined {
   if (text && text.includes(SCHEDULED_CALL_PREFIX)) {
-    return text.replace(/📅\[SCHEDULED_CALL\]\{.*\}/, "📅 Scheduled call invite");
+    return text.replace(
+      /📅\[SCHEDULED_CALL\]\{.*\}/,
+      "📅 Scheduled call invite",
+    );
   }
   return text;
 }
@@ -581,7 +584,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             const isActive = activeConvRef.current?.id === c.id;
             return {
               ...c,
-              lastMessage: sanitizeLastMessage(isMe ? `You: ${newMsg.text}` : newMsg.text),
+              lastMessage: sanitizeLastMessage(
+                isMe ? `You: ${newMsg.text}` : newMsg.text,
+              ),
               lastMessageTime: msgTimestamp,
               lastMessageTimestamp: msg.createdAt,
               lastMessageId: msg._id,
@@ -1320,9 +1325,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         // Mark as sent anyway — the server likely saved it
         if (activeConvRef.current?.id === conversationId) {
           setActiveMessages((prev) =>
-            prev.map((m) =>
-              m.id === tempId ? { ...m, status: "sent" } : m,
-            ),
+            prev.map((m) => (m.id === tempId ? { ...m, status: "sent" } : m)),
           );
         }
         setConversations((prev) =>
@@ -1348,9 +1351,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
               sentMsgsRef.current.set(res.messageId!, conversationId);
               if (activeConvRef.current?.id === conversationId) {
                 setActiveMessages((prev) => {
-                  const alreadyReal = prev.some(
-                    (m) => m.id === res.messageId,
-                  );
+                  const alreadyReal = prev.some((m) => m.id === res.messageId);
                   if (alreadyReal && !prev.find((m) => m.id === tempId)) {
                     return prev;
                   }
