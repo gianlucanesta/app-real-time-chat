@@ -240,8 +240,44 @@ export function NewGroupPanel({
           {/* Contacts list */}
           <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border">
             {isLoading && (
-              <div className="flex items-center justify-center py-12 text-text-secondary text-[13px]">
-                Loading contacts…
+              <div
+                className="flex flex-col"
+                aria-busy="true"
+                aria-label="Loading contacts"
+              >
+                {/* Skeleton letter header */}
+                {["A", "B", "C"].map((letter, gi) => (
+                  <div key={letter}>
+                    <div className="px-4 py-1.5 sticky top-0 bg-bg/80 backdrop-blur-sm">
+                      <div className="w-3 h-3 rounded bg-border/60 animate-pulse" />
+                    </div>
+                    {Array.from({
+                      length: gi === 0 ? 3 : gi === 1 ? 2 : 1,
+                    }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-3 px-4 py-2.5"
+                      >
+                        {/* Avatar circle */}
+                        <div className="w-11 h-11 rounded-full bg-border/60 animate-pulse shrink-0" />
+                        {/* Name bar */}
+                        <div className="flex-1 min-w-0">
+                          <div
+                            className={`h-3.5 rounded-full bg-border/60 animate-pulse ${
+                              i % 3 === 0
+                                ? "w-32"
+                                : i % 3 === 1
+                                  ? "w-40"
+                                  : "w-28"
+                            }`}
+                          />
+                        </div>
+                        {/* Checkbox circle */}
+                        <div className="w-5 h-5 rounded-full border-2 border-border/50 shrink-0 animate-pulse" />
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
             )}
             {!isLoading && contacts.length === 0 && (
