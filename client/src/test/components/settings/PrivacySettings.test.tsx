@@ -17,7 +17,7 @@ vi.mock('../../../contexts/SettingsContext', () => ({
       privacyProfilePhoto: 'everyone',
       privacyInfo: 'everyone',
       privacyStatus: 'contacts',
-      readReceipts: true
+      privacyReadReceipts: true
     },
     updateSetting: mockUpdateSetting,
   }),
@@ -61,7 +61,7 @@ describe('PrivacySettings', () => {
   it('renders Read Receipts toggle state', () => {
     render(<PrivacySettings />);
     // Read Receipts non apre viste secondarie e ha un toggle direttamente
-    expect(screen.getByText('Read receipts')).toBeInTheDocument();
+    expect(screen.getByText('Read Receipts')).toBeInTheDocument();
     const toggle = screen.getByRole('switch', { name: /Read receipts/i });
     expect(toggle).toBeChecked();
   });

@@ -4,16 +4,16 @@ import { Skeleton, ConversationSkeleton, SidebarSkeleton } from '../../../compon
 
 describe('Skeletons', () => {
   describe('Skeleton', () => {
-    it('renders with appropriate accessible attributes', () => {
-      render(<Skeleton data-testid="skeleton" />);
-      const skeleton = screen.getByTestId('skeleton');
+    it('renders with aria-hidden and animate-pulse class', () => {
+      const { container } = render(<Skeleton />);
+      const skeleton = container.firstElementChild!;
       expect(skeleton).toHaveAttribute('aria-hidden', 'true');
       expect(skeleton).toHaveClass('animate-pulse');
     });
 
     it('merges custom classnames properly', () => {
-      render(<Skeleton className="w-10 h-10 custom-skel" data-testid="skeleton" />);
-      const skeleton = screen.getByTestId('skeleton');
+      const { container } = render(<Skeleton className="w-10 h-10 custom-skel" />);
+      const skeleton = container.firstElementChild!;
       expect(skeleton).toHaveClass('w-10', 'h-10', 'custom-skel', 'animate-pulse');
     });
   });
@@ -21,7 +21,6 @@ describe('Skeletons', () => {
   describe('ConversationSkeleton', () => {
     it('renders as hidden placeholder', () => {
       render(<ConversationSkeleton />);
-      // Può essere testato cercando classi o struttura generica, essendo elementi decorativi.
       const container = document.querySelector('.flex.items-center.gap-3');
       expect(container).toBeInTheDocument();
       expect(container).toHaveAttribute('aria-hidden', 'true');
