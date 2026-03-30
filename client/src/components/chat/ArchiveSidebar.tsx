@@ -33,7 +33,6 @@ export function ArchiveSidebar({ onSelectChat }: ArchiveSidebarProps) {
     conversationsLoading,
     markAsUnread,
     clearConversationById,
-    unmuteConversation,
     unarchiveConversation,
     addToFavorites,
     removeFromFavorites,
@@ -313,11 +312,16 @@ export function ArchiveSidebar({ onSelectChat }: ArchiveSidebarProps) {
       {/* Mute Modal */}
       {mutingConvId && (
         <MuteConversationModal
-          onMute={(d: MuteDuration) => {
-            // Not used in archive but keeping for consistency
+          isOpen={true}
+          conversationName={
+            conversations.find((c) => c.id === mutingConvId)?.name ?? ""
+          }
+          isMuted={false}
+          onMute={(_d: MuteDuration) => {
             setMutingConvId(null);
           }}
-          onClose={() => setMutingConvId(null)}
+          onUnmute={() => setMutingConvId(null)}
+          onCancel={() => setMutingConvId(null)}
         />
       )}
     </aside>
