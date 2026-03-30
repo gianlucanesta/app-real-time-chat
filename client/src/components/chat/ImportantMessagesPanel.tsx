@@ -26,15 +26,6 @@ interface ImportantMessagesPanelProps {
   onUnstar?: (messageId: string) => void;
 }
 
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString(undefined, {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
-
 function formatTime(dateStr: string): string {
   const d = new Date(dateStr);
   return d.toLocaleTimeString(undefined, {

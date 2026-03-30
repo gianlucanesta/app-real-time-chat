@@ -129,6 +129,12 @@ export interface ServerToClientEvents {
   }) => void;
   /** Sent to the status owner when someone views one of their items */
   "status:viewed": (data: { itemId: string; viewerCount: number }) => void;
+  "message:starred": (data: {
+    messageId: string;
+    conversationId: string;
+    userId: string;
+    starred: boolean;
+  }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -209,6 +215,11 @@ export interface ClientToServerEvents {
   "call:end": (data: { to: string }) => void;
   "call:reject": (data: { to: string }) => void;
   "call:screenshare": (data: { to: string; active: boolean }) => void;
+
+  "message:star": (
+    data: { messageId: string; conversationId: string },
+    ack: (res: { ok: boolean; starred?: boolean }) => void,
+  ) => void;
 
   // ── Call link rooms ──
   "call:join-room": (data: { roomId: string }) => void;
