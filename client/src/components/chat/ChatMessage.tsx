@@ -348,7 +348,7 @@ export function ChatMessage({
                 statusReply ||
                 !!quotedReply ||
                 !!scheduledCallPayload
-                  ? `rounded-2xl overflow-hidden shadow-sm ${isSent ? "rounded-br-sm" : "rounded-bl-sm"} ${(!isMediaBubble && (statusReply || scheduledCallPayload) && !isSent) || (!isMediaBubble && quotedReply && !isSent) ? "border border-border/50" : ""}`
+                  ? `rounded-2xl overflow-hidden shadow-sm ${isSent ? "rounded-br-sm" : "rounded-bl-sm"} ${(!isMediaBubble && (statusReply || scheduledCallPayload) && !isSent) || (!isMediaBubble && quotedReply && !isSent) ? "border border-border/50 bg-card text-text-main" : ""}`
                   : `pr-8 px-4 py-3 text-[14px] leading-relaxed break-words shadow-sm rounded-2xl overflow-hidden ${
                       isSent
                         ? "text-white rounded-br-sm"
@@ -637,7 +637,7 @@ export function ChatMessage({
                     className={`flex gap-2 mx-2 mt-2 mb-1 rounded-lg overflow-hidden border-l-4 ${
                       isSent
                         ? "border-white/60 bg-white/15"
-                        : "border-accent bg-input/60"
+                        : "border-accent bg-black/20"
                     }${onScrollToMessage ? " cursor-pointer hover:brightness-110 transition-all" : ""}`}
                   >
                     {quotedReply.mediaType === "image" &&
