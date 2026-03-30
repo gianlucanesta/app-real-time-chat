@@ -42,6 +42,13 @@ export interface MessagePayload {
     caption?: string | null;
     senderName: string;
   } | null;
+  quotedReply?: {
+    messageId: string;
+    senderName: string;
+    text: string;
+    mediaType?: "image" | "video" | "audio" | "document" | null;
+    mediaUrl?: string | null;
+  } | null;
 }
 
 export interface ServerToClientEvents {

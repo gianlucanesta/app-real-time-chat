@@ -77,6 +77,21 @@ const messageSchema = new mongoose.Schema({
     },
     default: null,
   },
+  // Quoted reply: reference to the original message being replied to
+  quotedReply: {
+    type: {
+      messageId: { type: String, required: true },
+      senderName: { type: String, required: true },
+      text: { type: String, default: "" },
+      mediaType: {
+        type: String,
+        enum: ["image", "video", "audio", "document", null],
+        default: null,
+      },
+      mediaUrl: { type: String, default: null },
+    },
+    default: null,
+  },
   // Status reply: reference to the status item being replied to
   statusReply: {
     type: {

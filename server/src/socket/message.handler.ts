@@ -52,6 +52,13 @@ export function registerMessageHandlers(
           caption?: string | null;
           senderName: string;
         } | null;
+        quotedReply?: {
+          messageId: string;
+          senderName: string;
+          text: string;
+          mediaType?: "image" | "video" | "audio" | "document" | null;
+          mediaUrl?: string | null;
+        } | null;
       },
       ack: (res: { ok: boolean; messageId?: string }) => void,
     ) => {
@@ -65,6 +72,7 @@ export function registerMessageHandlers(
         viewOnce,
         linkPreview,
         statusReply,
+        quotedReply,
       } = data || {};
 
       if (!conversationId) {
@@ -107,6 +115,7 @@ export function registerMessageHandlers(
           viewOnce: !!viewOnce,
           linkPreview: linkPreview || null,
           statusReply: statusReply || null,
+          quotedReply: quotedReply || null,
           senderDisplayName: displayName,
           senderInitials: senderProfile?.initials ?? "",
           senderGradient:

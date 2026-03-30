@@ -74,6 +74,7 @@ interface ChatMessageProps {
     mediaType?: "image" | "video" | "audio" | "document" | null;
     mediaUrl?: string | null;
   } | null;
+  onScrollToMessage?: (messageId: string) => void;
 }
 
 const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
@@ -110,6 +111,7 @@ export function ChatMessage({
   isUploading,
   statusReply,
   quotedReply,
+  onScrollToMessage,
 }: ChatMessageProps) {
   const [isReactionMenuOpen, setIsReactionMenuOpen] = useState(false);
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
@@ -585,11 +587,34 @@ export function ChatMessage({
                 <div className="flex flex-col min-w-[220px] max-w-[308px]">
                   {/* Quote bar */}
                   <div
+                    role={onScrollToMessage ? "button" : undefined}
+                    tabIndex={onScrollToMessage ? 0 : undefined}
+                    aria-label={
+                      onScrollToMessage ? "Jump to original message" : undefined
+                    }
+                    onClick={
+                      onScrollToMessage
+                        ? (e) => {
+                            e.stopPropagation();
+                            onScrollToMessage(quotedReply.messageId);
+                          }
+                        : undefined
+                    }
+                    onKeyDown={
+                      onScrollToMessage
+                        ? (e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.stopPropagation();
+                              onScrollToMessage(quotedReply.messageId);
+                            }
+                          }
+                        : undefined
+                    }
                     className={`flex gap-2 mx-2 mt-2 mb-1 rounded-lg overflow-hidden border-l-4 ${
                       isSent
                         ? "border-white/60 bg-white/15"
                         : "border-accent bg-input/60"
-                    }`}
+                    }${onScrollToMessage ? " cursor-pointer hover:brightness-110 transition-all" : ""}`}
                   >
                     {quotedReply.mediaType === "image" &&
                       quotedReply.mediaUrl && (

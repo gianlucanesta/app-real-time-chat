@@ -36,7 +36,7 @@ function formatCallDate(isoStart: string, isoEnd: string): string {
     minute: "2-digit",
   });
 
-  return `${dateLabel}, ${startTime} - ${endTime}`;
+  return `${dateLabel}, at ${startTime} - ${endTime}`;
 }
 
 export function ScheduledCallCard({
@@ -44,58 +44,91 @@ export function ScheduledCallCard({
   isSent,
   onJoin,
 }: ScheduledCallCardProps) {
-  const CallIcon = payload.callType === "video" ? Video : Phone;
+  const isVideo = payload.callType === "video";
 
   return (
     <div className="min-w-[260px] max-w-[308px]">
       {/* Card body */}
       <div
-        className={`rounded-xl overflow-hidden border ${
-          isSent ? "border-white/20" : "border-border"
+        className={`rounded-xl overflow-hidden ${
+          isSent ? "" : "border border-border"
         }`}
       >
-        {/* Top section — dark teal background like WhatsApp */}
-        <div className={`px-4 py-3 ${isSent ? "bg-white/10" : "bg-accent/10"}`}>
+        {/* Top section — accent-tinted background */}
+        <div
+          className={`px-4 py-3.5 ${
+            isSent
+              ? "bg-white/10"
+              : "bg-accent/8 border-b border-border"
+          }`}
+        >
           <div className="flex items-start gap-3">
-            {/* Calendar icon */}
+            {/* Calendar icon — blue accent */}
             <div
               className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
                 isSent ? "bg-white/15" : "bg-accent/15"
               }`}
             >
               <CalendarClock
-                className={`w-5 h-5 ${isSent ? "text-white/90" : "text-accent"}`}
+                className={`w-5 h-5 ${
+                  isSent ? "text-white/90" : "text-accent"
+                }`}
               />
             </div>
+
             {/* Info */}
             <div className="flex-1 min-w-0">
+              {/* Title: "Call by [name]" */}
               <p
                 className={`text-[14px] font-semibold leading-tight ${
                   isSent ? "text-white" : "text-text-main"
                 }`}
               >
-                {payload.organizerName}&apos;s call
+                Call by {payload.organizerName}
               </p>
+
+              {/* Date/time */}
               <p
-                className={`text-[12px] mt-0.5 ${
+                className={`text-[12px] mt-1 ${
                   isSent ? "text-white/70" : "text-text-secondary"
                 }`}
               >
                 {formatCallDate(payload.startDate, payload.endDate)}
               </p>
-              <p
-                className={`text-[12px] mt-0.5 ${
-                  isSent ? "text-white/70" : "text-text-secondary"
-                }`}
-              >
-                {payload.callType === "video" ? "Video call" : "Voice call"}
-              </p>
-              <div className="flex items-center gap-1 mt-1">
+
+              {/* Call type */}
+              <div className="flex items-center gap-1.5 mt-1">
+                {isVideo ? (
+                  <Video
+                    className={`w-3.5 h-3.5 ${
+                      isSent ? "text-white/60" : "text-text-secondary"
+                    }`}
+                  />
+                ) : (
+                  <Phone
+                    className={`w-3.5 h-3.5 ${
+                      isSent ? "text-white/60" : "text-text-secondary"
+                    }`}
+                  />
+                )}
+                <span
+                  className={`text-[12px] ${
+                    isSent ? "text-white/70" : "text-text-secondary"
+                  }`}
+                >
+                  Ephemeral {isVideo ? "Video call" : "Voice call"}
+                </span>
+              </div>
+
+              {/* Participants count */}
+              <div className="flex items-center gap-1.5 mt-1">
                 <Users
-                  className={`w-3.5 h-3.5 ${isSent ? "text-white/60" : "text-text-secondary"}`}
+                  className={`w-3.5 h-3.5 ${
+                    isSent ? "text-white/60" : "text-text-secondary"
+                  }`}
                 />
                 <span
-                  className={`text-[11px] ${
+                  className={`text-[12px] ${
                     isSent ? "text-white/60" : "text-text-secondary"
                   }`}
                 >
@@ -103,22 +136,16 @@ export function ScheduledCallCard({
                 </span>
               </div>
             </div>
-            {/* Call type icon */}
-            <CallIcon
-              className={`w-4 h-4 shrink-0 mt-1 ${
-                isSent ? "text-white/50" : "text-text-secondary/50"
-              }`}
-            />
           </div>
         </div>
 
-        {/* Join link */}
+        {/* "Join the call" action link — blue accent */}
         <button
           onClick={onJoin}
-          className={`w-full px-4 py-2.5 text-center text-[13px] font-medium transition-colors ${
+          className={`w-full px-4 py-2.5 text-center text-[13px] font-semibold transition-colors ${
             isSent
-              ? "text-white/90 hover:bg-white/10"
-              : "text-accent hover:bg-accent/5"
+              ? "text-white/90 hover:bg-white/10 bg-white/5"
+              : "text-accent hover:bg-accent/5 bg-card"
           }`}
         >
           Join the call

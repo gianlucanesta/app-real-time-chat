@@ -380,14 +380,14 @@ export function CommunityDetail({
 
             {/* Announcement input (admin only) */}
             {isAdmin && (
-              <div className="px-4 py-3 border-t border-border bg-card shrink-0">
-                <div className="flex items-end gap-2">
-                  <textarea
+              <div className="px-4 py-3 shrink-0">
+                <div className="flex items-center bg-input/80 backdrop-blur-md rounded-full border border-border/50 shadow-lg p-1.5">
+                  <input
+                    type="text"
                     placeholder="Write an announcement..."
                     value={newAnnouncement}
                     onChange={(e) => setNewAnnouncement(e.target.value)}
-                    rows={2}
-                    className="flex-1 bg-input border border-border rounded-lg px-3 py-2 text-text-main text-[14px] placeholder:text-text-secondary/60 outline-none focus:border-accent transition-colors resize-none"
+                    className="flex-1 bg-transparent border-none outline-none text-[14px] text-text-main placeholder:text-text-secondary px-2"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
@@ -398,10 +398,10 @@ export function CommunityDetail({
                   <button
                     onClick={handleSendAnnouncement}
                     disabled={!newAnnouncement.trim() || isSending}
-                    className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-white hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                    className="w-11 h-11 rounded-full bg-accent flex items-center justify-center text-white hover:brightness-110 shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                     aria-label="Send announcement"
                   >
-                    <Send className="w-4 h-4" />
+                    <Send className="w-[22px] h-[22px] ml-0.5" />
                   </button>
                 </div>
               </div>

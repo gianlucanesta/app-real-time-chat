@@ -382,6 +382,31 @@ export function ChatArea({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
+  const handleScrollToMessage = useCallback((messageId: string) => {
+    const el = messagesContainerRef.current?.querySelector<HTMLElement>(
+      `[data-id="${CSS.escape(messageId)}"]`,
+    );
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    // Brief highlight flash
+    el.classList.add(
+      "ring-2",
+      "ring-accent",
+      "ring-offset-1",
+      "rounded-2xl",
+      "transition-all",
+    );
+    setTimeout(() => {
+      el.classList.remove(
+        "ring-2",
+        "ring-accent",
+        "ring-offset-1",
+        "rounded-2xl",
+        "transition-all",
+      );
+    }, 1500);
+  }, []);
+
   // Typing emit logic
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
@@ -1254,6 +1279,7 @@ export function ChatArea({
                       linkPreview={msg.linkPreview}
                       statusReply={msg.statusReply}
                       quotedReply={msg.quotedReply}
+                      onScrollToMessage={handleScrollToMessage}
                     />
                   );
                 })}
