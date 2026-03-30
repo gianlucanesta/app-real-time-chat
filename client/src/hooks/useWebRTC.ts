@@ -29,10 +29,12 @@ async function fetchIceServers(): Promise<RTCIceServer[]> {
   }
 }
 
-const ICE_RESTART_TIMEOUT_MS = 8_000;
+const ICE_RESTART_TIMEOUT_MS = 10_000;
 /** If ICE stays at "checking" without reaching connected, trigger restart */
-const ICE_CONNECTING_TIMEOUT_MS = 12_000;
-const MAX_FULL_RETRIES = 2;
+const ICE_CONNECTING_TIMEOUT_MS = 30_000;
+/** How long the caller waits for the callee to accept before giving up */
+const RINGING_TIMEOUT_MS = 45_000;
+const MAX_FULL_RETRIES = 3;
 
 /** Build getUserMedia constraints using saved device preferences. */
 function getMediaConstraints(withVideo: boolean): MediaStreamConstraints {
@@ -66,6 +68,7 @@ export function useWebRTC(socket: TypedSocket | null) {
   const retryCount = useRef(0);
   const iceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const connectingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ringingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const targetUserRef = useRef<string | null>(null);
   const withVideoRef = useRef(true);
   const iceCandidateBuffer = useRef<RTCIceCandidateInit[]>([]);
@@ -108,6 +111,13 @@ export function useWebRTC(socket: TypedSocket | null) {
     if (connectingTimerRef.current) {
       clearTimeout(connectingTimerRef.current);
       connectingTimerRef.current = null;
+    }
+  }, []);
+
+  const clearRingingTimer = useCallback(() => {
+    if (ringingTimerRef.current) {
+      clearTimeout(ringingTimerRef.current);
+      ringingTimerRef.current = null;
     }
   }, []);
 
@@ -184,12 +194,14 @@ export function useWebRTC(socket: TypedSocket | null) {
         if (state === "connected" || state === "completed") {
           clearIceTimer();
           clearConnectingTimer();
+          clearRingingTimer();
           retryCount.current = 0;
           setStatus("connected");
         }
 
         if (state === "failed" || state === "disconnected") {
-          handleIceFailed();
+          // Use ref to avoid stale closure
+          handleIceFailedRef.current();
         }
       };
 
@@ -199,8 +211,11 @@ export function useWebRTC(socket: TypedSocket | null) {
 
       return pc;
     },
-    [socket, clearIceTimer],
+    [socket, clearIceTimer, clearConnectingTimer, clearRingingTimer],
   );
+
+  // ── Ref to break circular dependency between createPC ↔ handleIceFailed ──
+  const handleIceFailedRef = useRef<() => void>(() => {});
 
   // ── ICE restart (level 1) ──────────────────────────────────────────────
   const triggerFullRetry = useCallback(async () => {
@@ -249,6 +264,7 @@ export function useWebRTC(socket: TypedSocket | null) {
     if (!pc) return;
     setStatus("reconnecting");
     clearIceTimer();
+    clearConnectingTimer();
 
     console.log(
       `[webrtc] ICE failed — restart attempt (retry ${retryCount.current + 1}/${MAX_FULL_RETRIES})`,
@@ -264,7 +280,12 @@ export function useWebRTC(socket: TypedSocket | null) {
     iceTimerRef.current = setTimeout(() => {
       void triggerFullRetry();
     }, ICE_RESTART_TIMEOUT_MS);
-  }, [clearIceTimer, triggerFullRetry]);
+  }, [clearIceTimer, clearConnectingTimer, triggerFullRetry]);
+
+  // Keep ref in sync so createPC's oniceconnectionstatechange avoids stale closure
+  useEffect(() => {
+    handleIceFailedRef.current = handleIceFailed;
+  }, [handleIceFailed]);
 
   // ── Start a call (caller) ──────────────────────────────────────────────
   const startCall = useCallback(
@@ -304,21 +325,20 @@ export function useWebRTC(socket: TypedSocket | null) {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
         socket.emit("call:offer", { to: toUserId, withVideo, offer });
-        setStatus("connecting");
-        // Start a connecting timer — if ICE stays at "checking" too long, trigger restart
-        clearConnectingTimer();
-        connectingTimerRef.current = setTimeout(() => {
-          console.warn(
-            "[webrtc] connecting timeout — ICE stuck, triggering restart",
-          );
-          handleIceFailed();
-        }, ICE_CONNECTING_TIMEOUT_MS);
+        // Stay in "calling" (ringing) until the callee answers.
+        // Only start a ringing timeout — the connecting timer starts
+        // when we receive the answer.
+        clearRingingTimer();
+        ringingTimerRef.current = setTimeout(() => {
+          console.warn("[webrtc] ringing timeout — no answer received");
+          endCallRef.current();
+        }, RINGING_TIMEOUT_MS);
       } catch (err) {
         console.error("[webrtc] Failed to start call:", err);
         setStatus("failed");
       }
     },
-    [socket, createPC, clearConnectingTimer, handleIceFailed],
+    [socket, createPC, clearRingingTimer],
   );
 
   // ── Answer a call (callee) ─────────────────────────────────────────────
@@ -386,13 +406,13 @@ export function useWebRTC(socket: TypedSocket | null) {
         console.warn(
           "[webrtc] connecting timeout — ICE stuck, triggering restart",
         );
-        handleIceFailed();
+        handleIceFailedRef.current();
       }, ICE_CONNECTING_TIMEOUT_MS);
     } catch (err) {
       console.error("[webrtc] Failed to answer call:", err);
       setStatus("failed");
     }
-  }, [socket, incomingCall, createPC, clearConnectingTimer, handleIceFailed]);
+  }, [socket, incomingCall, createPC, clearConnectingTimer]);
 
   // ── Reject incoming call ───────────────────────────────────────────────
   const rejectCall = useCallback(() => {
@@ -407,6 +427,7 @@ export function useWebRTC(socket: TypedSocket | null) {
   const endCall = useCallback(() => {
     clearIceTimer();
     clearConnectingTimer();
+    clearRingingTimer();
     pcRef.current?.close();
     pcRef.current = null;
     cleanupMedia();
@@ -418,7 +439,13 @@ export function useWebRTC(socket: TypedSocket | null) {
     targetUserRef.current = null;
     retryCount.current = 0;
     iceCandidateBuffer.current = [];
-  }, [cleanupMedia, socket, clearIceTimer, clearConnectingTimer]);
+  }, [cleanupMedia, socket, clearIceTimer, clearConnectingTimer, clearRingingTimer]);
+
+  // Ref so ringing timeout can call endCall without stale closure
+  const endCallRef = useRef(endCall);
+  useEffect(() => {
+    endCallRef.current = endCall;
+  }, [endCall]);
 
   // ── Toggle mute ────────────────────────────────────────────────────────
   const toggleMute = useCallback(() => {
@@ -545,6 +572,11 @@ export function useWebRTC(socket: TypedSocket | null) {
       answer: RTCSessionDescriptionInit;
     }) => {
       console.log("[webrtc] received answer from:", data.from);
+      // Clear ringing timer — callee has answered
+      if (ringingTimerRef.current) {
+        clearTimeout(ringingTimerRef.current);
+        ringingTimerRef.current = null;
+      }
       if (pcRef.current) {
         await pcRef.current.setRemoteDescription(
           new RTCSessionDescription(data.answer),
@@ -554,6 +586,15 @@ export function useWebRTC(socket: TypedSocket | null) {
           pcRef.current.signalingState,
         );
         await flushIceBuffer(pcRef.current);
+        // NOW transition to "connecting" and start the ICE connecting timer
+        setStatus("connecting");
+        if (connectingTimerRef.current) clearTimeout(connectingTimerRef.current);
+        connectingTimerRef.current = setTimeout(() => {
+          console.warn(
+            "[webrtc] connecting timeout — ICE stuck, triggering restart",
+          );
+          handleIceFailedRef.current();
+        }, ICE_CONNECTING_TIMEOUT_MS);
       }
     };
 
@@ -577,6 +618,10 @@ export function useWebRTC(socket: TypedSocket | null) {
     const doFullCleanup = () => {
       clearIceTimer();
       clearConnectingTimer();
+      if (ringingTimerRef.current) {
+        clearTimeout(ringingTimerRef.current);
+        ringingTimerRef.current = null;
+      }
       pcRef.current?.close();
       pcRef.current = null;
       iceCandidateBuffer.current = [];

@@ -24,6 +24,9 @@ export function registerCallHandlers(
   // ── Relay offer to callee ──
   socket.on("call:offer", ({ to, withVideo, offer }) => {
     if (typeof to !== "string" || !to) return;
+    console.log(
+      `[call] offer: ${userId} → ${to} (video: ${withVideo}, sdp length: ${offer?.sdp?.length ?? 0})`,
+    );
     io.to(`user:${to}`).emit("call:incoming", {
       from: userId,
       fromName: displayName,
@@ -35,30 +38,39 @@ export function registerCallHandlers(
   // ── Relay answer to caller ──
   socket.on("call:answer", ({ to, answer }) => {
     if (typeof to !== "string" || !to) return;
+    console.log(
+      `[call] answer: ${userId} → ${to} (sdp length: ${answer?.sdp?.length ?? 0})`,
+    );
     io.to(`user:${to}`).emit("call:answer", { from: userId, answer });
   });
 
   // ── Relay ICE candidate ──
   socket.on("call:ice", ({ to, candidate }) => {
     if (typeof to !== "string" || !to) return;
+    console.log(
+      `[call] ice: ${userId} → ${to} (candidate: ${candidate?.candidate?.slice(0, 50) ?? "?"})`,
+    );
     io.to(`user:${to}`).emit("call:ice", { from: userId, candidate });
   });
 
   // ── Call ended ──
   socket.on("call:end", ({ to }) => {
     if (typeof to !== "string" || !to) return;
+    console.log(`[call] end: ${userId} → ${to}`);
     io.to(`user:${to}`).emit("call:ended", { from: userId });
   });
 
   // ── Call rejected ──
   socket.on("call:reject", ({ to }) => {
     if (typeof to !== "string" || !to) return;
+    console.log(`[call] reject: ${userId} → ${to}`);
     io.to(`user:${to}`).emit("call:rejected", { from: userId });
   });
 
   // ── Screen share status relay ──
   socket.on("call:screenshare", ({ to, active }) => {
     if (typeof to !== "string" || !to) return;
+    console.log(`[call] screenshare: ${userId} → ${to} (active: ${active})`);
     io.to(`user:${to}`).emit("call:screenshare", { from: userId, active });
   });
 

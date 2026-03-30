@@ -1623,7 +1623,7 @@ export function ChatArea({
                 placeholder="Write a message..."
                 value={inputValue}
                 spellCheck={chatSettings.spellCheck}
-                className="flex-1 bg-transparent border-none outline-none text-[14px] text-text-main placeholder:text-text-secondary px-2"
+                className="flex-1 bg-transparent border-none outline-none text-[16px] md:text-[14px] text-text-main placeholder:text-text-secondary px-2"
                 onChange={(e) => {
                   const val = applyEmojiReplace(
                     e.target.value,
@@ -1804,8 +1804,7 @@ export function ChatArea({
         open={showScheduleCallModal}
         onClose={() => setShowScheduleCallModal(false)}
         onSchedule={(scheduled: ScheduledCall) => {
-          const startMs =
-            new Date(scheduled.startDate).getTime() - Date.now();
+          const startMs = new Date(scheduled.startDate).getTime() - Date.now();
           const endMs = new Date(scheduled.endDate).getTime() - Date.now();
 
           // Auto-start the call when the scheduled time arrives
@@ -1845,12 +1844,9 @@ export function ChatArea({
               organizerName: user.displayName ?? "Unknown",
               participantCount: scheduled.participants.length,
             };
-            const msgText =
-              SCHEDULED_CALL_PREFIX + JSON.stringify(payload);
+            const msgText = SCHEDULED_CALL_PREFIX + JSON.stringify(payload);
             for (const participantId of scheduled.participants) {
-              const convId = [user.id, participantId]
-                .sort()
-                .join("___");
+              const convId = [user.id, participantId].sort().join("___");
               sendScheduledCallInvite(convId, msgText);
             }
           }
