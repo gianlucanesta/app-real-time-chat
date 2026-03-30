@@ -3,8 +3,9 @@ import {
   Outlet,
   redirect,
   useNavigate,
+  useRouterState,
 } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { VerticalNav } from "../components/layout/VerticalNav";
 import { ChatProvider, useChat } from "../contexts/ChatContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -29,8 +30,15 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function LayoutContent() {
-  const { mobileInChat, conversations, webrtc } = useChat();
+  const { mobileInChat, conversations, webrtc, socket } = useChat();
   const { user } = useAuth();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  // If we're on /call/:id, extract the room ID so CallScreen can use it
+  const callRoomId = useMemo(() => {
+    const match = pathname.match(/^\/call\/([^/]+)$/);
+    return match ? match[1] : undefined;
+  }, [pathname]);
 
   // Derive contact info from conversations using the callContactId
   const callConv = conversations.find(
@@ -104,6 +112,8 @@ function LayoutContent() {
         onToggleCamera={webrtc.toggleCamera}
         onToggleScreenShare={() => void webrtc.toggleScreenShare()}
         onRetry={webrtc.retryCall}
+        socket={socket}
+        callRoomId={callRoomId}
       />
     </div>
   );

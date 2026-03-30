@@ -781,7 +781,7 @@
   transform: scaleX(-1);
 }
 
-/* ── Call sidebar (desktop-only right panel) ─────────────── */
+/* ── Call sidebar (desktop-only right panel, toggleable) ──── */
 .call-sidebar {
   display: none;
   width: 300px;
@@ -793,11 +793,62 @@
   align-items: center;
   gap: 6px;
   overflow-y: auto;
+  position: relative;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 @media (min-width: 768px) {
   .call-sidebar {
     display: flex;
+    width: 0;
+    padding: 0;
+    border-left: none;
+    overflow: hidden;
   }
+  .call-sidebar--open {
+    width: 300px;
+    padding: 40px 24px 24px;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    transform: translateX(0);
+    overflow-y: auto;
+  }
+}
+/* Mobile: slide-over panel */
+@media (max-width: 767px) {
+  .call-sidebar {
+    display: flex;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 85%;
+    max-width: 320px;
+    z-index: 20;
+    padding: 40px 20px 24px;
+  }
+  .call-sidebar--open {
+    transform: translateX(0);
+  }
+}
+.call-sidebar-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.call-sidebar-close-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
 }
 .call-sidebar-avatar-wrap {
   margin-bottom: 8px;

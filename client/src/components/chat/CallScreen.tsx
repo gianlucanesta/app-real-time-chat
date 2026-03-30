@@ -12,9 +12,11 @@ import {
   UserPlus,
   ChevronRight,
   Users,
+  X,
 } from "lucide-react";
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { CallStatus } from "../../hooks/useWebRTC";
+import type { TypedSocket } from "../../hooks/useSocket";
 
 function generateCallLinkId(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -49,6 +51,8 @@ interface CallScreenProps {
   onRetry: () => void;
   onAddPeople?: () => void;
   contactPhone?: string;
+  callRoomId?: string;
+  socket?: TypedSocket | null;
 }
 
 export function CallScreen({
@@ -74,6 +78,8 @@ export function CallScreen({
   onRetry,
   onAddPeople,
   contactPhone,
+  callRoomId,
+  socket,
 }: CallScreenProps) {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -87,6 +93,7 @@ export function CallScreen({
   // ── Call sidebar state ────────────────────────────────────────────────
   const [callLinkId, setCallLinkId] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // ── Draggable PiP state ───────────────────────────────────────────────
   const [pipOffset, setPipOffset] = useState({ x: 0, y: 0 });
@@ -145,13 +152,25 @@ export function CallScreen({
     }
   }, [status]);
 
-  // Generate call link when call starts
+  // Generate call link when call starts (use the actual room ID if available)
   useEffect(() => {
     if (status === "calling" || status === "connecting") {
-      setCallLinkId(generateCallLinkId());
+      setCallLinkId(callRoomId || generateCallLinkId());
       setLinkCopied(false);
+      setSidebarOpen(false);
     }
-  }, [status]);
+  }, [status, callRoomId]);
+
+  // Join the call link room so visitors on the invite link can find us
+  useEffect(() => {
+    if (!socket || !callLinkId || !isOpen) return;
+    // Don't re-join if this is already the route-based room
+    if (callRoomId && callLinkId === callRoomId) return;
+    socket.emit("call:join-room", { roomId: callLinkId });
+    return () => {
+      socket.emit("call:leave-room", { roomId: callLinkId });
+    };
+  }, [socket, callLinkId, isOpen, callRoomId]);
 
   // Track remote video track mute/unmute to detect when remote user toggles camera
   useEffect(() => {
@@ -326,7 +345,33 @@ export function CallScreen({
 
   const handlePipPointerUp = useCallback(() => {
     dragRef.current.active = false;
-  }, []);
+    // Clamp PiP within the call screen bounds
+    const mainEl = document.querySelector(".call-screen-main");
+    if (!mainEl) return;
+    const rect = mainEl.getBoundingClientRect();
+    const isExp = pipExpanded;
+    const isMobile = window.innerWidth < 768;
+    const pipW = isExp ? (isMobile ? 220 : 320) : isMobile ? 110 : 160;
+    const pipH = isExp ? (isMobile ? 165 : 240) : isMobile ? 82 : 120;
+    const defaultRight = isMobile ? 12 : 20;
+    const defaultBottom = isMobile ? 140 : 120;
+    const anchorLeft = rect.right - defaultRight - pipW;
+    const anchorTop = rect.bottom - defaultBottom - pipH;
+    setPipOffset((prev) => {
+      const actualLeft = anchorLeft + prev.x;
+      const actualTop = anchorTop + prev.y;
+      let clampedX = prev.x;
+      let clampedY = prev.y;
+      if (actualLeft < rect.left) clampedX = prev.x + (rect.left - actualLeft);
+      if (actualTop < rect.top) clampedY = prev.y + (rect.top - actualTop);
+      if (actualLeft + pipW > rect.right)
+        clampedX = prev.x - (actualLeft + pipW - rect.right);
+      if (actualTop + pipH > rect.bottom)
+        clampedY = prev.y - (actualTop + pipH - rect.bottom);
+      if (clampedX === prev.x && clampedY === prev.y) return prev;
+      return { x: clampedX, y: clampedY };
+    });
+  }, [pipExpanded]);
 
   const handlePipDoubleClick = useCallback(() => {
     window.clearTimeout(clickTimerRef.current);
@@ -929,28 +974,17 @@ export function CallScreen({
               </button>
             )}
 
-            {/* Participants */}
+            {/* Participants / toggle sidebar */}
             <button
               type="button"
               className="call-bar-btn"
-              aria-label="Participants"
+              aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
               style={{ display: "flex", alignItems: "center", gap: "2px" }}
+              onClick={() => setSidebarOpen((prev) => !prev)}
             >
               <Users className="w-5 h-5" />
               <ChevronRight className="w-3 h-3" style={{ opacity: 0.6 }} />
             </button>
-
-            {/* Add people */}
-            {onAddPeople && (
-              <button
-                type="button"
-                className="call-bar-btn"
-                onClick={onAddPeople}
-                aria-label="Add people to call"
-              >
-                <UserPlus className="w-6 h-6" />
-              </button>
-            )}
 
             {/* Retry button (failed state) */}
             {status === "failed" && (
@@ -978,8 +1012,20 @@ export function CallScreen({
         </div>
         {/* end call-screen-main */}
 
-        {/* ── Right sidebar (desktop only) ──────────────────────────── */}
-        <aside className="call-sidebar">
+        {/* ── Right sidebar (toggleable) ──────────────────────────── */}
+        <aside
+          className={`call-sidebar${sidebarOpen ? " call-sidebar--open" : ""}`}
+        >
+          {/* Close button */}
+          <button
+            type="button"
+            className="call-sidebar-close-btn"
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close sidebar"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
           {/* Contact avatar */}
           <div className="call-sidebar-avatar-wrap">
             {contactAvatarUrl ? (
@@ -1030,7 +1076,7 @@ export function CallScreen({
           <button
             type="button"
             className="call-sidebar-add-people"
-            onClick={onAddPeople}
+            onClick={handleCopyLink}
           >
             <UserPlus className="w-5 h-5 call-sidebar-add-icon" />
             <span className="call-sidebar-add-label">Add people</span>
