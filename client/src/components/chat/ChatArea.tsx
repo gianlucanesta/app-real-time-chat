@@ -40,6 +40,14 @@ import {
   MuteConversationModal,
   type MuteDuration,
 } from "./MuteConversationModal";
+import { StartCallModal } from "./StartCallModal";
+import { CallLinkModal } from "./CallLinkModal";
+import {
+  ScheduleCallModal,
+  type ScheduledCall,
+  type ScheduledCallPayload,
+  SCHEDULED_CALL_PREFIX,
+} from "./ScheduleCallModal";
 import { useChat, type Message } from "../../contexts/ChatContext";
 import type { LinkPreview } from "../../types";
 import { useAuth } from "../../contexts/AuthContext";
@@ -124,6 +132,7 @@ export function ChatArea({
     reactToMessage,
     muteConversation,
     unmuteConversation,
+    sendScheduledCallInvite,
   } = useChat();
   const toast = useToast();
   const chatSettings = useChatSettings();
@@ -317,6 +326,9 @@ export function ChatArea({
 
   // Call & Modal State
   const webrtc = useChat().webrtc;
+  const [showStartCallModal, setShowStartCallModal] = useState(false);
+  const [showCallLinkModal, setShowCallLinkModal] = useState(false);
+  const [showScheduleCallModal, setShowScheduleCallModal] = useState(false);
   const [activeModal, setActiveModal] = useState<
     | "delete-messages"
     | "clear-chat"
@@ -1030,15 +1042,33 @@ export function ChatArea({
                   </button>
                 </div>
                 <div className="w-full h-px bg-border/50 mb-1" />
-                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors">
+                <button
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors"
+                  onClick={() => {
+                    setIsCallMenuOpen(false);
+                    setShowStartCallModal(true);
+                  }}
+                >
                   <Users2 className="w-[18px] h-[18px] text-text-secondary" />{" "}
                   New group call
                 </button>
-                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors">
+                <button
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors"
+                  onClick={() => {
+                    setIsCallMenuOpen(false);
+                    setShowCallLinkModal(true);
+                  }}
+                >
                   <Link2 className="w-[18px] h-[18px] text-text-secondary" />{" "}
                   Send call link
                 </button>
-                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors">
+                <button
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors"
+                  onClick={() => {
+                    setIsCallMenuOpen(false);
+                    setShowScheduleCallModal(true);
+                  }}
+                >
                   <Calendar className="w-[18px] h-[18px] text-text-secondary" />{" "}
                   Schedule a call
                 </button>
@@ -1755,6 +1785,77 @@ export function ChatArea({
           if (activeConversation) unmuteConversation(activeConversation.id);
           setActiveModal(null);
           toast.showToast("Notifications unmuted", "success");
+        }}
+      />
+
+      {/* Call modals */}
+      <StartCallModal
+        open={showStartCallModal}
+        onClose={() => setShowStartCallModal(false)}
+        onStartCall={(contactId, withVideo) => {
+          void webrtc.startCall(contactId, withVideo);
+        }}
+      />
+      <CallLinkModal
+        open={showCallLinkModal}
+        onClose={() => setShowCallLinkModal(false)}
+      />
+      <ScheduleCallModal
+        open={showScheduleCallModal}
+        onClose={() => setShowScheduleCallModal(false)}
+        onSchedule={(scheduled: ScheduledCall) => {
+          const startMs =
+            new Date(scheduled.startDate).getTime() - Date.now();
+          const endMs = new Date(scheduled.endDate).getTime() - Date.now();
+
+          // Auto-start the call when the scheduled time arrives
+          if (startMs > 0) {
+            setTimeout(() => {
+              if (scheduled.participants.length > 0) {
+                void webrtc.startCall(
+                  scheduled.participants[0],
+                  scheduled.callType === "video",
+                );
+              }
+            }, startMs);
+          }
+
+          // Auto-end the call when the scheduled end time arrives
+          if (endMs > 0) {
+            setTimeout(() => {
+              if (
+                webrtc.status === "connected" ||
+                webrtc.status === "connecting" ||
+                webrtc.status === "calling"
+              ) {
+                webrtc.endCall();
+              }
+            }, endMs);
+          }
+
+          // Send invite message to each participant
+          if (user) {
+            const payload: ScheduledCallPayload = {
+              id: scheduled.id,
+              name: scheduled.name,
+              description: scheduled.description,
+              startDate: scheduled.startDate,
+              endDate: scheduled.endDate,
+              callType: scheduled.callType,
+              organizerName: user.displayName ?? "Unknown",
+              participantCount: scheduled.participants.length,
+            };
+            const msgText =
+              SCHEDULED_CALL_PREFIX + JSON.stringify(payload);
+            for (const participantId of scheduled.participants) {
+              const convId = [user.id, participantId]
+                .sort()
+                .join("___");
+              sendScheduledCallInvite(convId, msgText);
+            }
+          }
+
+          toast.showToast("Call scheduled", "success");
         }}
       />
     </main>
