@@ -70,6 +70,12 @@ export interface ServerToClientEvents {
     emoji: string;
     action: "add" | "remove";
   }) => void;
+  "message:edited": (data: {
+    messageId: string;
+    conversationId: string;
+    text: string;
+    editedAt: string;
+  }) => void;
   "message:viewOnce:opened": (data: {
     messageId: string;
     conversationId: string;
@@ -182,6 +188,10 @@ export interface ClientToServerEvents {
   ) => void;
   "message:react": (
     data: { messageId: string; conversationId: string; emoji: string },
+    ack: (res: { ok: boolean }) => void,
+  ) => void;
+  "message:edit": (
+    data: { messageId: string; conversationId: string; text: string },
     ack: (res: { ok: boolean }) => void,
   ) => void;
 
