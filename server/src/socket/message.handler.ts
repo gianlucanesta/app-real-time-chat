@@ -79,6 +79,7 @@ export function registerMessageHandlers(
         socket.emit("error", {
           message: "conversationId is required",
         });
+        if (typeof ack === "function") ack({ ok: false });
         return;
       }
 
@@ -91,10 +92,12 @@ export function registerMessageHandlers(
         socket.emit("error", {
           message: "text or media is required",
         });
+        if (typeof ack === "function") ack({ ok: false });
         return;
       }
       if (hasText && text.length > 4096) {
         socket.emit("error", { message: "Message exceeds 4096 characters" });
+        if (typeof ack === "function") ack({ ok: false });
         return;
       }
 

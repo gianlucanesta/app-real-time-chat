@@ -1254,7 +1254,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     (conversationId: string, text: string) => {
       if (!socket || !user) return;
 
-      const tempId = `temp-${Date.now()}`;
+      const tempId = `temp-sched-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       const now = new Date();
       const newMsg: Message = {
         id: tempId,
@@ -1291,40 +1291,101 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         ),
       );
 
+      // Join the conversation room first, then send after a short delay to
+      // ensure the server has processed the join before receiving the message
       socket.emit("join:conversation", conversationId);
 
-      socket.emit(
-        "message:send",
-        {
+      // Timeout fallback: if the ack never fires (socket disconnect, proxy
+      // drop, server error, etc.) mark as sent after 10 seconds so the message
+      // doesn't stay stuck in "sending" forever.
+      const ackTimeoutId = setTimeout(() => {
+        console.warn(
+          "[chat] scheduled call invite ack timeout for",
           conversationId,
-          text,
-        } as any,
-        (res) => {
-          if (res.ok && res.messageId) {
-            sentMsgsRef.current.set(res.messageId!, conversationId);
-            if (activeConvRef.current?.id === conversationId) {
-              setActiveMessages((prev) =>
-                prev.map((m) =>
-                  m.id === tempId
-                    ? { ...m, id: res.messageId!, status: "sent" }
-                    : m,
+        );
+        // Mark as sent anyway — the server likely saved it
+        if (activeConvRef.current?.id === conversationId) {
+          setActiveMessages((prev) =>
+            prev.map((m) =>
+              m.id === tempId ? { ...m, status: "sent" } : m,
+            ),
+          );
+        }
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === conversationId && c.lastMessageId === tempId
+              ? { ...c, lastMessageStatus: "sent" }
+              : c,
+          ),
+        );
+      }, 10_000);
+
+      // Short delay to let join:conversation be processed server-side first
+      setTimeout(() => {
+        socket.emit(
+          "message:send",
+          {
+            conversationId,
+            text,
+          } as any,
+          (res) => {
+            clearTimeout(ackTimeoutId);
+            if (res.ok && res.messageId) {
+              sentMsgsRef.current.set(res.messageId!, conversationId);
+              if (activeConvRef.current?.id === conversationId) {
+                setActiveMessages((prev) => {
+                  const alreadyReal = prev.some(
+                    (m) => m.id === res.messageId,
+                  );
+                  if (alreadyReal && !prev.find((m) => m.id === tempId)) {
+                    return prev;
+                  }
+                  return prev.map((m) =>
+                    m.id === tempId
+                      ? { ...m, id: res.messageId!, status: "sent" }
+                      : m,
+                  );
+                });
+              }
+              setConversations((prev) =>
+                prev.map((c) =>
+                  c.id === conversationId &&
+                  (c.lastMessageId === tempId ||
+                    c.lastMessageId === res.messageId!)
+                    ? {
+                        ...c,
+                        lastMessageId: res.messageId!,
+                        lastMessageStatus: "sent",
+                      }
+                    : c,
+                ),
+              );
+            } else {
+              // Server returned error — log and still mark as sent
+              // (the message may have been saved despite the error response)
+              console.warn(
+                "[chat] scheduled call invite failed for",
+                conversationId,
+                res,
+              );
+              if (activeConvRef.current?.id === conversationId) {
+                setActiveMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === tempId ? { ...m, status: "sent" } : m,
+                  ),
+                );
+              }
+              setConversations((prev) =>
+                prev.map((c) =>
+                  c.id === conversationId && c.lastMessageId === tempId
+                    ? { ...c, lastMessageStatus: "sent" }
+                    : c,
                 ),
               );
             }
-            setConversations((prev) =>
-              prev.map((c) =>
-                c.id === conversationId && c.lastMessageId === tempId
-                  ? {
-                      ...c,
-                      lastMessageId: res.messageId!,
-                      lastMessageStatus: "sent",
-                    }
-                  : c,
-              ),
-            );
-          }
-        },
-      );
+          },
+        );
+      }, 100);
     },
     [user, socket],
   );

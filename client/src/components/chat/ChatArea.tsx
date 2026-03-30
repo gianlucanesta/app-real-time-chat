@@ -390,19 +390,21 @@ export function ChatArea({
     el.scrollIntoView({ behavior: "smooth", block: "center" });
     // Brief highlight flash
     el.classList.add(
-      "ring-2",
-      "ring-accent",
-      "ring-offset-1",
+      "ring-1",
+      "ring-accent/30",
+      "bg-accent/5",
       "rounded-2xl",
       "transition-all",
+      "duration-500",
     );
     setTimeout(() => {
       el.classList.remove(
-        "ring-2",
-        "ring-accent",
-        "ring-offset-1",
+        "ring-1",
+        "ring-accent/30",
+        "bg-accent/5",
         "rounded-2xl",
         "transition-all",
+        "duration-500",
       );
     }, 1500);
   }, []);
