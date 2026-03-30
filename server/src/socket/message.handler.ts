@@ -92,6 +92,10 @@ export function registerMessageHandlers(
 
       try {
         const expires_at = (Message as any).buildExpiresAt();
+        const senderProfile = await UserModel.findById(userId).catch(
+          () => null,
+        );
+
         const msg = await Message.create({
           conversationId,
           sender: userId,
@@ -103,6 +107,12 @@ export function registerMessageHandlers(
           viewOnce: !!viewOnce,
           linkPreview: linkPreview || null,
           statusReply: statusReply || null,
+          senderDisplayName: displayName,
+          senderInitials: senderProfile?.initials ?? "",
+          senderGradient:
+            senderProfile?.avatar_gradient ??
+            "linear-gradient(135deg,#2563EB,#7C3AED)",
+          senderAvatarUrl: senderProfile?.avatar_url ?? null,
           expires_at,
         });
 
@@ -114,10 +124,6 @@ export function registerMessageHandlers(
             (redisErr as Error).message,
           );
         }
-
-        const senderProfile = await UserModel.findById(userId).catch(
-          () => null,
-        );
 
         const msgPayload = {
           ...msg.toObject(),

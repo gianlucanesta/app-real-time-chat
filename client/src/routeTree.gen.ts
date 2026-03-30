@@ -25,6 +25,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedCommunityRouteImport } from './routes/_authenticated.community'
 import { Route as AuthenticatedChannelsRouteImport } from './routes/_authenticated.channels'
 import { Route as AuthenticatedCallsRouteImport } from './routes/_authenticated.calls'
+import { Route as AuthenticatedArchiveRouteImport } from './routes/_authenticated.archive'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -105,6 +106,11 @@ const AuthenticatedCallsRoute = AuthenticatedCallsRouteImport.update({
   path: '/calls',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedArchiveRoute = AuthenticatedArchiveRouteImport.update({
+  id: '/archive',
+  path: '/archive',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/support': typeof SupportRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/archive': typeof AuthenticatedArchiveRoute
   '/calls': typeof AuthenticatedCallsRoute
   '/channels': typeof AuthenticatedChannelsRoute
   '/community': typeof AuthenticatedCommunityRoute
@@ -133,6 +140,7 @@ export interface FileRoutesByTo {
   '/support': typeof SupportRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/archive': typeof AuthenticatedArchiveRoute
   '/calls': typeof AuthenticatedCallsRoute
   '/channels': typeof AuthenticatedChannelsRoute
   '/community': typeof AuthenticatedCommunityRoute
@@ -152,6 +160,7 @@ export interface FileRoutesById {
   '/support': typeof SupportRoute
   '/terms-of-service': typeof TermsOfServiceRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/_authenticated/archive': typeof AuthenticatedArchiveRoute
   '/_authenticated/calls': typeof AuthenticatedCallsRoute
   '/_authenticated/channels': typeof AuthenticatedChannelsRoute
   '/_authenticated/community': typeof AuthenticatedCommunityRoute
@@ -172,6 +181,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/terms-of-service'
     | '/verify-email'
+    | '/archive'
     | '/calls'
     | '/channels'
     | '/community'
@@ -188,6 +198,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/terms-of-service'
     | '/verify-email'
+    | '/archive'
     | '/calls'
     | '/channels'
     | '/community'
@@ -206,6 +217,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/terms-of-service'
     | '/verify-email'
+    | '/_authenticated/archive'
     | '/_authenticated/calls'
     | '/_authenticated/channels'
     | '/_authenticated/community'
@@ -341,10 +353,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCallsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/archive': {
+      id: '/_authenticated/archive'
+      path: '/archive'
+      fullPath: '/archive'
+      preLoaderRoute: typeof AuthenticatedArchiveRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedArchiveRoute: typeof AuthenticatedArchiveRoute
   AuthenticatedCallsRoute: typeof AuthenticatedCallsRoute
   AuthenticatedChannelsRoute: typeof AuthenticatedChannelsRoute
   AuthenticatedCommunityRoute: typeof AuthenticatedCommunityRoute
@@ -354,6 +374,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedArchiveRoute: AuthenticatedArchiveRoute,
   AuthenticatedCallsRoute: AuthenticatedCallsRoute,
   AuthenticatedChannelsRoute: AuthenticatedChannelsRoute,
   AuthenticatedCommunityRoute: AuthenticatedCommunityRoute,

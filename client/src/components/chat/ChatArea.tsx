@@ -35,7 +35,10 @@ import { VoiceRecorder } from "./VoiceRecorder";
 import { MediaPreviewScreen } from "./MediaPreviewScreen";
 import { MediaViewer, type MediaItem } from "./MediaViewer";
 import { EmojiPicker } from "./EmojiPicker";
-import { MuteConversationModal, type MuteDuration } from "./MuteConversationModal";
+import {
+  MuteConversationModal,
+  type MuteDuration,
+} from "./MuteConversationModal";
 import { useChat, type Message } from "../../contexts/ChatContext";
 import type { LinkPreview } from "../../types";
 import { useAuth } from "../../contexts/AuthContext";
@@ -304,7 +307,11 @@ export function ChatArea({
   // Call & Modal State
   const webrtc = useChat().webrtc;
   const [activeModal, setActiveModal] = useState<
-    "delete-messages" | "clear-chat" | "delete-chat" | "mute-notifications" | null
+    | "delete-messages"
+    | "clear-chat"
+    | "delete-chat"
+    | "mute-notifications"
+    | null
   >(null);
 
   const contactName = activeConversation?.name || "";
@@ -1004,7 +1011,9 @@ export function ChatArea({
                   }}
                 >
                   <BellOff className="w-4 h-4 text-text-secondary" />
-                  {liveConv?.isMuted ? "Unmute notifications" : "Mute notifications"}
+                  {liveConv?.isMuted
+                    ? "Unmute notifications"
+                    : "Mute notifications"}
                 </button>
                 <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors">
                   <Timer className="w-4 h-4 text-text-secondary" /> Disappearing
@@ -1070,17 +1079,21 @@ export function ChatArea({
         className={`flex-1 min-h-0 overflow-y-auto px-4 md:px-8 flex flex-col pt-6 pb-4 scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-toggle-off ${isSelectMode ? "select-mode" : ""}`}
       >
         {messagesLoading ? (
-          <div className="flex flex-col gap-3 py-2" aria-busy="true" aria-label="Loading messages">
+          <div
+            className="flex flex-col gap-3 py-2"
+            aria-busy="true"
+            aria-label="Loading messages"
+          >
             {/* Skeleton rows: alternating received / sent to mimic a real conversation */}
             {[
               { sent: false, widths: ["w-48", "w-32"] },
-              { sent: true,  widths: ["w-56"] },
+              { sent: true, widths: ["w-56"] },
               { sent: false, widths: ["w-64", "w-40"] },
-              { sent: true,  widths: ["w-40", "w-52"] },
+              { sent: true, widths: ["w-40", "w-52"] },
               { sent: false, widths: ["w-36"] },
-              { sent: true,  widths: ["w-60"] },
+              { sent: true, widths: ["w-60"] },
               { sent: false, widths: ["w-44", "w-28"] },
-              { sent: true,  widths: ["w-52", "w-36"] },
+              { sent: true, widths: ["w-52", "w-36"] },
             ].map((row, i) => (
               <div
                 key={i}
@@ -1097,7 +1110,10 @@ export function ChatArea({
                   } animate-pulse`}
                 >
                   {row.widths.map((w, j) => (
-                    <div key={j} className={`h-3 rounded-full bg-border/70 ${w}`} />
+                    <div
+                      key={j}
+                      className={`h-3 rounded-full bg-border/70 ${w}`}
+                    />
                   ))}
                   {/* Timestamp bar */}
                   <div className="h-2 w-10 rounded-full bg-border/50 self-end mt-0.5" />
@@ -1116,43 +1132,68 @@ export function ChatArea({
                   </span>
                 </div>
 
-                {msgs.map((msg) => (
-                  <ChatMessage
-                    key={msg.id}
-                    id={msg.id}
-                    text={msg.text}
-                    time={msg.timestamp}
-                    isSent={msg.isMe}
-                    status={msg.status}
-                    mediaUrl={msg.mediaUrl}
-                    mediaType={msg.mediaType}
-                    mediaDuration={msg.mediaDuration}
-                    mediaFileName={msg.mediaFileName}
-                    isUploading={msg.isUploading}
-                    viewOnce={msg.viewOnce}
-                    viewedAt={msg.viewedAt}
-                    contactInitials={msg.isMe ? myInitials : contactInitials}
-                    contactGradient={msg.isMe ? myGradient : contactGradient}
-                    contactAvatarUrl={msg.isMe ? myAvatarUrl : contactAvatarUrl}
-                    isSelectMode={isSelectMode}
-                    isSelected={selectedMessages.includes(msg.id)}
-                    onToggleSelect={() => toggleMessageSelection(msg.id)}
-                    onCopy={() => handleCopyMessage(msg.text)}
-                    onEnterSelectMode={(reason) =>
-                      handleEnterSelectMode(msg.id, reason)
-                    }
-                    reactions={reactions[msg.id]}
-                    onReaction={(emoji) => reactToMessage(msg.id, emoji)}
-                    currentUserId={user?.id}
-                    onViewOnceOpen={() => markViewOnceOpened(msg.id)}
-                    onOpenMedia={() => {
-                      const idx = allMedia.findIndex((m) => m.messageId === msg.id);
-                      if (idx >= 0) setMediaViewerIndex(idx);
-                    }}
-                    linkPreview={msg.linkPreview}
-                    statusReply={msg.statusReply}
-                  />
-                ))}
+                {msgs.map((msg) => {
+                  const isGroup = activeConversation?.type === "group";
+                  return (
+                    <ChatMessage
+                      key={msg.id}
+                      id={msg.id}
+                      text={msg.text}
+                      time={msg.timestamp}
+                      isSent={msg.isMe}
+                      isGroupChat={isGroup}
+                      senderName={!msg.isMe ? msg.senderName : undefined}
+                      status={msg.status}
+                      mediaUrl={msg.mediaUrl}
+                      mediaType={msg.mediaType}
+                      mediaDuration={msg.mediaDuration}
+                      mediaFileName={msg.mediaFileName}
+                      isUploading={msg.isUploading}
+                      viewOnce={msg.viewOnce}
+                      viewedAt={msg.viewedAt}
+                      contactInitials={
+                        msg.isMe
+                          ? myInitials
+                          : isGroup && msg.senderInitials
+                            ? msg.senderInitials
+                            : contactInitials
+                      }
+                      contactGradient={
+                        msg.isMe
+                          ? myGradient
+                          : isGroup && msg.senderGradient
+                            ? msg.senderGradient
+                            : contactGradient
+                      }
+                      contactAvatarUrl={
+                        msg.isMe
+                          ? myAvatarUrl
+                          : isGroup && msg.senderAvatarUrl !== undefined
+                            ? msg.senderAvatarUrl
+                            : contactAvatarUrl
+                      }
+                      isSelectMode={isSelectMode}
+                      isSelected={selectedMessages.includes(msg.id)}
+                      onToggleSelect={() => toggleMessageSelection(msg.id)}
+                      onCopy={() => handleCopyMessage(msg.text)}
+                      onEnterSelectMode={(reason) =>
+                        handleEnterSelectMode(msg.id, reason)
+                      }
+                      reactions={reactions[msg.id]}
+                      onReaction={(emoji) => reactToMessage(msg.id, emoji)}
+                      currentUserId={user?.id}
+                      onViewOnceOpen={() => markViewOnceOpened(msg.id)}
+                      onOpenMedia={() => {
+                        const idx = allMedia.findIndex(
+                          (m) => m.messageId === msg.id,
+                        );
+                        if (idx >= 0) setMediaViewerIndex(idx);
+                      }}
+                      linkPreview={msg.linkPreview}
+                      statusReply={msg.statusReply}
+                    />
+                  );
+                })}
               </div>
             ))}
 
@@ -1580,7 +1621,8 @@ export function ChatArea({
         isMuted={liveConv?.isMuted ?? false}
         onCancel={() => setActiveModal(null)}
         onMute={(duration: MuteDuration) => {
-          if (activeConversation) muteConversation(activeConversation.id, duration);
+          if (activeConversation)
+            muteConversation(activeConversation.id, duration);
           setActiveModal(null);
           toast.showToast("Notifications muted", "success");
         }}

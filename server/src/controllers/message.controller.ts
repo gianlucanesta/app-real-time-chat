@@ -6,6 +6,7 @@ import type {
 import { Message, MESSAGE_TTL_SECONDS } from "../models/message.model.js";
 import { redis } from "../config/redis.js";
 import { deleteCloudinaryAssetsForMessages } from "../services/cloudinary.service.js";
+import * as UserModel from "../models/user.model.js";
 
 const MAX_TEXT_LENGTH = 4096;
 
@@ -32,6 +33,34 @@ export async function list(
       .sort({ createdAt: 1 })
       .limit(200)
       .lean();
+
+    // Enrich messages missing sender profile (backward compat for old messages)
+    const senderIds = [
+      ...new Set(
+        messages
+          .filter((m: any) => !m.senderDisplayName && m.sender)
+          .map((m: any) => m.sender as string),
+      ),
+    ];
+    let profileMap: Record<string, any> = {};
+    if (senderIds.length > 0) {
+      const profiles = await Promise.all(
+        senderIds.map((id) => UserModel.findById(id).catch(() => null)),
+      );
+      for (let i = 0; i < senderIds.length; i++) {
+        if (profiles[i]) profileMap[senderIds[i]] = profiles[i];
+      }
+      for (const msg of messages as any[]) {
+        if (!msg.senderDisplayName && profileMap[msg.sender]) {
+          const p = profileMap[msg.sender];
+          msg.senderDisplayName = p.display_name ?? null;
+          msg.senderInitials = p.initials ?? null;
+          msg.senderGradient =
+            p.avatar_gradient ?? "linear-gradient(135deg,#2563EB,#7C3AED)";
+          msg.senderAvatarUrl = p.avatar_url ?? null;
+        }
+      }
+    }
 
     res.status(200).json({ messages });
   } catch (err) {

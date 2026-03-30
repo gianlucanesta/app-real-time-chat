@@ -32,6 +32,8 @@ interface ChatMessageProps {
   text: string;
   time: string;
   isSent: boolean;
+  isGroupChat?: boolean;
+  senderName?: string;
   contactInitials?: string;
   contactGradient?: string;
   contactAvatarUrl?: string | null;
@@ -71,6 +73,8 @@ export function ChatMessage({
   text,
   time,
   isSent,
+  isGroupChat = false,
+  senderName,
   contactInitials,
   contactGradient,
   contactAvatarUrl,
@@ -287,6 +291,30 @@ export function ChatMessage({
 
         {/* Avatar for received messages — removed */}
 
+        {/* Avatar for received messages in group chats */}
+        {isGroupChat && !isSent && !isSelectMode && (
+          <div className="w-8 h-8 min-w-[32px] rounded-full shrink-0 mr-2 self-end mb-1 overflow-hidden">
+            {contactAvatarUrl ? (
+              <img
+                src={contactAvatarUrl}
+                alt={senderName || ""}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div
+                className="w-full h-full flex items-center justify-center text-[11px] font-semibold text-white"
+                style={{
+                  background:
+                    contactGradient ||
+                    "linear-gradient(135deg,#2563EB,#7C3AED)",
+                }}
+              >
+                {contactInitials || "?"}
+              </div>
+            )}
+          </div>
+        )}
+
         <div
           ref={contextMenuRef}
           className={`relative flex flex-col ${isSelectMode && isSent ? "items-end ml-auto" : ""}`}
@@ -310,6 +338,20 @@ export function ChatMessage({
                   : undefined
               }
             >
+              {/* Sender name for group received messages */}
+              {isGroupChat && !isSent && senderName && (
+                <div
+                  className={`text-[12px] font-semibold truncate ${
+                    isMediaBubble
+                      ? "absolute top-0 left-0 right-0 z-10 px-3 pt-2 pb-4 bg-gradient-to-b from-black/50 to-transparent text-white rounded-t-2xl"
+                      : statusReply
+                        ? "text-accent px-3 pt-2 pb-0"
+                        : "text-accent mb-1"
+                  }`}
+                >
+                  {senderName}
+                </div>
+              )}
               {/* Media content or view-once placeholder */}
               {isViewOnceHidden ? (
                 <div className="flex items-center gap-2 py-1">

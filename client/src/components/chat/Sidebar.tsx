@@ -33,7 +33,10 @@ import { SidebarSkeleton } from "../ui/Skeleton";
 import { NewChatPanel } from "./NewChatPanel";
 import { NewContactPanel } from "./NewContactPanel";
 import { NewGroupPanel } from "./NewGroupPanel";
-import { MuteConversationModal, type MuteDuration } from "./MuteConversationModal";
+import {
+  MuteConversationModal,
+  type MuteDuration,
+} from "./MuteConversationModal";
 
 interface SidebarProps {
   onOpenNewChat?: () => void;
@@ -186,6 +189,13 @@ export function Sidebar({
     clearConversationById,
     muteConversation,
     unmuteConversation,
+    archiveConversation,
+    pinConversation,
+    unpinConversation,
+    addToFavorites,
+    removeFromFavorites,
+    blockConversationUser,
+    deleteConversationById,
   } = useChat();
 
   const [mutingConvId, setMutingConvId] = useState<string | null>(null);
@@ -212,15 +222,16 @@ export function Sidebar({
   const filteredConversations = useMemo(() => {
     let list = [...conversations];
 
+    // Always hide archived chats from main sidebar
+    list = list.filter((c) => !c.isArchived);
+
     // Apply filter chip
     if (activeFilter === "Unread") {
       list = list.filter((c) => c.unreadCount > 0);
     } else if (activeFilter === "Groups") {
       list = list.filter((c) => c.type === "group");
-    }
-    // "Favorites", "Archived", "Muted" — no data yet, show empty
-    if (["Favorites", "Archived", "Muted"].includes(activeFilter)) {
-      list = [];
+    } else if (activeFilter === "Favorites") {
+      list = list.filter((c) => c.isFavorite);
     }
 
     // Apply search
@@ -229,8 +240,10 @@ export function Sidebar({
       list = list.filter((c) => c.name.toLowerCase().includes(q));
     }
 
-    // Sort by last message timestamp (most recent first)
+    // Sort: pinned first, then by last message timestamp (most recent first)
     list.sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
       const ta = a.lastMessageTimestamp
         ? new Date(a.lastMessageTimestamp).getTime()
         : 0;
@@ -611,6 +624,7 @@ export function Sidebar({
                         <div
                           onClick={(e) => {
                             e.stopPropagation();
+                            archiveConversation(chat.id);
                             setOpenConvMenuId(null);
                           }}
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-text-main hover:bg-input/80 transition-colors cursor-pointer"
@@ -627,17 +641,21 @@ export function Sidebar({
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-text-main hover:bg-input/80 transition-colors cursor-pointer"
                         >
                           <BellOff className="w-4 h-4 text-text-secondary" />{" "}
-                          {chat.isMuted ? "Unmute notifications" : "Mute notifications"}
+                          {chat.isMuted
+                            ? "Unmute notifications"
+                            : "Mute notifications"}
                         </div>
                         <div
                           onClick={(e) => {
                             e.stopPropagation();
+                            if (chat.isPinned) unpinConversation(chat.id);
+                            else pinConversation(chat.id);
                             setOpenConvMenuId(null);
                           }}
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-text-main hover:bg-input/80 transition-colors cursor-pointer"
                         >
-                          <Pin className="w-4 h-4 text-text-secondary" /> Pin
-                          chat
+                          <Pin className="w-4 h-4 text-text-secondary" />{" "}
+                          {chat.isPinned ? "Unpin chat" : "Pin chat"}
                         </div>
                         <div
                           onClick={(e) => {
@@ -653,12 +671,16 @@ export function Sidebar({
                         <div
                           onClick={(e) => {
                             e.stopPropagation();
+                            if (chat.isFavorite) removeFromFavorites(chat.id);
+                            else addToFavorites(chat.id);
                             setOpenConvMenuId(null);
                           }}
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] text-text-main hover:bg-input/80 transition-colors cursor-pointer"
                         >
-                          <Star className="w-4 h-4 text-text-secondary" /> Add
-                          to favorites
+                          <Star className="w-4 h-4 text-text-secondary" />{" "}
+                          {chat.isFavorite
+                            ? "Remove from favorites"
+                            : "Add to favorites"}
                         </div>
                         <div
                           onClick={(e) => {
@@ -684,6 +706,7 @@ export function Sidebar({
                         <div
                           onClick={(e) => {
                             e.stopPropagation();
+                            void blockConversationUser(chat.id);
                             setOpenConvMenuId(null);
                           }}
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-danger hover:bg-danger/10 transition-colors cursor-pointer"
@@ -703,6 +726,7 @@ export function Sidebar({
                         <div
                           onClick={(e) => {
                             e.stopPropagation();
+                            deleteConversationById(chat.id);
                             setOpenConvMenuId(null);
                           }}
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-danger hover:bg-danger/10 transition-colors cursor-pointer"
@@ -847,25 +871,26 @@ export function Sidebar({
       <div className="h-[4px] md:hidden shrink-0"></div>
 
       {/* Mute modal (triggered from per-conversation context menu) */}
-      {mutingConvId && (() => {
-        const conv = conversations.find((c) => c.id === mutingConvId);
-        return (
-          <MuteConversationModal
-            isOpen={true}
-            conversationName={conv?.name ?? ""}
-            isMuted={conv?.isMuted ?? false}
-            onCancel={() => setMutingConvId(null)}
-            onMute={(duration: MuteDuration) => {
-              muteConversation(mutingConvId, duration);
-              setMutingConvId(null);
-            }}
-            onUnmute={() => {
-              unmuteConversation(mutingConvId);
-              setMutingConvId(null);
-            }}
-          />
-        );
-      })()}
+      {mutingConvId &&
+        (() => {
+          const conv = conversations.find((c) => c.id === mutingConvId);
+          return (
+            <MuteConversationModal
+              isOpen={true}
+              conversationName={conv?.name ?? ""}
+              isMuted={conv?.isMuted ?? false}
+              onCancel={() => setMutingConvId(null)}
+              onMute={(duration: MuteDuration) => {
+                muteConversation(mutingConvId, duration);
+                setMutingConvId(null);
+              }}
+              onUnmute={() => {
+                unmuteConversation(mutingConvId);
+                setMutingConvId(null);
+              }}
+            />
+          );
+        })()}
     </aside>
   );
 }

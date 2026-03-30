@@ -31,6 +31,9 @@ export interface Message {
   id: string;
   senderId: string;
   senderName: string;
+  senderInitials?: string;
+  senderGradient?: string;
+  senderAvatarUrl?: string | null;
   text: string;
   mediaUrl?: string | null;
   mediaType?: "image" | "video" | "audio" | "document" | null;
@@ -95,6 +98,9 @@ export interface Conversation {
   typingName?: string;
   isMuted?: boolean;
   mutedUntil?: string;
+  isArchived?: boolean;
+  isPinned?: boolean;
+  isFavorite?: boolean;
 }
 
 interface ChatContextType {
@@ -140,6 +146,15 @@ interface ChatContextType {
   clearConversationById: (convId: string) => void;
   muteConversation: (convId: string, duration: "8h" | "1w" | "always") => void;
   unmuteConversation: (convId: string) => void;
+  archiveConversation: (convId: string) => void;
+  unarchiveConversation: (convId: string) => void;
+  pinConversation: (convId: string) => void;
+  unpinConversation: (convId: string) => void;
+  addToFavorites: (convId: string) => void;
+  removeFromFavorites: (convId: string) => void;
+  blockConversationUser: (convId: string) => Promise<void>;
+  unblockConversationUser: (convId: string) => Promise<void>;
+  deleteConversationById: (convId: string) => void;
   pendingRemoteDeletions: string[];
   confirmRemoteDeletion: (ids: string[]) => void;
   reactions: Record<string, Reaction[]>;
@@ -268,6 +283,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
               localStorage.removeItem(`muted_${c.id}`);
             }
           }
+          const isArchived =
+            localStorage.getItem(`archived_${c.id}`) === "true";
+          const isPinned = localStorage.getItem(`pinned_${c.id}`) === "true";
+          const isFavorite =
+            localStorage.getItem(`favorite_${c.id}`) === "true";
           return {
             ...c,
             lastMessageTimestamp: c.lastMessageTime || undefined,
@@ -280,6 +300,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             ),
             isMuted,
             mutedUntil,
+            isArchived,
+            isPinned,
+            isFavorite,
           };
         }),
       );
@@ -338,6 +361,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         viewedAt?: string | null;
         status: string;
         createdAt: string;
+        senderDisplayName?: string | null;
+        senderInitials?: string | null;
+        senderGradient?: string | null;
+        senderAvatarUrl?: string | null;
         reactions?: Array<{
           userId: string;
           emoji: string;
@@ -366,9 +393,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             id: m._id,
             senderId: m.sender,
             senderName:
-              m.sender === user?.id
+              m.senderDisplayName ??
+              (m.sender === user?.id
                 ? (user?.displayName ?? "Me")
-                : activeConversation.name,
+                : activeConversation.name),
+            senderInitials: m.senderInitials ?? undefined,
+            senderGradient: m.senderGradient ?? undefined,
+            senderAvatarUrl: m.senderAvatarUrl ?? null,
             text: m.text,
             mediaUrl: m.mediaUrl || null,
             mediaType: m.mediaType || null,
@@ -460,6 +491,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         senderName:
           msg.senderDisplayName ??
           (isMe ? (user.displayName ?? "Me") : "Unknown"),
+        senderInitials: msg.senderInitials ?? undefined,
+        senderGradient: msg.senderGradient ?? undefined,
+        senderAvatarUrl: msg.senderAvatarUrl ?? null,
         text: msg.text,
         mediaUrl: msg.mediaUrl || null,
         mediaType: msg.mediaType || null,
@@ -1764,6 +1798,93 @@ export function ChatProvider({ children }: { children: ReactNode }) {
               prev ? { ...prev, isMuted: false, mutedUntil: undefined } : prev,
             );
           }
+        },
+        archiveConversation: (convId: string) => {
+          localStorage.setItem(`archived_${convId}`, "true");
+          setConversations((prev) =>
+            prev.map((c) => (c.id === convId ? { ...c, isArchived: true } : c)),
+          );
+          if (activeConversation?.id === convId) {
+            setActiveConversation(null);
+          }
+        },
+        unarchiveConversation: (convId: string) => {
+          localStorage.removeItem(`archived_${convId}`);
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === convId ? { ...c, isArchived: false } : c,
+            ),
+          );
+        },
+        pinConversation: (convId: string) => {
+          localStorage.setItem(`pinned_${convId}`, "true");
+          setConversations((prev) =>
+            prev.map((c) => (c.id === convId ? { ...c, isPinned: true } : c)),
+          );
+        },
+        unpinConversation: (convId: string) => {
+          localStorage.removeItem(`pinned_${convId}`);
+          setConversations((prev) =>
+            prev.map((c) => (c.id === convId ? { ...c, isPinned: false } : c)),
+          );
+        },
+        addToFavorites: (convId: string) => {
+          localStorage.setItem(`favorite_${convId}`, "true");
+          setConversations((prev) =>
+            prev.map((c) => (c.id === convId ? { ...c, isFavorite: true } : c)),
+          );
+        },
+        removeFromFavorites: (convId: string) => {
+          localStorage.removeItem(`favorite_${convId}`);
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === convId ? { ...c, isFavorite: false } : c,
+            ),
+          );
+        },
+        blockConversationUser: async (convId: string) => {
+          const parts = convId.split("___");
+          const partnerId = parts.find((p) => p !== user?.id) ?? parts[0];
+          if (!partnerId || convId.startsWith("grp_")) return;
+          try {
+            await apiFetch("/users/block", {
+              method: "POST",
+              body: JSON.stringify({ userId: partnerId }),
+            });
+          } catch (err) {
+            console.warn("[chat] block user failed:", (err as Error).message);
+          }
+        },
+        unblockConversationUser: async (convId: string) => {
+          const parts = convId.split("___");
+          const partnerId = parts.find((p) => p !== user?.id) ?? parts[0];
+          if (!partnerId || convId.startsWith("grp_")) return;
+          try {
+            await apiFetch(`/users/block/${partnerId}`, { method: "DELETE" });
+          } catch (err) {
+            console.warn("[chat] unblock user failed:", (err as Error).message);
+          }
+        },
+        deleteConversationById: (convId: string) => {
+          // Clear messages locally
+          if (activeConversation?.id === convId) {
+            setActiveMessages([]);
+            setActiveConversation(null);
+          }
+          // Remove conversation from sidebar
+          setConversations((prev) => prev.filter((c) => c.id !== convId));
+          // Clean up localStorage
+          localStorage.removeItem(`archived_${convId}`);
+          localStorage.removeItem(`pinned_${convId}`);
+          localStorage.removeItem(`favorite_${convId}`);
+          localStorage.removeItem(`muted_${convId}`);
+          // Delete messages on server
+          apiFetch(`/messages/${convId}`, { method: "DELETE" }).catch((err) =>
+            console.warn(
+              "[chat] delete conversation failed:",
+              (err as Error).message,
+            ),
+          );
         },
         pendingRemoteDeletions,
         confirmRemoteDeletion,

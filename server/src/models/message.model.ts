@@ -12,6 +12,11 @@ const messageSchema = new mongoose.Schema({
     type: String, // UUID from PostgreSQL users table
     required: true,
   },
+  // Denormalized sender profile for group chat display
+  senderDisplayName: { type: String, default: null },
+  senderInitials: { type: String, default: null },
+  senderGradient: { type: String, default: null },
+  senderAvatarUrl: { type: String, default: null },
   text: {
     type: String,
     default: "",
@@ -75,7 +80,11 @@ const messageSchema = new mongoose.Schema({
   // Status reply: reference to the status item being replied to
   statusReply: {
     type: {
-      mediaType: { type: String, enum: ["text", "image", "video"], required: true },
+      mediaType: {
+        type: String,
+        enum: ["text", "image", "video"],
+        required: true,
+      },
       text: { type: String, default: null },
       textBgGradient: { type: String, default: null },
       mediaUrl: { type: String, default: null },
