@@ -1,7 +1,14 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { CallsSidebar } from "../components/chat/CallsSidebar";
 import { CallInfoPanel } from "../components/chat/CallInfoPanel";
+import { StartCallModal } from "../components/chat/StartCallModal";
+import { CallLinkModal } from "../components/chat/CallLinkModal";
+import { DialpadPanel } from "../components/chat/DialpadPanel";
+import {
+  ScheduleCallModal,
+  type ScheduledCall,
+} from "../components/chat/ScheduleCallModal";
 import { useChat } from "../contexts/ChatContext";
 import type { CallGroup, CallRecord } from "../types";
 
@@ -219,6 +226,24 @@ function CallsPage() {
   const [selectedGroup, setSelectedGroup] = useState<CallGroup | null>(null);
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
 
+  // Modal states
+  const [showStartCall, setShowStartCall] = useState(false);
+  const [showCallLink, setShowCallLink] = useState(false);
+  const [showDialpad, setShowDialpad] = useState(false);
+  const [showScheduleCall, setShowScheduleCall] = useState(false);
+
+  // Scheduled calls list
+  const [scheduledCalls, setScheduledCalls] = useState<ScheduledCall[]>([]);
+  const scheduledTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map(),
+  );
+  const endWarningTimersRef = useRef<
+    Map<string, ReturnType<typeof setTimeout>>
+  >(new Map());
+  const endTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map(),
+  );
+
   // Build call groups from conversations
   const callGroups = useMemo(
     () => buildCallGroupsFromConversations(conversations),
@@ -252,17 +277,129 @@ function CallsPage() {
     }
   };
 
+  // Start call from modal (contact picker)
+  const handleStartCallFromModal = useCallback(
+    (contactId: string, withVideo: boolean) => {
+      void webrtc.startCall(contactId, withVideo);
+    },
+    [webrtc],
+  );
+
+  // Call from dialpad (phone lookup)
+  const handleCallFromDialpad = useCallback(
+    (userId: string, withVideo: boolean) => {
+      void webrtc.startCall(userId, withVideo);
+    },
+    [webrtc],
+  );
+
+  // Schedule call handler — sets up timers for auto-start and end
+  const handleScheduleCall = useCallback(
+    (scheduled: ScheduledCall) => {
+      setScheduledCalls((prev) => [...prev, scheduled]);
+
+      const startMs =
+        new Date(scheduled.startDate).getTime() - Date.now();
+      const endMs = new Date(scheduled.endDate).getTime() - Date.now();
+      // Warning: 5 min before end
+      const warnMs = endMs - 5 * 60 * 1000;
+
+      // Timer to auto-start the call
+      if (startMs > 0) {
+        const startTimer = setTimeout(() => {
+          // Auto-start: call participants
+          if (scheduled.participants.length > 0) {
+            void webrtc.startCall(
+              scheduled.participants[0],
+              scheduled.callType === "video",
+            );
+          }
+          scheduledTimersRef.current.delete(scheduled.id);
+        }, startMs);
+        scheduledTimersRef.current.set(scheduled.id, startTimer);
+      }
+
+      // Timer to warn 5 min before end
+      if (warnMs > 0) {
+        const warnTimer = setTimeout(() => {
+          const endTime = new Date(scheduled.endDate).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          // Show browser notification as warning
+          if (Notification.permission === "granted") {
+            new Notification("Scheduled call ending soon", {
+              body: `"${scheduled.name}" will end at ${endTime}`,
+              icon: "/favicon.ico",
+            });
+          }
+          endWarningTimersRef.current.delete(scheduled.id);
+        }, warnMs);
+        endWarningTimersRef.current.set(scheduled.id, warnTimer);
+      }
+
+      // Timer to auto-end the call
+      if (endMs > 0) {
+        const endTimer = setTimeout(() => {
+          // If a call is active, end it
+          if (
+            webrtc.status === "connected" ||
+            webrtc.status === "connecting" ||
+            webrtc.status === "calling"
+          ) {
+            if (Notification.permission === "granted") {
+              new Notification("Scheduled call ended", {
+                body: `"${scheduled.name}" has ended`,
+                icon: "/favicon.ico",
+              });
+            }
+            webrtc.endCall();
+          }
+          // Remove from scheduled list
+          setScheduledCalls((prev) =>
+            prev.filter((c) => c.id !== scheduled.id),
+          );
+          endTimersRef.current.delete(scheduled.id);
+        }, endMs);
+        endTimersRef.current.set(scheduled.id, endTimer);
+      }
+    },
+    [webrtc],
+  );
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      scheduledTimersRef.current.forEach((t) => clearTimeout(t));
+      endWarningTimersRef.current.forEach((t) => clearTimeout(t));
+      endTimersRef.current.forEach((t) => clearTimeout(t));
+    };
+  }, []);
+
+  // Request notification permission (for scheduled call warnings)
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      void Notification.requestPermission();
+    }
+  }, []);
+
   return (
     <div className="h-screen max-h-screen flex overflow-hidden font-sans bg-bg text-text-main">
       {/* Left: Call list */}
       <div
-        className={`${mobileShowDetail ? "hidden" : "flex"} md:flex w-full md:w-auto`}
+        className={`${mobileShowDetail ? "hidden" : "flex"} md:flex w-full md:w-auto relative`}
       >
         <CallsSidebar
           callGroups={recent}
           favorites={favorites}
           selectedCallGroup={selectedGroup}
           onSelectCallGroup={handleSelectGroup}
+        />
+        {/* Dialpad overlays the sidebar */}
+        <DialpadPanel
+          open={showDialpad}
+          onClose={() => setShowDialpad(false)}
+          onCallUser={handleCallFromDialpad}
         />
       </div>
 
@@ -275,8 +412,28 @@ function CallsPage() {
           onClose={handleCloseDetail}
           onStartVoiceCall={handleStartVoiceCall}
           onStartVideoCall={handleStartVideoCall}
+          onStartCall={() => setShowStartCall(true)}
+          onNewCallLink={() => setShowCallLink(true)}
+          onCallNumber={() => setShowDialpad(true)}
+          onScheduleCall={() => setShowScheduleCall(true)}
         />
       </div>
+
+      {/* Modals */}
+      <StartCallModal
+        open={showStartCall}
+        onClose={() => setShowStartCall(false)}
+        onStartCall={handleStartCallFromModal}
+      />
+      <CallLinkModal
+        open={showCallLink}
+        onClose={() => setShowCallLink(false)}
+      />
+      <ScheduleCallModal
+        open={showScheduleCall}
+        onClose={() => setShowScheduleCall(false)}
+        onSchedule={handleScheduleCall}
+      />
     </div>
   );
 }

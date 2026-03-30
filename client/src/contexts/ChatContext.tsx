@@ -55,6 +55,13 @@ export interface Message {
     caption?: string | null;
     senderName: string;
   } | null;
+  quotedReply?: {
+    messageId: string;
+    senderName: string;
+    text: string;
+    mediaType?: "image" | "video" | "audio" | "document" | null;
+    mediaUrl?: string | null;
+  } | null;
 }
 
 export interface Reaction {
@@ -114,7 +121,11 @@ interface ChatContextType {
   mobileInChat: boolean;
   setActiveConversation: (conv: Conversation | null) => void;
   setMobileInChat: (v: boolean) => void;
-  sendMessage: (text: string, linkPreview?: LinkPreview | null) => void;
+  sendMessage: (
+    text: string,
+    linkPreview?: LinkPreview | null,
+    quotedReply?: Message["quotedReply"],
+  ) => void;
   sendMediaMessage: (media: {
     mediaUrl: string;
     mediaType: "image" | "video" | "audio" | "document";
@@ -413,6 +424,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             isMe: m.sender === user?.id,
             linkPreview: m.linkPreview || null,
             statusReply: (m as any).statusReply || null,
+            quotedReply: (m as any).quotedReply || null,
           })),
         );
 
@@ -507,6 +519,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         isMe,
         linkPreview: (msg as any).linkPreview || null,
         statusReply: (msg as any).statusReply || null,
+        quotedReply: (msg as any).quotedReply || null,
       };
 
       // For own messages, the optimistic update + ack callback already manages
@@ -1017,7 +1030,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   // ── Send message ─────────────────────────────────────────────────────────
   const sendMessage = useCallback(
-    (text: string, linkPreview?: LinkPreview | null) => {
+    (
+      text: string,
+      linkPreview?: LinkPreview | null,
+      quotedReply?: Message["quotedReply"],
+    ) => {
       if (!activeConversation || !user || !socket) return;
 
       const tempId = `temp-${Date.now()}`;
@@ -1035,6 +1052,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         status: "sending",
         isMe: true,
         linkPreview: linkPreview || null,
+        quotedReply: quotedReply || null,
       };
 
       setActiveMessages((prev) => [...prev, newMsg]);
@@ -1093,6 +1111,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           conversationId: activeConversation.id,
           text,
           linkPreview: linkPreview || null,
+          quotedReply: quotedReply || null,
         },
         (res) => {
           clearTimeout(ackTimeoutId);

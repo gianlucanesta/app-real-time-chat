@@ -172,6 +172,16 @@ export function ChatArea({
   );
   const [selectedMessages, setSelectedMessages] = useState<string[]>([]);
 
+  // Reply state
+  const [replyingTo, setReplyingTo] = useState<{
+    messageId: string;
+    senderName: string;
+    text: string;
+    mediaType?: "image" | "video" | "audio" | "document" | null;
+    mediaUrl?: string | null;
+  } | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
   // Attachment menu & voice recording
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -437,16 +447,24 @@ export function ChatArea({
 
   const handleSend = useCallback(() => {
     if (!inputValue.trim()) return;
-    sendMessage(inputValue.trim(), linkPreview);
+    sendMessage(inputValue.trim(), linkPreview, replyingTo ?? undefined);
     setInputValue("");
     setLinkPreview(null);
+    setReplyingTo(null);
     linkPreviewDismissed.current = false;
     if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
     if (isTypingRef.current && activeConversation && socket) {
       isTypingRef.current = false;
       socket.emit("typing:stop", activeConversation.id);
     }
-  }, [inputValue, linkPreview, sendMessage, activeConversation, socket]);
+  }, [
+    inputValue,
+    linkPreview,
+    replyingTo,
+    sendMessage,
+    activeConversation,
+    socket,
+  ]);
 
   // Handle file selection from AttachmentMenu → open preview screen
   const handleFileSelected = useCallback(
@@ -598,6 +616,7 @@ export function ChatArea({
     setOfflineTextVisible(true);
     setViewOnce(false);
     setMediaViewerIndex(null);
+    setReplyingTo(null);
     setPreviewFiles((prev) => {
       prev.forEach((f) => URL.revokeObjectURL(f.previewUrl));
       return [];
@@ -1069,7 +1088,7 @@ export function ChatArea({
                     }
                   }}
                 >
-                  <Trash2 className="w-4 h-4 text-text-secondary" /> Close chat
+                  <X className="w-4 h-4 text-text-secondary" /> Close chat
                 </button>
                 <div className="w-full h-px bg-border/50 my-1"></div>
                 <button className="w-full flex items-center gap-3 px-4 py-2.5 text-[13.5px] text-text-main hover:bg-input/80 transition-colors">
@@ -1220,8 +1239,21 @@ export function ChatArea({
                         );
                         if (idx >= 0) setMediaViewerIndex(idx);
                       }}
+                      onReply={() => {
+                        setReplyingTo({
+                          messageId: msg.id,
+                          senderName: msg.isMe
+                            ? "You"
+                            : msg.senderName || contactName,
+                          text: msg.text,
+                          mediaType: msg.mediaType,
+                          mediaUrl: msg.mediaUrl,
+                        });
+                        setTimeout(() => inputRef.current?.focus(), 50);
+                      }}
                       linkPreview={msg.linkPreview}
                       statusReply={msg.statusReply}
+                      quotedReply={msg.quotedReply}
                     />
                   );
                 })}
@@ -1444,100 +1476,132 @@ export function ChatArea({
             onToggleViewOnce={() => setViewOnce((v) => !v)}
           />
         ) : (
-          <div className="flex items-center bg-input/80 backdrop-blur-md rounded-full border border-border/50 p-1.5 shadow-lg">
-            {/* + button: opens attachment menu */}
-            <div className="relative">
-              <button
-                className={`w-10 h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                  isAttachmentMenuOpen
-                    ? "bg-accent text-white rotate-45"
-                    : "bg-accent text-white md:bg-transparent md:text-text-secondary hover:brightness-110 md:hover:bg-card md:hover:text-text-main"
-                }`}
-                aria-label="Add attachment"
-                onClick={() => setIsAttachmentMenuOpen(!isAttachmentMenuOpen)}
-              >
-                {isAttachmentMenuOpen ? (
-                  <X className="w-[22px] h-[22px]" />
-                ) : (
-                  <Plus className="w-[22px] h-[22px]" />
+          <div className="flex flex-col bg-input/80 backdrop-blur-md rounded-2xl border border-border/50 shadow-lg overflow-hidden">
+            {/* Reply preview bar */}
+            {replyingTo && (
+              <div className="flex items-center gap-2 px-3 pt-2 pb-1.5 border-b border-border/40">
+                <div className="flex-1 min-w-0 flex flex-col border-l-4 border-accent pl-2">
+                  <span className="text-[11px] font-semibold text-accent truncate">
+                    {replyingTo.senderName}
+                  </span>
+                  <span className="text-[12px] text-text-secondary truncate">
+                    {replyingTo.mediaType === "image"
+                      ? "📷 Photo"
+                      : replyingTo.mediaType === "video"
+                        ? "🎬 Video"
+                        : replyingTo.mediaType === "audio"
+                          ? "🎤 Voice message"
+                          : replyingTo.mediaType === "document"
+                            ? "📄 Document"
+                            : replyingTo.text}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Cancel reply"
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors shrink-0"
+                  onClick={() => setReplyingTo(null)}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+            <div className="flex items-center p-1.5">
+              {/* + button: opens attachment menu */}
+              <div className="relative">
+                <button
+                  className={`w-10 h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                    isAttachmentMenuOpen
+                      ? "bg-accent text-white rotate-45"
+                      : "bg-accent text-white md:bg-transparent md:text-text-secondary hover:brightness-110 md:hover:bg-card md:hover:text-text-main"
+                  }`}
+                  aria-label="Add attachment"
+                  onClick={() => setIsAttachmentMenuOpen(!isAttachmentMenuOpen)}
+                >
+                  {isAttachmentMenuOpen ? (
+                    <X className="w-[22px] h-[22px]" />
+                  ) : (
+                    <Plus className="w-[22px] h-[22px]" />
+                  )}
+                </button>
+                {isAttachmentMenuOpen && (
+                  <AttachmentMenu
+                    onClose={() => setIsAttachmentMenuOpen(false)}
+                    onSelectFile={handleFileSelected}
+                    onOpenCamera={() => setIsCameraOpen(true)}
+                  />
                 )}
-              </button>
-              {isAttachmentMenuOpen && (
-                <AttachmentMenu
-                  onClose={() => setIsAttachmentMenuOpen(false)}
-                  onSelectFile={handleFileSelected}
-                  onOpenCamera={() => setIsCameraOpen(true)}
-                />
-              )}
-            </div>
+              </div>
 
-            {/* Emoji: always on desktop; on mobile only when input is empty */}
-            <div
-              className={`relative mr-1 ${inputValue ? "hidden md:flex" : "flex"}`}
-            >
-              <button
-                className="w-11 h-11 rounded-full flex items-center justify-center text-text-secondary shrink-0 hover:bg-card hover:text-text-main transition-colors"
-                aria-label="Emoji"
-                onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+              {/* Emoji: always on desktop; on mobile only when input is empty */}
+              <div
+                className={`relative mr-1 ${inputValue ? "hidden md:flex" : "flex"}`}
               >
-                <Smile className="w-[22px] h-[22px]" />
-              </button>
-              {isEmojiPickerOpen && (
-                <EmojiPicker
-                  position="top"
-                  align="left"
-                  onSelect={(emoji) => {
-                    setInputValue((prev) => prev + emoji);
-                    setIsEmojiPickerOpen(false);
-                  }}
-                  onClose={() => setIsEmojiPickerOpen(false)}
-                />
-              )}
-            </div>
+                <button
+                  className="w-11 h-11 rounded-full flex items-center justify-center text-text-secondary shrink-0 hover:bg-card hover:text-text-main transition-colors"
+                  aria-label="Emoji"
+                  onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+                >
+                  <Smile className="w-[22px] h-[22px]" />
+                </button>
+                {isEmojiPickerOpen && (
+                  <EmojiPicker
+                    position="top"
+                    align="left"
+                    onSelect={(emoji) => {
+                      setInputValue((prev) => prev + emoji);
+                      setIsEmojiPickerOpen(false);
+                    }}
+                    onClose={() => setIsEmojiPickerOpen(false)}
+                  />
+                )}
+              </div>
 
-            <input
-              type="text"
-              placeholder="Write a message..."
-              value={inputValue}
-              spellCheck={chatSettings.spellCheck}
-              className="flex-1 bg-transparent border-none outline-none text-[14px] text-text-main placeholder:text-text-secondary px-2"
-              onChange={(e) => {
-                const val = applyEmojiReplace(
-                  e.target.value,
-                  chatSettings.emojiReplace,
-                );
-                setInputValue(val);
-                handleTypingEmit();
-              }}
-              onKeyDown={(e) => {
-                if (
-                  e.key === "Enter" &&
-                  !e.shiftKey &&
-                  chatSettings.enterToSend
-                ) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-            />
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder="Write a message..."
+                value={inputValue}
+                spellCheck={chatSettings.spellCheck}
+                className="flex-1 bg-transparent border-none outline-none text-[14px] text-text-main placeholder:text-text-secondary px-2"
+                onChange={(e) => {
+                  const val = applyEmojiReplace(
+                    e.target.value,
+                    chatSettings.emojiReplace,
+                  );
+                  setInputValue(val);
+                  handleTypingEmit();
+                }}
+                onKeyDown={(e) => {
+                  if (
+                    e.key === "Enter" &&
+                    !e.shiftKey &&
+                    chatSettings.enterToSend
+                  ) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+              />
 
-            <div className="flex items-center gap-1.5 ml-2">
-              {/* Mic: only when input is empty */}
-              <button
-                className={`w-11 h-11 rounded-full flex items-center justify-center text-text-secondary shrink-0 hover:bg-card hover:text-text-main transition-colors ${inputValue ? "hidden" : "flex"}`}
-                aria-label="Voice note"
-                onClick={() => setIsRecording(true)}
-              >
-                <Mic className="w-[22px] h-[22px]" />
-              </button>
-              {/* Send: only when input has text */}
-              <button
-                className={`w-11 h-11 rounded-full bg-accent flex items-center justify-center text-white shrink-0 hover:brightness-110 shadow-md transition-all ${inputValue ? "flex" : "hidden"}`}
-                aria-label="Send message"
-                onClick={handleSend}
-              >
-                <Send className="w-[22px] h-[22px] ml-0.5" />
-              </button>
+              <div className="flex items-center gap-1.5 ml-2">
+                {/* Mic: only when input is empty */}
+                <button
+                  className={`w-11 h-11 rounded-full flex items-center justify-center text-text-secondary shrink-0 hover:bg-card hover:text-text-main transition-colors ${inputValue ? "hidden" : "flex"}`}
+                  aria-label="Voice note"
+                  onClick={() => setIsRecording(true)}
+                >
+                  <Mic className="w-[22px] h-[22px]" />
+                </button>
+                {/* Send: only when input has text */}
+                <button
+                  className={`w-11 h-11 rounded-full bg-accent flex items-center justify-center text-white shrink-0 hover:brightness-110 shadow-md transition-all ${inputValue ? "flex" : "hidden"}`}
+                  aria-label="Send message"
+                  onClick={handleSend}
+                >
+                  <Send className="w-[22px] h-[22px] ml-0.5" />
+                </button>
+              </div>
             </div>
           </div>
         )}

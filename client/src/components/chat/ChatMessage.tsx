@@ -48,6 +48,7 @@ interface ChatMessageProps {
   isSelected?: boolean;
   onToggleSelect?: () => void;
   onCopy?: () => void;
+  onReply?: () => void;
   onEnterSelectMode?: (reason?: "select" | "delete") => void;
   reactions?: Reaction[];
   onReaction?: (emoji: string) => void;
@@ -63,6 +64,13 @@ interface ChatMessageProps {
     mediaUrl?: string | null;
     caption?: string | null;
     senderName: string;
+  } | null;
+  quotedReply?: {
+    messageId: string;
+    senderName: string;
+    text: string;
+    mediaType?: "image" | "video" | "audio" | "document" | null;
+    mediaUrl?: string | null;
   } | null;
 }
 
@@ -89,6 +97,7 @@ export function ChatMessage({
   isSelected = false,
   onToggleSelect,
   onCopy,
+  onReply,
   onEnterSelectMode,
   reactions,
   onReaction,
@@ -98,6 +107,7 @@ export function ChatMessage({
   linkPreview,
   isUploading,
   statusReply,
+  quotedReply,
 }: ChatMessageProps) {
   const [isReactionMenuOpen, setIsReactionMenuOpen] = useState(false);
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
@@ -324,8 +334,8 @@ export function ChatMessage({
             {/* Message Bubble */}
             <div
               className={`group/bubble relative ${
-                isMediaBubble || statusReply
-                  ? `rounded-2xl overflow-hidden shadow-sm ${isSent ? "rounded-br-sm" : "rounded-bl-sm"} ${!isMediaBubble && statusReply && !isSent ? "border border-border/50" : ""}`
+                isMediaBubble || statusReply || !!quotedReply
+                  ? `rounded-2xl overflow-hidden shadow-sm ${isSent ? "rounded-br-sm" : "rounded-bl-sm"} ${(!isMediaBubble && statusReply && !isSent) || (!isMediaBubble && quotedReply && !isSent) ? "border border-border/50" : ""}`
                   : `pr-8 px-4 py-3 text-[14px] leading-relaxed break-words shadow-sm rounded-2xl overflow-hidden ${
                       isSent
                         ? "text-white rounded-br-sm"
@@ -333,9 +343,13 @@ export function ChatMessage({
                     }`
               }`}
               style={
-                isSent && !isMediaBubble && !statusReply
+                isSent && !isMediaBubble && !statusReply && !quotedReply
                   ? { background: "linear-gradient(135deg, #2563EB, #3B82F6)" }
-                  : undefined
+                  : isSent && !!quotedReply && !isMediaBubble
+                    ? {
+                        background: "linear-gradient(135deg, #2563EB, #3B82F6)",
+                      }
+                    : undefined
               }
             >
               {/* Sender name for group received messages */}
@@ -344,7 +358,7 @@ export function ChatMessage({
                   className={`text-[12px] font-semibold truncate ${
                     isMediaBubble
                       ? "absolute top-0 left-0 right-0 z-10 px-3 pt-2 pb-4 bg-gradient-to-b from-black/50 to-transparent text-white rounded-t-2xl"
-                      : statusReply
+                      : statusReply || quotedReply
                         ? "text-accent px-3 pt-2 pb-0"
                         : "text-accent mb-1"
                   }`}
@@ -528,10 +542,69 @@ export function ChatMessage({
                 </div>
               )}
               {/* Inline text for non-media bubbles */}
-              {text && !isViewOnceHidden && !isMediaBubble && !statusReply && (
-                <>
-                  <span>{text}</span>
-                </>
+              {text &&
+                !isViewOnceHidden &&
+                !isMediaBubble &&
+                !statusReply &&
+                !quotedReply && (
+                  <>
+                    <span>{text}</span>
+                  </>
+                )}
+
+              {/* Quoted reply — compact preview bar + text */}
+              {quotedReply && !isMediaBubble && (
+                <div className="flex flex-col min-w-[220px] max-w-[308px]">
+                  {/* Quote bar */}
+                  <div
+                    className={`flex gap-2 mx-2 mt-2 mb-1 rounded-lg overflow-hidden border-l-4 ${
+                      isSent
+                        ? "border-white/60 bg-white/15"
+                        : "border-accent bg-input/60"
+                    }`}
+                  >
+                    {quotedReply.mediaType === "image" &&
+                      quotedReply.mediaUrl && (
+                        <img
+                          src={quotedReply.mediaUrl}
+                          alt=""
+                          className="w-12 h-12 object-cover shrink-0"
+                        />
+                      )}
+                    <div className="flex flex-col justify-center px-2 py-1.5 min-w-0">
+                      <span
+                        className={`text-[11px] font-semibold truncate ${
+                          isSent ? "text-white/90" : "text-accent"
+                        }`}
+                      >
+                        {quotedReply.senderName}
+                      </span>
+                      <span
+                        className={`text-[12px] truncate ${
+                          isSent ? "text-white/70" : "text-text-secondary"
+                        }`}
+                      >
+                        {quotedReply.mediaType === "image"
+                          ? "📷 Photo"
+                          : quotedReply.mediaType === "video"
+                            ? "🎬 Video"
+                            : quotedReply.mediaType === "audio"
+                              ? "🎤 Voice message"
+                              : quotedReply.mediaType === "document"
+                                ? "📄 Document"
+                                : quotedReply.text}
+                      </span>
+                    </div>
+                  </div>
+                  {/* Reply text */}
+                  {text && (
+                    <div
+                      className={`pl-4 pr-10 py-2 pb-3 text-[14px] leading-relaxed break-words ${isSent ? "text-white" : "text-text-main"}`}
+                    >
+                      <span>{text}</span>
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* Status reply — media-card style */}
@@ -723,6 +796,10 @@ export function ChatMessage({
                   <button
                     type="button"
                     className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
+                    onClick={() => {
+                      onReply?.();
+                      setIsContextMenuOpen(false);
+                    }}
                   >
                     <Reply
                       className="w-4 h-4 text-text-secondary"
