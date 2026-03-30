@@ -1476,7 +1476,9 @@ export function ChatArea({
             onToggleViewOnce={() => setViewOnce((v) => !v)}
           />
         ) : (
-          <div className="flex flex-col bg-input/80 backdrop-blur-md rounded-2xl border border-border/50 shadow-lg overflow-hidden">
+          <div
+            className={`flex flex-col bg-input/80 backdrop-blur-md border border-border/50 shadow-lg overflow-hidden transition-all duration-150 ${replyingTo ? "rounded-b-full rounded-t-2xl" : "rounded-full"}`}
+          >
             {/* Reply preview bar */}
             {replyingTo && (
               <div className="flex items-center gap-2 px-3 pt-2 pb-1.5 border-b border-border/40">

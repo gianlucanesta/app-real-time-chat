@@ -3,11 +3,10 @@ import {
   X,
   Video,
   Phone,
+  ChevronUp,
+  ChevronDown,
   Search,
   Send,
-  ArrowLeft,
-  ArrowRight,
-  CalendarClock,
 } from "lucide-react";
 import { useChat } from "../../contexts/ChatContext";
 import { useAuth } from "../../contexts/AuthContext";
@@ -75,9 +74,6 @@ export function ScheduleCallModal({
   const { conversations } = useChat();
   const { user } = useAuth();
 
-  // Step: "details" = fill call info, "contacts" = pick who to send to
-  const [step, setStep] = useState<"details" | "contacts">("details");
-
   // Defaults: start = now rounded up to next 30min, end = start + 30min
   const now = new Date();
   const roundedMinutes = Math.ceil(now.getMinutes() / 30) * 30;
@@ -89,7 +85,6 @@ export function ScheduleCallModal({
   }
   const defaultEnd = new Date(defaultStart.getTime() + 30 * 60 * 1000);
 
-  const [callName, setCallName] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState(formatDateForInput(defaultStart));
   const [startTime, setStartTime] = useState(formatTimeForInput(defaultStart));
@@ -97,37 +92,70 @@ export function ScheduleCallModal({
   const [endTime, setEndTime] = useState(formatTimeForInput(defaultEnd));
   const [showEndTime, setShowEndTime] = useState(true);
   const [callType, setCallType] = useState<"video" | "voice">("video");
+
+  // Selected participants stored as user IDs (the other user in a direct conv)
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>(
     [],
   );
   const [participantSearch, setParticipantSearch] = useState("");
+  const [showParticipantPicker, setShowParticipantPicker] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Direct conversations as potential contacts
-  const contacts = useMemo(() => {
-    const direct = conversations.filter((c) => c.type === "direct");
-    if (!participantSearch.trim()) return direct;
-    const q = participantSearch.toLowerCase();
-    return direct.filter((c) => c.name.toLowerCase().includes(q));
-  }, [conversations, participantSearch]);
+  // Only direct conversations as potential contacts (never groups)
+  const directConversations = useMemo(
+    () => conversations.filter((c) => c.type === "direct"),
+    [conversations],
+  );
 
-  const toggleParticipant = useCallback((participantId: string) => {
+  // Filtered contacts for the search dropdown
+  const filteredContacts = useMemo(() => {
+    if (!participantSearch.trim()) return directConversations;
+    const q = participantSearch.toLowerCase();
+    return directConversations.filter((c) =>
+      c.name.toLowerCase().includes(q),
+    );
+  }, [directConversations, participantSearch]);
+
+  // Helper: get the other user's ID from a direct conversation
+  const getOtherUserId = useCallback(
+    (conv: { participants: string[] }) => {
+      return conv.participants.find((p) => p !== user?.id) ?? "";
+    },
+    [user?.id],
+  );
+
+  // Helper: resolve a participant user ID to a display name
+  const getParticipantName = useCallback(
+    (userId: string): string => {
+      const conv = directConversations.find((c) =>
+        c.participants.includes(userId) && c.participants.some((p) => p !== user?.id && p === userId),
+      );
+      return conv?.name ?? userId;
+    },
+    [directConversations, user?.id],
+  );
+
+
+
+  const toggleParticipant = useCallback((userId: string) => {
     setSelectedParticipants((prev) =>
-      prev.includes(participantId)
-        ? prev.filter((id) => id !== participantId)
-        : [...prev, participantId],
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId],
     );
   }, []);
 
-  const validateDetails = useCallback((): boolean => {
+  const removeParticipant = useCallback((userId: string) => {
+    setSelectedParticipants((prev) => prev.filter((id) => id !== userId));
+  }, []);
+
+  const handleSubmit = useCallback(() => {
     const newErrors: Record<string, string> = {};
 
-    if (!callName.trim()) {
-      newErrors.name = "Call name is required";
-    }
-
     const start = new Date(`${startDate}T${startTime}`);
-    const end = new Date(`${endDate}T${endTime}`);
+    const end = showEndTime
+      ? new Date(`${endDate}T${endTime}`)
+      : new Date(start.getTime() + 60 * 60 * 1000);
 
     if (isNaN(start.getTime())) {
       newErrors.startDate = "Invalid start date/time";
@@ -138,31 +166,23 @@ export function ScheduleCallModal({
     if (showEndTime && end <= start) {
       newErrors.endDate = "End time must be after start time";
     }
-    if (start < new Date()) {
-      newErrors.startDate = "Start time must be in the future";
+
+    if (selectedParticipants.length === 0) {
+      newErrors.participants = "Select at least one participant";
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }, [callName, startDate, startTime, endDate, endTime, showEndTime]);
+    if (Object.keys(newErrors).length > 0) return;
 
-  const handleGoToContacts = useCallback(() => {
-    if (!validateDetails()) return;
-    setStep("contacts");
-    setParticipantSearch("");
-  }, [validateDetails]);
-
-  const handleSubmit = useCallback(() => {
-    if (selectedParticipants.length === 0) return;
-
-    const start = new Date(`${startDate}T${startTime}`);
-    const end = showEndTime
-      ? new Date(`${endDate}T${endTime}`)
-      : new Date(start.getTime() + 60 * 60 * 1000);
+    // Build a call name from participants if not explicitly set
+    const participantNames = selectedParticipants
+      .map((pid) => getParticipantName(pid))
+      .join(", ");
+    const callName = participantNames || "Scheduled call";
 
     const scheduled: ScheduledCall = {
       id: crypto.randomUUID(),
-      name: callName.trim(),
+      name: callName,
       description: description.trim(),
       startDate: start.toISOString(),
       endDate: end.toISOString(),
@@ -173,205 +193,36 @@ export function ScheduleCallModal({
     onSchedule(scheduled);
     onClose();
     // Reset form
-    setCallName("");
     setDescription("");
     setSelectedParticipants([]);
     setErrors({});
-    setStep("details");
+    setShowParticipantPicker(false);
+    setParticipantSearch("");
   }, [
     startDate,
     startTime,
     endDate,
     endTime,
     showEndTime,
-    callName,
     description,
     callType,
     selectedParticipants,
+    getParticipantName,
     onSchedule,
     onClose,
   ]);
 
   const handleClose = useCallback(() => {
     onClose();
-    setStep("details");
-    setCallName("");
     setDescription("");
     setSelectedParticipants([]);
     setErrors({});
+    setShowParticipantPicker(false);
+    setParticipantSearch("");
   }, [onClose]);
-
-  // Auto-set call name hint
-  const nameHint = useMemo(() => {
-    if (user?.displayName) return `${user.displayName}'s call`;
-    return "My call";
-  }, [user]);
-
-  // Selected participants display names for bottom bar
-  const selectedNames = useMemo(() => {
-    return selectedParticipants
-      .map((pid) => {
-        const conv = conversations.find((c) => {
-          const other = c.participants.find((p) => p !== user?.id);
-          return other === pid;
-        });
-        return conv?.name || pid;
-      })
-      .join(", ");
-  }, [selectedParticipants, conversations, user]);
 
   if (!open) return null;
 
-  // ── Step 2: Contact Picker (WhatsApp "Send to" style) ──
-  if (step === "contacts") {
-    return (
-      <div
-        className="fixed inset-0 z-[500] flex items-center justify-center bg-black/50"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) handleClose();
-        }}
-      >
-        <div className="w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
-          {/* Header */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
-            <button
-              onClick={() => setStep("details")}
-              title="Back"
-              className="w-8 h-8 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-[16px] font-semibold text-text-main">
-                Send to
-              </h2>
-              <p className="text-[12px] text-text-secondary truncate">
-                {callName || nameHint}
-              </p>
-            </div>
-            <button
-              onClick={handleClose}
-              title="Close"
-              className="w-8 h-8 rounded-full flex items-center justify-center text-text-secondary hover:text-text-main hover:bg-input transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Search bar */}
-          <div className="px-4 py-2 border-b border-border">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-input border border-border">
-              <Search className="w-4 h-4 text-text-secondary shrink-0" />
-              <input
-                type="text"
-                placeholder="Search a name or number"
-                value={participantSearch}
-                onChange={(e) => setParticipantSearch(e.target.value)}
-                className="flex-1 bg-transparent text-[14px] text-text-main placeholder:text-text-secondary outline-none"
-              />
-            </div>
-          </div>
-
-          {/* Contact list */}
-          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-border">
-            <p className="px-5 pt-3 pb-2 text-[12px] text-text-secondary font-medium uppercase tracking-wider">
-              Recent chats
-            </p>
-            {contacts.map((conv) => {
-              const pid = conv.participants.find((p) => p !== user?.id);
-              if (!pid) return null;
-              const isSelected = selectedParticipants.includes(pid);
-              return (
-                <button
-                  key={conv.id}
-                  onClick={() => toggleParticipant(pid)}
-                  className={`w-full flex items-center gap-3 px-5 py-3 hover:bg-input/50 transition-colors`}
-                >
-                  {/* Checkbox */}
-                  <div
-                    className={`w-[22px] h-[22px] rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
-                      isSelected
-                        ? "bg-accent border-accent"
-                        : "border-text-secondary/40"
-                    }`}
-                  >
-                    {isSelected && (
-                      <svg
-                        className="w-3.5 h-3.5 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    )}
-                  </div>
-                  {/* Avatar */}
-                  {conv.avatar ? (
-                    <img
-                      src={conv.avatar}
-                      alt={conv.name}
-                      className="w-10 h-10 rounded-full object-cover shrink-0"
-                    />
-                  ) : (
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold shrink-0"
-                      style={{
-                        background:
-                          conv.gradient ||
-                          "linear-gradient(135deg, #6366f1, #a855f7)",
-                      }}
-                    >
-                      {conv.initials}
-                    </div>
-                  )}
-                  {/* Name + last message */}
-                  <div className="flex-1 min-w-0 text-left">
-                    <p className="text-[14px] font-medium text-text-main truncate">
-                      {conv.name}
-                    </p>
-                    {conv.lastMessage && (
-                      <p className="text-[12px] text-text-secondary truncate">
-                        {conv.lastMessage}
-                      </p>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-            {contacts.length === 0 && (
-              <p className="px-5 py-8 text-center text-[13px] text-text-secondary">
-                No contacts found
-              </p>
-            )}
-          </div>
-
-          {/* Bottom bar — selected contacts + send button */}
-          {selectedParticipants.length > 0 && (
-            <div className="flex items-center gap-3 px-4 py-3 border-t border-border bg-card">
-              <p className="flex-1 text-[13px] text-text-main truncate min-w-0">
-                {selectedNames}
-              </p>
-              <button
-                onClick={handleSubmit}
-                title="Send"
-                className="w-11 h-11 rounded-full bg-accent flex items-center justify-center text-white hover:brightness-110 transition-all shrink-0 shadow-lg"
-              >
-                <Send className="w-5 h-5" />
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // ── Step 1: Call Details ──
   return (
     <div
       className="fixed inset-0 z-[500] flex items-center justify-center bg-black/50"
@@ -394,31 +245,10 @@ export function ScheduleCallModal({
               Schedule call
             </h2>
           </div>
-          <div className="flex items-center gap-1 text-[11px] text-text-secondary">
-            <CalendarClock className="w-3.5 h-3.5" />
-            Step 1 of 2
-          </div>
         </div>
 
-        {/* Form */}
+        {/* Scrollable Form */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 scrollbar-thin scrollbar-thumb-border">
-          {/* Call name */}
-          <div>
-            <label className="text-[12px] text-text-secondary block mb-1">
-              Call name
-            </label>
-            <input
-              type="text"
-              value={callName}
-              onChange={(e) => setCallName(e.target.value)}
-              placeholder={nameHint}
-              className="w-full px-3 py-2.5 rounded-lg bg-input border border-border text-[14px] text-text-main placeholder:text-text-secondary/60 outline-none focus:border-accent transition-colors"
-            />
-            {errors.name && (
-              <p className="text-[12px] text-danger mt-1">{errors.name}</p>
-            )}
-          </div>
-
           {/* Description */}
           <div>
             <label className="text-[12px] text-text-secondary block mb-1">
@@ -433,53 +263,61 @@ export function ScheduleCallModal({
             />
           </div>
 
-          {/* Start date/time */}
+          {/* Start date & time */}
           <div>
             <label className="text-[12px] text-text-secondary block mb-1">
               Start date & time
             </label>
             <div className="flex gap-2">
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                title="Start date"
-                className="flex-1 px-3 py-2.5 rounded-lg bg-input border border-border text-[14px] text-text-main outline-none focus:border-accent transition-colors"
-              />
-              <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                title="Start time"
-                className="w-[120px] px-3 py-2.5 rounded-lg bg-input border border-border text-[14px] text-text-main outline-none focus:border-accent transition-colors"
-              />
+              <div className="relative flex-1">
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  title="Start date"
+                  className="w-full px-3 py-2.5 rounded-lg bg-input border border-border text-[14px] text-text-main outline-none focus:border-accent transition-colors"
+                />
+              </div>
+              <div className="relative">
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  title="Start time"
+                  className="w-[120px] px-3 py-2.5 rounded-lg bg-input border border-border text-[14px] text-text-main outline-none focus:border-accent transition-colors"
+                />
+              </div>
             </div>
             {errors.startDate && (
               <p className="text-[12px] text-danger mt-1">{errors.startDate}</p>
             )}
           </div>
 
-          {/* End date/time */}
+          {/* End date & time */}
           {showEndTime && (
             <div>
               <label className="text-[12px] text-text-secondary block mb-1">
                 End date & time
               </label>
               <div className="flex gap-2">
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  title="End date"
-                  className="flex-1 px-3 py-2.5 rounded-lg bg-input border border-border text-[14px] text-text-main outline-none focus:border-accent transition-colors"
-                />
-                <input
-                  type="time"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  title="End time"
-                  className="w-[120px] px-3 py-2.5 rounded-lg bg-input border border-border text-[14px] text-text-main outline-none focus:border-accent transition-colors"
-                />
+                <div className="relative flex-1">
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    title="End date"
+                    className="w-full px-3 py-2.5 rounded-lg bg-input border border-border text-[14px] text-text-main outline-none focus:border-accent transition-colors"
+                  />
+                </div>
+                <div className="relative">
+                  <input
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    title="End time"
+                    className="w-[120px] px-3 py-2.5 rounded-lg bg-input border border-border text-[14px] text-text-main outline-none focus:border-accent transition-colors"
+                  />
+                </div>
               </div>
               {errors.endDate && (
                 <p className="text-[12px] text-danger mt-1">{errors.endDate}</p>
@@ -525,16 +363,155 @@ export function ScheduleCallModal({
               </button>
             </div>
           </div>
+
+          {/* ── Participants section ── */}
+          <div>
+            <label className="text-[12px] text-text-secondary block mb-2">
+              Participants
+            </label>
+
+            {/* Selected participant pills */}
+            {selectedParticipants.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {selectedParticipants.map((pid) => (
+                  <span
+                    key={pid}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent/15 text-accent text-[12px] font-medium border border-accent/30"
+                  >
+                    {getParticipantName(pid)}
+                    <button
+                      onClick={() => removeParticipant(pid)}
+                      className="w-3.5 h-3.5 rounded-full flex items-center justify-center hover:bg-accent/20 transition-colors"
+                      title={`Remove ${getParticipantName(pid)}`}
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {errors.participants && (
+              <p className="text-[12px] text-danger mb-2">
+                {errors.participants}
+              </p>
+            )}
+
+            {/* Add participants toggle */}
+            <button
+              onClick={() => setShowParticipantPicker(!showParticipantPicker)}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg bg-input border border-border text-[14px] text-text-secondary hover:border-accent/50 transition-colors"
+            >
+              <span>Add participants...</span>
+              {showParticipantPicker ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </button>
+
+            {/* Contact picker dropdown */}
+            {showParticipantPicker && (
+              <div className="mt-2 rounded-lg border border-border bg-card overflow-hidden">
+                {/* Search bar */}
+                <div className="px-3 py-2 border-b border-border">
+                  <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-input border border-border">
+                    <Search className="w-3.5 h-3.5 text-text-secondary shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="Search..."
+                      value={participantSearch}
+                      onChange={(e) => setParticipantSearch(e.target.value)}
+                      className="flex-1 bg-transparent text-[13px] text-text-main placeholder:text-text-secondary outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Contact list */}
+                <div className="max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-border">
+                  {filteredContacts.map((conv) => {
+                    const otherUserId = getOtherUserId(conv);
+                    if (!otherUserId) return null;
+                    const isSelected = selectedParticipants.includes(otherUserId);
+
+                    return (
+                      <button
+                        key={conv.id}
+                        onClick={() => toggleParticipant(otherUserId)}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-input/50 transition-colors"
+                      >
+                        {/* Avatar */}
+                        {conv.avatar ? (
+                          <img
+                            src={conv.avatar}
+                            alt={conv.name}
+                            className="w-9 h-9 rounded-full object-cover shrink-0"
+                          />
+                        ) : (
+                          <div
+                            className="w-9 h-9 rounded-full flex items-center justify-center text-white text-[12px] font-semibold shrink-0"
+                            style={{
+                              background:
+                                conv.gradient ||
+                                "linear-gradient(135deg, #6366f1, #a855f7)",
+                            }}
+                          >
+                            {conv.initials}
+                          </div>
+                        )}
+
+                        {/* Name */}
+                        <p className="flex-1 text-[13px] font-medium text-text-main truncate text-left">
+                          {conv.name}
+                        </p>
+
+                        {/* Checkbox */}
+                        <div
+                          className={`w-[20px] h-[20px] rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                            isSelected
+                              ? "bg-accent border-accent"
+                              : "border-text-secondary/40"
+                          }`}
+                        >
+                          {isSelected && (
+                            <svg
+                              className="w-3 h-3 text-white"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                  {filteredContacts.length === 0 && (
+                    <p className="px-4 py-6 text-center text-[13px] text-text-secondary">
+                      No contacts found
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Next button */}
+        {/* Schedule call button */}
         <div className="px-5 pb-5 pt-3 border-t border-border">
           <button
-            onClick={handleGoToContacts}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[14px] font-semibold text-white bg-accent hover:brightness-110 transition-all"
+            onClick={handleSubmit}
+            disabled={selectedParticipants.length === 0}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-[14px] font-semibold text-white bg-accent hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Choose contacts
-            <ArrowRight className="w-4 h-4" />
+            <Send className="w-4 h-4" />
+            Schedule call
           </button>
         </div>
       </div>
