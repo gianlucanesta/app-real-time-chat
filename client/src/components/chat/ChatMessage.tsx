@@ -483,16 +483,40 @@ export function ChatMessage({
                       )}
                       {isUploading && !mediaUrl && (
                         <div
-                          className={`flex items-center gap-3 px-3 py-3 rounded-xl min-w-[240px] ${
+                          className={`flex items-center gap-3 px-4 py-3 rounded-xl min-w-[260px] ${
                             isSent ? "bg-blue-700/20" : "bg-input"
                           }`}
                         >
-                          <div className="w-8 h-8 border-[3px] border-accent border-t-transparent rounded-full animate-spin shrink-0" />
-                          <span
-                            className={`text-sm ${isSent ? "text-blue-100" : "text-text-secondary"}`}
-                          >
-                            Uploading audio…
-                          </span>
+                          {/* Animated waveform bars */}
+                          <div className="flex items-end gap-[3px] h-8 shrink-0">
+                            {[0, 150, 300, 150, 0, 200, 100].map((delay, i) => (
+                              <div
+                                key={i}
+                                className={`w-[3px] rounded-full ${isSent ? "bg-white/70" : "bg-accent/70"}`}
+                                style={{
+                                  animation:
+                                    "upload-wave 1.2s ease-in-out infinite",
+                                  animationDelay: `${delay}ms`,
+                                  height: "40%",
+                                }}
+                              />
+                            ))}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span
+                              className={`text-sm font-medium ${isSent ? "text-white/90" : "text-text-main"}`}
+                            >
+                              Sending voice note
+                            </span>
+                            <span
+                              className={`text-xs ${isSent ? "text-blue-200/80" : "text-text-secondary"}`}
+                            >
+                              Uploading…
+                            </span>
+                          </div>
+                          <div
+                            className={`w-5 h-5 border-2 ${isSent ? "border-white/60 border-t-transparent" : "border-accent border-t-transparent"} rounded-full animate-spin shrink-0 ml-auto`}
+                          />
                         </div>
                       )}
                     </div>

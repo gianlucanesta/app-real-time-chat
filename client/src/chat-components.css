@@ -1083,6 +1083,16 @@
   }
 }
 
+@keyframes upload-wave {
+  0%,
+  100% {
+    height: 20%;
+  }
+  50% {
+    height: 90%;
+  }
+}
+
 .incoming-call-text {
   display: flex;
   flex-direction: column;
