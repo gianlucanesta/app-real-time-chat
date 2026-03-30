@@ -240,10 +240,15 @@ export function Sidebar({
       list = list.filter((c) => c.name.toLowerCase().includes(q));
     }
 
-    // Sort: pinned first, then by last message timestamp (most recent first)
+    // Sort: pinned first (most recently pinned = first among pinned),
+    // then unpinned by last message timestamp (most recent first)
     list.sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
+      if (a.isPinned && b.isPinned) {
+        // Most recently pinned comes first
+        return (b.pinnedAt ?? 0) - (a.pinnedAt ?? 0);
+      }
       const ta = a.lastMessageTimestamp
         ? new Date(a.lastMessageTimestamp).getTime()
         : 0;
@@ -847,6 +852,9 @@ export function Sidebar({
                   <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-accent text-white text-[10px] font-bold px-1.5 shrink-0">
                     {chat.unreadCount}
                   </span>
+                )}
+                {chat.isPinned && (
+                  <Pin className="w-3.5 h-3.5 text-text-secondary shrink-0 rotate-45" />
                 )}
                 {chat.isMuted && chat.unreadCount === 0 && (
                   <BellOff className="w-3.5 h-3.5 text-text-secondary shrink-0" />

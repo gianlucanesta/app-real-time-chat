@@ -75,6 +75,7 @@ interface ChatMessageProps {
     mediaUrl?: string | null;
   } | null;
   onScrollToMessage?: (messageId: string) => void;
+  onMessageInfo?: () => void;
 }
 
 const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
@@ -112,6 +113,7 @@ export function ChatMessage({
   statusReply,
   quotedReply,
   onScrollToMessage,
+  onMessageInfo,
 }: ChatMessageProps) {
   const [isReactionMenuOpen, setIsReactionMenuOpen] = useState(false);
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
@@ -863,6 +865,10 @@ export function ChatMessage({
                   <button
                     type="button"
                     className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
+                    onClick={() => {
+                      onMessageInfo?.();
+                      setIsContextMenuOpen(false);
+                    }}
                   >
                     <Info
                       className="w-4 h-4 text-text-secondary"

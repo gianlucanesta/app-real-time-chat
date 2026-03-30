@@ -30,6 +30,7 @@ function buildCallGroupsFromConversations(
     initials: string;
     participants: string[];
   }[],
+  currentUserId: string,
 ): CallGroup[] {
   const now = Date.now();
   const day = 86_400_000;
@@ -171,6 +172,7 @@ function buildCallGroupsFromConversations(
     // Each conversation gets 1-3 calls
     const numCalls = Math.min(3, callTemplates.length - idx * 2);
     const calls: CallRecord[] = [];
+    const otherId = conv.participants.find(p => p !== currentUserId) || conv.participants[0] || conv.id;
 
     for (let j = 0; j < numCalls && idx * 2 + j < callTemplates.length; j++) {
       const tpl = callTemplates[idx * 2 + j];
@@ -179,7 +181,7 @@ function buildCallGroupsFromConversations(
 
       calls.push({
         id: `call-${conv.id}-${j}`,
-        contactId: conv.participants[0] || conv.id,
+        contactId: otherId,
         contactName: conv.name,
         contactAvatar: conv.avatar || null,
         contactGradient: conv.gradient,
@@ -200,7 +202,7 @@ function buildCallGroupsFromConversations(
       );
 
       groups.push({
-        contactId: conv.participants[0] || conv.id,
+        contactId: otherId,
         contactName: conv.name,
         contactAvatar: conv.avatar || null,
         contactGradient: conv.gradient,
@@ -250,8 +252,8 @@ function CallsPage() {
 
   // Build call groups from conversations
   const callGroups = useMemo(
-    () => buildCallGroupsFromConversations(conversations),
-    [conversations],
+    () => buildCallGroupsFromConversations(conversations, user?.id ?? ""),
+    [conversations, user?.id],
   );
 
   // First 2 groups act as favorites

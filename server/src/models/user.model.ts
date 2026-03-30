@@ -90,6 +90,7 @@ export async function create({
  */
 export async function findByPhone(phone: string): Promise<IUser | null> {
   const normalized = phone.replace(/[^+\d]/g, "");
+  // Exact match first
   const { rows } = await pool.query<IUser>(
     `SELECT id, email, display_name, initials, avatar_gradient, avatar_url
      FROM users
@@ -97,7 +98,21 @@ export async function findByPhone(phone: string): Promise<IUser | null> {
      LIMIT 1`,
     [normalized],
   );
-  return rows[0] ?? null;
+  if (rows[0]) return rows[0];
+
+  // Suffix match fallback: user typed local number without country code
+  if (!normalized.startsWith("+") && normalized.length >= 6) {
+    const { rows: suffixRows } = await pool.query<IUser>(
+      `SELECT id, email, display_name, initials, avatar_gradient, avatar_url
+       FROM users
+       WHERE regexp_replace(phone, '[^+\\d]', '', 'g') LIKE '%' || $1
+       LIMIT 1`,
+      [normalized],
+    );
+    return suffixRows[0] ?? null;
+  }
+
+  return null;
 }
 
 /** Partial update — only the fields present in `fields` are changed. */

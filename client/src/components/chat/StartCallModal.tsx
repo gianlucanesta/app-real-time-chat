@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { X, Phone, Video, Search } from "lucide-react";
 import { useChat, type Conversation } from "../../contexts/ChatContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface StartCallModalProps {
   open: boolean;
@@ -14,6 +15,7 @@ export function StartCallModal({
   onStartCall,
 }: StartCallModalProps) {
   const { conversations } = useChat();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [callType, setCallType] = useState<"voice" | "video">("video");
 
@@ -28,7 +30,7 @@ export function StartCallModal({
   if (!open) return null;
 
   const handleSelect = (conv: Conversation) => {
-    const target = conv.participants.find((p) => p !== ""); // will be matched in parent
+    const target = conv.participants.find((p) => p !== "" && p !== user?.id);
     if (target) {
       onStartCall(target, callType === "video");
       onClose();

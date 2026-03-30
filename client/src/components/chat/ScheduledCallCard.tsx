@@ -1,4 +1,5 @@
 import { CalendarClock, Users, Video, Phone } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import type { ScheduledCallPayload } from "./ScheduleCallModal";
 
 interface ScheduledCallCardProps {
@@ -45,6 +46,15 @@ export function ScheduledCallCard({
   onJoin,
 }: ScheduledCallCardProps) {
   const isVideo = payload.callType === "video";
+  const navigate = useNavigate();
+
+  const handleJoin = () => {
+    if (onJoin) {
+      onJoin();
+    } else {
+      void navigate({ to: "/call/$id", params: { id: payload.id } });
+    }
+  };
 
   return (
     <div className="min-w-[260px] max-w-[308px]">
@@ -141,7 +151,7 @@ export function ScheduledCallCard({
 
         {/* "Join the call" action link — blue accent */}
         <button
-          onClick={onJoin}
+          onClick={handleJoin}
           className={`w-full px-4 py-2.5 text-center text-[13px] font-semibold transition-colors ${
             isSent
               ? "text-white/90 hover:bg-white/10 bg-white/5"

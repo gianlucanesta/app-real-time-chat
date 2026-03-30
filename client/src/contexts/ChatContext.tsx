@@ -116,6 +116,7 @@ export interface Conversation {
   mutedUntil?: string;
   isArchived?: boolean;
   isPinned?: boolean;
+  pinnedAt?: number;
   isFavorite?: boolean;
 }
 
@@ -307,6 +308,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           const isArchived =
             localStorage.getItem(`archived_${c.id}`) === "true";
           const isPinned = localStorage.getItem(`pinned_${c.id}`) === "true";
+          const pinnedAtRaw = localStorage.getItem(`pinnedAt_${c.id}`);
+          const pinnedAt = pinnedAtRaw ? parseInt(pinnedAtRaw, 10) : undefined;
           const isFavorite =
             localStorage.getItem(`favorite_${c.id}`) === "true";
           return {
@@ -324,6 +327,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             mutedUntil,
             isArchived,
             isPinned,
+            pinnedAt,
             isFavorite,
           };
         }),
@@ -1988,15 +1992,24 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           );
         },
         pinConversation: (convId: string) => {
+          const now = Date.now();
           localStorage.setItem(`pinned_${convId}`, "true");
+          localStorage.setItem(`pinnedAt_${convId}`, String(now));
           setConversations((prev) =>
-            prev.map((c) => (c.id === convId ? { ...c, isPinned: true } : c)),
+            prev.map((c) =>
+              c.id === convId ? { ...c, isPinned: true, pinnedAt: now } : c,
+            ),
           );
         },
         unpinConversation: (convId: string) => {
           localStorage.removeItem(`pinned_${convId}`);
+          localStorage.removeItem(`pinnedAt_${convId}`);
           setConversations((prev) =>
-            prev.map((c) => (c.id === convId ? { ...c, isPinned: false } : c)),
+            prev.map((c) =>
+              c.id === convId
+                ? { ...c, isPinned: false, pinnedAt: undefined }
+                : c,
+            ),
           );
         },
         addToFavorites: (convId: string) => {
