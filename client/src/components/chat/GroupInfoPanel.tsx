@@ -7,7 +7,6 @@ import {
   Bell,
   Star,
   Shield,
-  Timer,
   Trash2,
   AlertTriangle,
   Check,
@@ -77,7 +76,6 @@ export function GroupInfoPanel({
   const [group, setGroup] = useState<GroupInfo | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [myRole, setMyRole] = useState<"admin" | "member">("member");
-  const [loading, setLoading] = useState(false);
 
   // Inline editing state
   const [editingName, setEditingName] = useState(false);
@@ -97,7 +95,6 @@ export function GroupInfoPanel({
 
   const fetchGroupInfo = useCallback(async () => {
     if (!groupId) return;
-    setLoading(true);
     try {
       const data = await apiFetch<{
         group: GroupInfo;
@@ -112,8 +109,6 @@ export function GroupInfoPanel({
     } catch {
       // Fallback: use props
       setNameValue(initialName);
-    } finally {
-      setLoading(false);
     }
   }, [groupId, initialName]);
 
@@ -288,7 +283,9 @@ export function GroupInfoPanel({
               <button
                 type="button"
                 className="flex flex-col items-center justify-center flex-1 py-3 bg-card rounded-xl hover:bg-input transition-colors border border-border/50 text-accent"
-                onClick={() => toast.showToast("Add member coming soon", "info")}
+                onClick={() =>
+                  toast.showToast("Add member coming soon", "info")
+                }
               >
                 <UserPlus className="w-5 h-5 mb-1.5" />
                 <span className="text-xs font-medium">Add</span>
@@ -352,9 +349,7 @@ export function GroupInfoPanel({
             <div className="text-sm text-text-main">
               {displayDescription || (
                 <span className="text-text-secondary italic">
-                  {isAdmin
-                    ? "Add a group description"
-                    : "No description"}
+                  {isAdmin ? "Add a group description" : "No description"}
                 </span>
               )}
             </div>
@@ -529,9 +524,7 @@ export function GroupInfoPanel({
           <button
             type="button"
             className="w-full flex items-center gap-4 px-4 py-3.5 hover:bg-danger/10 text-danger transition-colors text-sm font-medium"
-            onClick={() =>
-              toast.showToast("Group reported", "info")
-            }
+            onClick={() => toast.showToast("Group reported", "info")}
           >
             <AlertTriangle className="w-5 h-5" />
             <span>Report group</span>
