@@ -26,6 +26,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useClickOutside } from "../../hooks/useClickOutside";
 import { ContactProfilePanel } from "./ContactProfilePanel";
 import { GroupInfoPanel } from "./GroupInfoPanel";
+import { ImportantMessagesPanel } from "./ImportantMessagesPanel";
 import { EditContactPanel } from "./EditContactPanel";
 import { ChatMessage } from "./ChatMessage";
 import { ConfirmModal } from "./ConfirmModal";
@@ -132,6 +133,7 @@ export function ChatArea({
     reactions,
     reactToMessage,
     editMessage,
+    starMessage,
     muteConversation,
     unmuteConversation,
     sendScheduledCallInvite,
@@ -145,6 +147,7 @@ export function ChatArea({
   const isContactOnline = liveConv?.isOnline ?? false;
 
   const [isContactInfoOpen, setIsContactInfoOpen] = useState(false);
+  const [isImportantOpen, setIsImportantOpen] = useState(false);
   const [isEditContactOpen, setIsEditContactOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [offlineTextVisible, setOfflineTextVisible] = useState(true);
@@ -808,7 +811,8 @@ export function ChatArea({
                 m.mediaType === "document",
             ).length
           }
-          starredCount={0}
+          starredCount={activeMessages.filter((m) => m.isStarred).length}
+          onImportantClick={() => setIsImportantOpen(true)}
           onSearch={undefined}
           onClearChat={() => {
             setIsContactInfoOpen(false);
@@ -836,7 +840,8 @@ export function ChatArea({
                 m.mediaType === "document",
             ).length
           }
-          starredCount={0}
+          starredCount={activeMessages.filter((m) => m.isStarred).length}
+          onImportantClick={() => setIsImportantOpen(true)}
           onAudioCall={() => {
             const target = activeConversation?.participants.find(
               (p) => p !== user?.id,
@@ -878,6 +883,16 @@ export function ChatArea({
         contactFirstName={activeConversation?.firstName}
         contactLastName={activeConversation?.lastName}
         contactPhone={activeConversation?.phone}
+      />
+      <ImportantMessagesPanel
+        isOpen={isImportantOpen}
+        onClose={() => setIsImportantOpen(false)}
+        conversationId={activeConversation?.id ?? ""}
+        contactName={contactName}
+        onUnstar={(messageId) => {
+          starMessage(messageId);
+          toast.showToast("Message unmarked as important", "info");
+        }}
       />
 
       {/* Chat Header */}
@@ -1329,6 +1344,16 @@ export function ChatArea({
                         })
                       }
                       edited={msg.edited}
+                      isStarred={msg.isStarred}
+                      onStar={() => {
+                        starMessage(msg.id);
+                        toast.showToast(
+                          msg.isStarred
+                            ? "Message unstarred"
+                            : "1 message marked as important",
+                          "success",
+                        );
+                      }}
                     />
                   );
                 })}

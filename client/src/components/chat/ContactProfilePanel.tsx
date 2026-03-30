@@ -49,6 +49,7 @@ interface ContactProfilePanelProps {
   onReportContact?: () => void;
   onAddToFavorites?: () => void;
   isFavorite?: boolean;
+  onImportantClick?: () => void;
 }
 
 export function ContactProfilePanel({
@@ -74,6 +75,7 @@ export function ContactProfilePanel({
   onReportContact,
   onAddToFavorites,
   isFavorite = false,
+  onImportantClick,
 }: ContactProfilePanelProps) {
   const [disappearingMessages] = useState<"off" | "24h" | "7d" | "90d">("off");
 
@@ -198,6 +200,7 @@ export function ContactProfilePanel({
           <button
             type="button"
             className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-input transition-colors text-text-main text-sm"
+            onClick={onImportantClick}
           >
             <div className="flex items-center gap-4">
               <Star className="w-5 h-5 text-text-secondary" />

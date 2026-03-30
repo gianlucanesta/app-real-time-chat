@@ -336,3 +336,64 @@ export async function clearConversation(
     next(err);
   }
 }
+
+/** GET /api/messages/:conversationId/starred */
+export async function listStarred(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const conversationId = req.params.conversationId as string;
+    const userId = String(req.user!.sub);
+
+    if (!conversationId) {
+      res.status(400).json({ error: "conversationId is required" });
+      return;
+    }
+
+    const messages = await Message.find(
+      {
+        conversationId,
+        starredBy: userId,
+        expires_at: { $gt: new Date() },
+      },
+      { __v: 0 },
+    )
+      .sort({ createdAt: -1 })
+      .limit(200)
+      .lean();
+
+    // Enrich messages missing sender profile
+    const senderIds = [
+      ...new Set(
+        messages
+          .filter((m: any) => !m.senderDisplayName && m.sender)
+          .map((m: any) => m.sender as string),
+      ),
+    ];
+    let profileMap: Record<string, any> = {};
+    if (senderIds.length > 0) {
+      const profiles = await Promise.all(
+        senderIds.map((id) => UserModel.findById(id).catch(() => null)),
+      );
+      for (let i = 0; i < senderIds.length; i++) {
+        if (profiles[i]) profileMap[senderIds[i]] = profiles[i];
+      }
+      for (const msg of messages as any[]) {
+        if (!msg.senderDisplayName && profileMap[msg.sender]) {
+          const p = profileMap[msg.sender];
+          msg.senderDisplayName = p.display_name ?? null;
+          msg.senderInitials = p.initials ?? null;
+          msg.senderGradient =
+            p.avatar_gradient ?? "linear-gradient(135deg,#2563EB,#7C3AED)";
+          msg.senderAvatarUrl = p.avatar_url ?? null;
+        }
+      }
+    }
+
+    res.status(200).json({ messages });
+  } catch (err) {
+    next(err);
+  }
+}

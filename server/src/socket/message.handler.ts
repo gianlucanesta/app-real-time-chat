@@ -455,6 +455,62 @@ export function registerMessageHandlers(
     },
   );
 
+  // ── message:star (toggle important/starred) ──
+  socket.on(
+    "message:star",
+    async (
+      data: { messageId: string; conversationId: string },
+      ack: (res: { ok: boolean; starred?: boolean }) => void,
+    ) => {
+      const { messageId, conversationId } = data;
+      if (!messageId || !conversationId) {
+        if (typeof ack === "function") ack({ ok: false });
+        return;
+      }
+
+      try {
+        const msg = await Message.findOne({ _id: messageId });
+        if (!msg) {
+          if (typeof ack === "function") ack({ ok: false });
+          return;
+        }
+
+        const alreadyStarred = (msg as any).starredBy?.includes(userId);
+        let starred: boolean;
+
+        if (alreadyStarred) {
+          await Message.updateOne(
+            { _id: messageId },
+            { $pull: { starredBy: userId } },
+          );
+          starred = false;
+        } else {
+          await Message.updateOne(
+            { _id: messageId },
+            { $addToSet: { starredBy: userId } },
+          );
+          starred = true;
+        }
+
+        // Notify the user who starred (only themselves — starring is per-user)
+        socket.emit("message:starred", {
+          messageId,
+          conversationId,
+          userId,
+          starred,
+        });
+
+        if (typeof ack === "function") ack({ ok: true, starred });
+      } catch (err) {
+        console.error(
+          "[socket] message:star error:",
+          (err as Error).message,
+        );
+        if (typeof ack === "function") ack({ ok: false });
+      }
+    },
+  );
+
   // ── message:viewOnce:open ──
   socket.on(
     "message:viewOnce:open",

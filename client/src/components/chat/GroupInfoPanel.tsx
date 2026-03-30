@@ -51,6 +51,7 @@ interface GroupInfoPanelProps {
   groupAvatar?: string | null;
   mediaCount?: number;
   starredCount?: number;
+  onImportantClick?: () => void;
   onSearch?: () => void;
   onClearChat?: () => void;
   onDeleteChat?: () => void;
@@ -66,6 +67,7 @@ export function GroupInfoPanel({
   groupAvatar: initialAvatar,
   mediaCount = 0,
   starredCount = 0,
+  onImportantClick,
   onSearch,
   onClearChat,
   onDeleteChat,
@@ -375,6 +377,7 @@ export function GroupInfoPanel({
           <button
             type="button"
             className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-input transition-colors text-text-main text-sm"
+            onClick={onImportantClick}
           >
             <div className="flex items-center gap-4">
               <Star className="w-5 h-5 text-text-secondary" />

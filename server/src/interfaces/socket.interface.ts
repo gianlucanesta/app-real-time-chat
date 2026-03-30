@@ -38,6 +38,7 @@ export interface MessagePayload {
   senderGradient?: string;
   linkPreview?: LinkPreview | null;
   statusReply?: StatusReply | null;
+  starredBy?: string[];
 }
 
 export interface ServerToClientEvents {
@@ -64,6 +65,12 @@ export interface ServerToClientEvents {
     displayName: string;
     emoji: string;
     action: "add" | "remove";
+  }) => void;
+  "message:starred": (data: {
+    messageId: string;
+    conversationId: string;
+    userId: string;
+    starred: boolean;
   }) => void;
   "message:viewOnce:opened": (data: {
     messageId: string;
@@ -182,6 +189,10 @@ export interface ClientToServerEvents {
   "message:edit": (
     data: { messageId: string; conversationId: string; text: string },
     ack: (res: { ok: boolean }) => void,
+  ) => void;
+  "message:star": (
+    data: { messageId: string; conversationId: string },
+    ack: (res: { ok: boolean; starred?: boolean }) => void,
   ) => void;
 
   // ── WebRTC call signaling ──

@@ -24,6 +24,7 @@ export const messageRouter = Router();
  *       400:
  *         description: Missing conversationId
  */
+messageRouter.get("/:conversationId/starred", authMiddleware, ctrl.listStarred);
 messageRouter.get("/:conversationId", authMiddleware, ctrl.list);
 
 /**

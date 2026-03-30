@@ -108,6 +108,11 @@ const messageSchema = new mongoose.Schema({
     },
     default: null,
   },
+  // Users who starred/marked this message as important
+  starredBy: {
+    type: [String],
+    default: [],
+  },
   // Whether the message was edited after sending
   edited: {
     type: Boolean,

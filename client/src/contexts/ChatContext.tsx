@@ -76,6 +76,7 @@ export interface Message {
     mediaType?: "image" | "video" | "audio" | "document" | null;
     mediaUrl?: string | null;
   } | null;
+  isStarred?: boolean;
 }
 
 export interface Reaction {
@@ -186,6 +187,7 @@ interface ChatContextType {
   reactions: Record<string, Reaction[]>;
   reactToMessage: (messageId: string, emoji: string) => void;
   editMessage: (messageId: string, newText: string) => void;
+  starMessage: (messageId: string) => void;
   feedStatusUserIds: Set<string>;
   removeFeedStatusUserId: (userId: string) => void;
   sendStatusReplyMessage: (
@@ -448,6 +450,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             linkPreview: m.linkPreview || null,
             statusReply: (m as any).statusReply || null,
             quotedReply: (m as any).quotedReply || null,
+            isStarred: Array.isArray((m as any).starredBy) && user?.id
+              ? (m as any).starredBy.includes(user.id)
+              : false,
           })),
         );
 
@@ -1022,6 +1027,21 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     };
     socket.on("message:edited", handleMessageEdited);
 
+    const handleMessageStarred = (data: {
+      messageId: string;
+      conversationId: string;
+      userId: string;
+      starred: boolean;
+    }) => {
+      if (data.userId !== user.id) return;
+      setActiveMessages((prev) =>
+        prev.map((m) =>
+          m.id === data.messageId ? { ...m, isStarred: data.starred } : m,
+        ),
+      );
+    };
+    socket.on("message:starred", handleMessageStarred);
+
     socket.on("presence:online", handlePresenceOnline);
     socket.on("presence:offline", handlePresenceOffline);
     socket.on("presence:list", handlePresenceList);
@@ -1072,6 +1092,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       socket.off("message:viewOnce:opened", handleViewOnceOpened);
       socket.off("message:reaction", handleReaction);
       socket.off("message:edited", handleMessageEdited);
+      socket.off("message:starred", handleMessageStarred);
       socket.off("presence:online", handlePresenceOnline);
       socket.off("presence:offline", handlePresenceOffline);
       socket.off("presence:list", handlePresenceList);
@@ -1774,6 +1795,26 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     [socket, user, activeConversation],
   );
 
+  // ── Star/unstar (important) message ───────────────────────────────────────
+  const starMessage = useCallback(
+    (messageId: string) => {
+      if (!socket || !user) return;
+      const convId = activeConversation?.id;
+      if (!convId) return;
+
+      socket.emit(
+        "message:star",
+        { messageId, conversationId: convId },
+        (ack) => {
+          if (!ack?.ok) {
+            console.warn("[chat] star message failed");
+          }
+        },
+      );
+    },
+    [socket, user, activeConversation],
+  );
+
   // ── Send media message ───────────────────────────────────────────────────
   // ── Add optimistic media bubble immediately (before upload) ────────────────
   const addOptimisticMediaMessage = useCallback(
@@ -2140,6 +2181,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         reactions,
         reactToMessage,
         editMessage,
+        starMessage,
         feedStatusUserIds,
         removeFeedStatusUserId: (userId: string) => {
           setFeedStatusUserIds((prev) => {

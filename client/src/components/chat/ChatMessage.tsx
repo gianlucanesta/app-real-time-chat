@@ -79,6 +79,8 @@ interface ChatMessageProps {
   onMessageInfo?: () => void;
   onEdit?: () => void;
   edited?: boolean;
+  isStarred?: boolean;
+  onStar?: () => void;
 }
 
 const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
@@ -119,6 +121,8 @@ export function ChatMessage({
   onMessageInfo,
   onEdit,
   edited,
+  isStarred,
+  onStar,
 }: ChatMessageProps) {
   const [isReactionMenuOpen, setIsReactionMenuOpen] = useState(false);
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
@@ -934,12 +938,16 @@ export function ChatMessage({
                   <button
                     type="button"
                     className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
+                    onClick={() => {
+                      onStar?.();
+                      setIsContextMenuOpen(false);
+                    }}
                   >
                     <Star
-                      className="w-4 h-4 text-text-secondary"
+                      className={`w-4 h-4 ${isStarred ? "text-amber-400 fill-amber-400" : "text-text-secondary"}`}
                       aria-hidden="true"
                     />{" "}
-                    Important
+                    {isStarred ? "Unstar" : "Important"}
                   </button>
                   {isSent && text && (
                     <button
@@ -1164,6 +1172,12 @@ export function ChatMessage({
           <div
             className={`text-[11px] text-text-secondary mt-1 flex items-center gap-1 ${isSent ? "justify-end mr-1" : "ml-1"}`}
           >
+            {isStarred && (
+              <Star
+                className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0"
+                aria-label="Starred"
+              />
+            )}
             {edited && (
               <span className="italic" aria-label="Edited">
                 edited
