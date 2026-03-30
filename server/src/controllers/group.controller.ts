@@ -164,7 +164,7 @@ export async function getById(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const userId = req.user!.sub;
 
     const group = await GroupModel.getById(id);
@@ -195,7 +195,7 @@ export async function update(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const userId = req.user!.sub;
 
     const role = await GroupModel.getMemberRole(id, userId);
@@ -254,7 +254,7 @@ export async function addMembers(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const userId = req.user!.sub;
 
     const role = await GroupModel.getMemberRole(id, userId);
@@ -285,7 +285,8 @@ export async function removeMember(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { id, userId: targetId } = req.params;
+    const id = req.params.id as string;
+    const targetId = req.params.userId as string;
     const requesterId = req.user!.sub;
 
     // Allow self-leave or admin removal
@@ -311,7 +312,8 @@ export async function updateMemberRole(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { id, userId: targetId } = req.params;
+    const id = req.params.id as string;
+    const targetId = req.params.userId as string;
     const requesterId = req.user!.sub;
 
     const requesterRole = await GroupModel.getMemberRole(id, requesterId);

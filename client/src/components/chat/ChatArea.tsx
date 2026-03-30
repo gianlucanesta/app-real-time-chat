@@ -25,6 +25,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useClickOutside } from "../../hooks/useClickOutside";
 import { ContactProfilePanel } from "./ContactProfilePanel";
+import { GroupInfoPanel } from "./GroupInfoPanel";
 import { EditContactPanel } from "./EditContactPanel";
 import { ChatMessage } from "./ChatMessage";
 import { ConfirmModal } from "./ConfirmModal";
@@ -723,53 +724,83 @@ export function ChatArea({
       }}
     >
       {/* Right Side Panels */}
-      <ContactProfilePanel
-        isOpen={isContactInfoOpen}
-        onClose={handleCloseContactInfo}
-        onEditClick={handleOpenEditContact}
-        contactName={contactName}
-        contactInitials={contactInitials}
-        contactGradient={contactGradient}
-        contactAvatarUrl={contactAvatarUrl}
-        mediaCount={
-          activeMessages.filter(
-            (m) =>
-              m.mediaType === "image" ||
-              m.mediaType === "video" ||
-              m.mediaType === "document",
-          ).length
-        }
-        starredCount={0}
-        onAudioCall={() => {
-          const target = activeConversation?.participants.find(
-            (p) => p !== user?.id,
-          );
-          if (target) void webrtc.startCall(target, false);
-        }}
-        onVideoCall={() => {
-          const target = activeConversation?.participants.find(
-            (p) => p !== user?.id,
-          );
-          if (target) void webrtc.startCall(target, true);
-        }}
-        onClearChat={() => {
-          setIsContactInfoOpen(false);
-          setActiveModal("clear-chat");
-        }}
-        onDeleteChat={() => {
-          setIsContactInfoOpen(false);
-          setActiveModal("delete-chat");
-        }}
-        onBlockContact={() => {
-          toast.showToast("Contact blocked", "info");
-        }}
-        onReportContact={() => {
-          toast.showToast("Contact reported", "info");
-        }}
-        onAddToFavorites={() => {
-          toast.showToast("Added to favorites", "info");
-        }}
-      />
+      {activeConversation?.type === "group" ? (
+        <GroupInfoPanel
+          isOpen={isContactInfoOpen}
+          onClose={handleCloseContactInfo}
+          groupConversationId={activeConversation.id}
+          groupName={contactName}
+          groupInitials={contactInitials}
+          groupGradient={contactGradient}
+          groupAvatar={contactAvatarUrl}
+          mediaCount={
+            activeMessages.filter(
+              (m) =>
+                m.mediaType === "image" ||
+                m.mediaType === "video" ||
+                m.mediaType === "document",
+            ).length
+          }
+          starredCount={0}
+          onSearch={undefined}
+          onClearChat={() => {
+            setIsContactInfoOpen(false);
+            setActiveModal("clear-chat");
+          }}
+          onDeleteChat={() => {
+            setIsContactInfoOpen(false);
+            setActiveModal("delete-chat");
+          }}
+        />
+      ) : (
+        <ContactProfilePanel
+          isOpen={isContactInfoOpen}
+          onClose={handleCloseContactInfo}
+          onEditClick={handleOpenEditContact}
+          contactName={contactName}
+          contactInitials={contactInitials}
+          contactGradient={contactGradient}
+          contactAvatarUrl={contactAvatarUrl}
+          mediaCount={
+            activeMessages.filter(
+              (m) =>
+                m.mediaType === "image" ||
+                m.mediaType === "video" ||
+                m.mediaType === "document",
+            ).length
+          }
+          starredCount={0}
+          onAudioCall={() => {
+            const target = activeConversation?.participants.find(
+              (p) => p !== user?.id,
+            );
+            if (target) void webrtc.startCall(target, false);
+          }}
+          onVideoCall={() => {
+            const target = activeConversation?.participants.find(
+              (p) => p !== user?.id,
+            );
+            if (target) void webrtc.startCall(target, true);
+          }}
+          onClearChat={() => {
+            setIsContactInfoOpen(false);
+            setActiveModal("clear-chat");
+          }}
+          onDeleteChat={() => {
+            setIsContactInfoOpen(false);
+            setActiveModal("delete-chat");
+          }}
+          onBlockContact={() => {
+            toast.showToast("Contact blocked", "info");
+          }}
+          onReportContact={() => {
+            toast.showToast("Contact reported", "info");
+          }}
+          onAddToFavorites={() => {
+            toast.showToast("Added to favorites", "info");
+          }}
+        />
+      )}
       <EditContactPanel
         isOpen={isEditContactOpen}
         onClose={handleCloseEditContact}
