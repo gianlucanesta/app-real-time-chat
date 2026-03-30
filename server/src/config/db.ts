@@ -189,6 +189,14 @@ export async function initSchema(): Promise<void> {
         ALTER TABLE group_chat_members ADD COLUMN role TEXT NOT NULL DEFAULT 'member';
       END IF;
     END $$;
+
+    -- Backfill: set creators to 'admin' for any groups where they still have role='member'
+    UPDATE group_chat_members gcm
+    SET role = 'admin'
+    FROM group_chats gc
+    WHERE gcm.group_id = gc.id
+      AND gcm.user_id = gc.created_by
+      AND gcm.role = 'member';
   `);
   console.log("[pg] schema ready");
 }
