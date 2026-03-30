@@ -12,6 +12,17 @@ interface SearchUser {
   email?: string;
 }
 
+interface SavedContact {
+  id: string;
+  display_name: string;
+  phone: string;
+  initials: string;
+  gradient: string;
+  linked_user_id: string | null;
+  linked_display_name?: string;
+  linked_initials?: string;
+}
+
 interface NewChatPanelProps {
   isOpen: boolean;
   onClose: () => void;
@@ -28,7 +39,16 @@ export function NewChatPanel({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchUser[]>([]);
   const [status, setStatus] = useState<"idle" | "searching" | "empty">("idle");
+  const [contacts, setContacts] = useState<SavedContact[]>([]);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load saved contacts on open
+  useEffect(() => {
+    if (!isOpen) return;
+    apiFetch<{ contacts: SavedContact[] }>("/contacts")
+      .then((data) => setContacts(data.contacts || []))
+      .catch(() => setContacts([]));
+  }, [isOpen]);
 
   // Debounced search
   useEffect(() => {
@@ -67,6 +87,28 @@ export function NewChatPanel({
       setStatus("idle");
     }
   }, [isOpen]);
+
+  const handleSelectContact = (c: SavedContact) => {
+    if (!user) return;
+    if (c.linked_user_id) {
+      const convId = [user.id, c.linked_user_id].sort().join("___");
+      const conv: Conversation = {
+        id: convId,
+        type: "direct",
+        name: c.linked_display_name || c.display_name,
+        gradient: c.gradient || "linear-gradient(135deg,#2563EB,#7C3AED)",
+        initials: c.linked_initials || c.initials,
+        lastMessage: "",
+        lastMessageTime: undefined,
+        unreadCount: 0,
+        isOnline: false,
+        participants: [user.id, c.linked_user_id],
+      };
+      addOrUpdateConversation(conv);
+      setActiveConversation(conv);
+    }
+    onClose();
+  };
 
   const handleSelectUser = (u: SearchUser) => {
     if (!user) return;
@@ -136,6 +178,7 @@ export function NewChatPanel({
             : "Contacts on Ephemeral"}
         </div>
 
+        {/* Searching spinner */}
         {status === "searching" && (
           <div className="flex flex-col items-center justify-center py-10 text-text-secondary text-[13px] gap-2">
             <svg
@@ -160,17 +203,61 @@ export function NewChatPanel({
           </div>
         )}
 
-        {status === "idle" && query.trim().length < 2 && (
-          <div className="flex flex-col items-center justify-center py-10 text-text-secondary text-[13px] gap-2">
-            <Search className="w-6 h-6" />
-            <p className="text-center">
-              Type at least 2 characters
-              <br />
-              to search for people
-            </p>
-          </div>
-        )}
+        {/* No search active — show saved contacts */}
+        {status === "idle" &&
+          query.trim().length < 2 &&
+          contacts.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-10 text-text-secondary text-[13px] gap-2">
+              <Search className="w-6 h-6" />
+              <p className="text-center">
+                Type at least 2 characters
+                <br />
+                to search for people
+              </p>
+            </div>
+          )}
 
+        {status === "idle" &&
+          query.trim().length < 2 &&
+          contacts.map((c) => (
+            <div
+              key={c.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => handleSelectContact(c)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleSelectContact(c);
+                }
+              }}
+              className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-input/50 transition-colors"
+            >
+              <div className="relative inline-block shrink-0">
+                <div
+                  className="w-[42px] h-[42px] rounded-full flex items-center justify-center font-bold text-[13px] text-white"
+                  style={{
+                    background:
+                      c.gradient || "linear-gradient(135deg,#2563EB,#7C3AED)",
+                  }}
+                >
+                  {c.linked_initials || c.initials}
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-[14px] text-text-main truncate">
+                  {c.linked_display_name || c.display_name}
+                </div>
+                {c.phone && (
+                  <div className="text-[13px] text-text-secondary truncate">
+                    {c.phone}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+
+        {/* Search results */}
         {status === "empty" && (
           <div className="flex flex-col items-center justify-center py-10 text-text-secondary text-[13px] gap-2">
             <Search className="w-6 h-6" />

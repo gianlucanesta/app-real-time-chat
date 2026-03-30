@@ -13,7 +13,10 @@ import {
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useChat } from "../../contexts/ChatContext";
 import type { Conversation } from "../../contexts/ChatContext";
-import { MuteConversationModal } from "./MuteConversationModal";
+import {
+  MuteConversationModal,
+  type MuteDuration,
+} from "./MuteConversationModal";
 
 interface ArchiveSidebarProps {
   onSelectChat?: (conv: Conversation) => void;
@@ -30,6 +33,7 @@ export function ArchiveSidebar({ onSelectChat }: ArchiveSidebarProps) {
     conversationsLoading,
     markAsUnread,
     clearConversationById,
+    unmuteConversation,
     unarchiveConversation,
     addToFavorites,
     removeFromFavorites,
@@ -309,21 +313,11 @@ export function ArchiveSidebar({ onSelectChat }: ArchiveSidebarProps) {
       {/* Mute Modal */}
       {mutingConvId && (
         <MuteConversationModal
-          isOpen={true}
-          conversationName={
-            archivedConversations.find((c) => c.id === mutingConvId)?.name ?? ""
-          }
-          isMuted={
-            archivedConversations.find((c) => c.id === mutingConvId)?.isMuted ??
-            false
-          }
-          onMute={() => {
+          onMute={(d: MuteDuration) => {
+            // Not used in archive but keeping for consistency
             setMutingConvId(null);
           }}
-          onUnmute={() => {
-            setMutingConvId(null);
-          }}
-          onCancel={() => setMutingConvId(null)}
+          onClose={() => setMutingConvId(null)}
         />
       )}
     </aside>
