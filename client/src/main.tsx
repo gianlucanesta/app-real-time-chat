@@ -3,6 +3,15 @@ import { createRoot } from "react-dom/client";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import "./index.css";
 
+/* ── Track visual viewport height (mobile keyboard handling) ── */
+function setVvh() {
+  const h = window.visualViewport?.height ?? window.innerHeight;
+  document.documentElement.style.setProperty("--vvh", `${h}px`);
+}
+setVvh();
+window.visualViewport?.addEventListener("resize", setVvh);
+window.addEventListener("resize", setVvh);
+
 /* ── Prevent all zoom (keyboard + touch) ────────────── */
 document.addEventListener("keydown", (e) => {
   if (
