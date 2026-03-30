@@ -28,7 +28,7 @@ interface NewGroupPanelProps {
 export function NewGroupPanel({
   isOpen,
   onClose,
-  onCreated,
+  onCreated: _onCreated,
 }: NewGroupPanelProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [contacts, setContacts] = useState<Contact[]>([]);
