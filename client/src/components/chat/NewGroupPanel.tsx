@@ -22,9 +22,14 @@ interface Contact {
 interface NewGroupPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  onCreated?: (conv: any) => void;
 }
 
-export function NewGroupPanel({ isOpen, onClose }: NewGroupPanelProps) {
+export function NewGroupPanel({
+  isOpen,
+  onClose,
+  onCreated,
+}: NewGroupPanelProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [query, setQuery] = useState("");
