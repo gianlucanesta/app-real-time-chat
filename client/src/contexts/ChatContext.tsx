@@ -185,6 +185,7 @@ interface ChatContextType {
       senderName: string;
     },
   ) => void;
+  sendScheduledCallInvite: (conversationId: string, text: string) => void;
   // ── WebRTC ──
   webrtc: {
     status: CallStatus;
@@ -1248,6 +1249,86 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     [user, socket],
   );
 
+  // ── Send a scheduled call invite to a specific conversation ────────────
+  const sendScheduledCallInvite = useCallback(
+    (conversationId: string, text: string) => {
+      if (!socket || !user) return;
+
+      const tempId = `temp-${Date.now()}`;
+      const now = new Date();
+      const newMsg: Message = {
+        id: tempId,
+        senderId: user.id ?? "me",
+        senderName: user.displayName ?? "Me",
+        text,
+        timestamp: now.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        rawTimestamp: now.toISOString(),
+        status: "sending",
+        isMe: true,
+      };
+
+      // If this conversation is already active, append optimistically
+      if (activeConvRef.current?.id === conversationId) {
+        setActiveMessages((prev) => [...prev, newMsg]);
+      }
+
+      // Update sidebar snippet optimistically
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === conversationId
+            ? {
+                ...c,
+                lastMessage: "📅 Scheduled call invite",
+                lastMessageTime: newMsg.timestamp,
+                lastMessageId: tempId,
+                lastMessageIsMine: true,
+                lastMessageStatus: "sending",
+              }
+            : c,
+        ),
+      );
+
+      socket.emit("join:conversation", conversationId);
+
+      socket.emit(
+        "message:send",
+        {
+          conversationId,
+          text,
+        } as any,
+        (res) => {
+          if (res.ok && res.messageId) {
+            sentMsgsRef.current.set(res.messageId!, conversationId);
+            if (activeConvRef.current?.id === conversationId) {
+              setActiveMessages((prev) =>
+                prev.map((m) =>
+                  m.id === tempId
+                    ? { ...m, id: res.messageId!, status: "sent" }
+                    : m,
+                ),
+              );
+            }
+            setConversations((prev) =>
+              prev.map((c) =>
+                c.id === conversationId && c.lastMessageId === tempId
+                  ? {
+                      ...c,
+                      lastMessageId: res.messageId!,
+                      lastMessageStatus: "sent",
+                    }
+                  : c,
+              ),
+            );
+          }
+        },
+      );
+    },
+    [user, socket],
+  );
+
   const deleteMessages = useCallback((ids: string[]) => {
     // Optimistic local removal
     setActiveMessages((prev) => prev.filter((m) => !ids.includes(m.id)));
@@ -1918,6 +1999,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           });
         },
         sendStatusReplyMessage,
+        sendScheduledCallInvite,
         webrtc,
       }}
     >

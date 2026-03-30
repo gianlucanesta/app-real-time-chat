@@ -26,6 +26,8 @@ import { TranscribeButton } from "./TranscribeButton";
 import type { Reaction } from "../../contexts/ChatContext";
 import type { LinkPreview } from "../../types";
 import { LinkPreviewCard } from "./LinkPreviewCard";
+import { parseScheduledCallMessage } from "./ScheduleCallModal";
+import { ScheduledCallCard } from "./ScheduledCallCard";
 
 interface ChatMessageProps {
   id: string;
@@ -152,6 +154,12 @@ export function ChatMessage({
     !!mediaUrl &&
     (mediaType === "image" || mediaType === "video") &&
     !isViewOnceHidden;
+
+  // Detect scheduled call invite messages
+  const scheduledCallPayload = useMemo(
+    () => (text ? parseScheduledCallMessage(text) : null),
+    [text],
+  );
 
   // ── View-once handlers ──
   // Mark opened on server (fires only once)
@@ -334,8 +342,11 @@ export function ChatMessage({
             {/* Message Bubble */}
             <div
               className={`group/bubble relative ${
-                isMediaBubble || statusReply || !!quotedReply
-                  ? `rounded-2xl overflow-hidden shadow-sm ${isSent ? "rounded-br-sm" : "rounded-bl-sm"} ${(!isMediaBubble && statusReply && !isSent) || (!isMediaBubble && quotedReply && !isSent) ? "border border-border/50" : ""}`
+                isMediaBubble ||
+                statusReply ||
+                !!quotedReply ||
+                !!scheduledCallPayload
+                  ? `rounded-2xl overflow-hidden shadow-sm ${isSent ? "rounded-br-sm" : "rounded-bl-sm"} ${(!isMediaBubble && (statusReply || scheduledCallPayload) && !isSent) || (!isMediaBubble && quotedReply && !isSent) ? "border border-border/50" : ""}`
                   : `pr-8 px-4 py-3 text-[14px] leading-relaxed break-words shadow-sm rounded-2xl overflow-hidden ${
                       isSent
                         ? "text-white rounded-br-sm"
@@ -343,9 +354,15 @@ export function ChatMessage({
                     }`
               }`}
               style={
-                isSent && !isMediaBubble && !statusReply && !quotedReply
+                isSent &&
+                !isMediaBubble &&
+                !statusReply &&
+                !quotedReply &&
+                !scheduledCallPayload
                   ? { background: "linear-gradient(135deg, #2563EB, #3B82F6)" }
-                  : isSent && !!quotedReply && !isMediaBubble
+                  : isSent &&
+                      (!!quotedReply || !!scheduledCallPayload) &&
+                      !isMediaBubble
                     ? {
                         background: "linear-gradient(135deg, #2563EB, #3B82F6)",
                       }
@@ -358,7 +375,7 @@ export function ChatMessage({
                   className={`text-[12px] font-semibold truncate ${
                     isMediaBubble
                       ? "absolute top-0 left-0 right-0 z-10 px-3 pt-2 pb-4 bg-gradient-to-b from-black/50 to-transparent text-white rounded-t-2xl"
-                      : statusReply || quotedReply
+                      : statusReply || quotedReply || scheduledCallPayload
                         ? "text-accent px-3 pt-2 pb-0"
                         : "text-accent mb-1"
                   }`}
@@ -541,8 +558,19 @@ export function ChatMessage({
                   <span>{text}</span>
                 </div>
               )}
+              {/* Scheduled call invite card */}
+              {scheduledCallPayload &&
+                !isMediaBubble &&
+                !statusReply &&
+                !quotedReply && (
+                  <ScheduledCallCard
+                    payload={scheduledCallPayload}
+                    isSent={isSent}
+                  />
+                )}
               {/* Inline text for non-media bubbles */}
               {text &&
+                !scheduledCallPayload &&
                 !isViewOnceHidden &&
                 !isMediaBubble &&
                 !statusReply &&

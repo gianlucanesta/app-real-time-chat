@@ -88,6 +88,7 @@ function LayoutContent() {
         contactInitials={contactInitials}
         contactGradient={contactGradient}
         contactAvatarUrl={contactAvatarUrl}
+        contactPhone={callConv?.phone}
         localInitials={myInitials}
         localGradient={myGradient}
         localAvatarUrl={myAvatarUrl}

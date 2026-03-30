@@ -93,6 +93,20 @@ export interface ServerToClientEvents {
   "call:rejected": (data: { from: string }) => void;
   "call:busy": (data: { from: string }) => void;
   "call:screenshare": (data: { from: string; active: boolean }) => void;
+
+  // ── Call link rooms ──
+  "call:peer-joined": (data: {
+    userId: string;
+    displayName: string;
+    roomId: string;
+  }) => void;
+  "call:peer-in-room": (data: {
+    userId: string;
+    displayName: string;
+    roomId: string;
+  }) => void;
+  "call:peer-left": (data: { userId: string; roomId: string }) => void;
+
   "user:profile-updated": (data: {
     userId: string;
     displayName: string;
@@ -178,6 +192,10 @@ export interface ClientToServerEvents {
   "call:end": (data: { to: string }) => void;
   "call:reject": (data: { to: string }) => void;
   "call:screenshare": (data: { to: string; active: boolean }) => void;
+
+  // ── Call link rooms ──
+  "call:join-room": (data: { roomId: string }) => void;
+  "call:leave-room": (data: { roomId: string }) => void;
 }
 
 export type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;

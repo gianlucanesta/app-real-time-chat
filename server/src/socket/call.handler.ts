@@ -61,4 +61,37 @@ export function registerCallHandlers(
     if (typeof to !== "string" || !to) return;
     io.to(`user:${to}`).emit("call:screenshare", { from: userId, active });
   });
+
+  // ── Call link room management ──
+  socket.on("call:join-room", ({ roomId }) => {
+    if (typeof roomId !== "string" || !roomId || roomId.length > 20) return;
+    const room = `call:${roomId}`;
+    socket.join(room);
+
+    // Tell existing peers about the new joiner
+    socket.to(room).emit("call:peer-joined", { userId, displayName, roomId });
+
+    // Tell the joiner about existing peers
+    const clients = io.sockets.adapter.rooms.get(room);
+    if (clients) {
+      for (const clientId of clients) {
+        if (clientId === socket.id) continue;
+        const peerSocket = io.sockets.sockets.get(clientId);
+        if (peerSocket?.data?.user) {
+          socket.emit("call:peer-in-room", {
+            userId: peerSocket.data.user.sub,
+            displayName: peerSocket.data.user.displayName,
+            roomId,
+          });
+        }
+      }
+    }
+  });
+
+  socket.on("call:leave-room", ({ roomId }) => {
+    if (typeof roomId !== "string" || !roomId) return;
+    const room = `call:${roomId}`;
+    socket.leave(room);
+    socket.to(room).emit("call:peer-left", { userId, roomId });
+  });
 }

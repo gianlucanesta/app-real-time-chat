@@ -8,8 +8,11 @@ import { DialpadPanel } from "../components/chat/DialpadPanel";
 import {
   ScheduleCallModal,
   type ScheduledCall,
+  SCHEDULED_CALL_PREFIX,
+  type ScheduledCallPayload,
 } from "../components/chat/ScheduleCallModal";
 import { useChat } from "../contexts/ChatContext";
+import { useAuth } from "../contexts/AuthContext";
 import type { CallGroup, CallRecord } from "../types";
 
 export const Route = createFileRoute("/_authenticated/calls")({
@@ -222,7 +225,8 @@ function buildCallGroupsFromConversations(
 /* ── Page Component ──────────────────────────────────────── */
 
 function CallsPage() {
-  const { conversations, webrtc } = useChat();
+  const { conversations, webrtc, sendScheduledCallInvite } = useChat();
+  const { user } = useAuth();
   const [selectedGroup, setSelectedGroup] = useState<CallGroup | null>(null);
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
 
@@ -337,6 +341,25 @@ function CallsPage() {
         endWarningTimersRef.current.set(scheduled.id, warnTimer);
       }
 
+      // Send invite message to each participant
+      if (user) {
+        const payload: ScheduledCallPayload = {
+          id: scheduled.id,
+          name: scheduled.name,
+          description: scheduled.description,
+          startDate: scheduled.startDate,
+          endDate: scheduled.endDate,
+          callType: scheduled.callType,
+          organizerName: user.displayName ?? "Unknown",
+          participantCount: scheduled.participants.length,
+        };
+        const msgText = SCHEDULED_CALL_PREFIX + JSON.stringify(payload);
+        for (const participantId of scheduled.participants) {
+          const convId = [user.id, participantId].sort().join("___");
+          sendScheduledCallInvite(convId, msgText);
+        }
+      }
+
       // Timer to auto-end the call
       if (endMs > 0) {
         const endTimer = setTimeout(() => {
@@ -363,7 +386,7 @@ function CallsPage() {
         endTimersRef.current.set(scheduled.id, endTimer);
       }
     },
-    [webrtc],
+    [webrtc, user, sendScheduledCallInvite],
   );
 
   // Cleanup timers on unmount

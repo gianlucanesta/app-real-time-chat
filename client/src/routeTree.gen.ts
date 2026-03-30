@@ -26,6 +26,7 @@ import { Route as AuthenticatedCommunityRouteImport } from './routes/_authentica
 import { Route as AuthenticatedChannelsRouteImport } from './routes/_authenticated.channels'
 import { Route as AuthenticatedCallsRouteImport } from './routes/_authenticated.calls'
 import { Route as AuthenticatedArchiveRouteImport } from './routes/_authenticated.archive'
+import { Route as AuthenticatedCallIdRouteImport } from './routes/_authenticated.call.$id'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -111,6 +112,11 @@ const AuthenticatedArchiveRoute = AuthenticatedArchiveRouteImport.update({
   path: '/archive',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCallIdRoute = AuthenticatedCallIdRouteImport.update({
+  id: '/call/$id',
+  path: '/call/$id',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -129,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/community': typeof AuthenticatedCommunityRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/status': typeof AuthenticatedStatusRoute
+  '/call/$id': typeof AuthenticatedCallIdRoute
 }
 export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
@@ -147,6 +154,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/status': typeof AuthenticatedStatusRoute
   '/': typeof AuthenticatedIndexRoute
+  '/call/$id': typeof AuthenticatedCallIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -167,6 +175,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/status': typeof AuthenticatedStatusRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/call/$id': typeof AuthenticatedCallIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -187,6 +196,7 @@ export interface FileRouteTypes {
     | '/community'
     | '/settings'
     | '/status'
+    | '/call/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/forgot-password'
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/status'
     | '/'
+    | '/call/$id'
   id:
     | '__root__'
     | '/_authenticated'
@@ -224,6 +235,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/status'
     | '/_authenticated/'
+    | '/_authenticated/call/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -360,6 +372,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedArchiveRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/call/$id': {
+      id: '/_authenticated/call/$id'
+      path: '/call/$id'
+      fullPath: '/call/$id'
+      preLoaderRoute: typeof AuthenticatedCallIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -371,6 +390,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedStatusRoute: typeof AuthenticatedStatusRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedCallIdRoute: typeof AuthenticatedCallIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -381,6 +401,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedStatusRoute: AuthenticatedStatusRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedCallIdRoute: AuthenticatedCallIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
