@@ -19,8 +19,9 @@ import type { CallStatus } from "../../hooks/useWebRTC";
 function generateCallLinkId(): string {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   const seg = (len: number) =>
-    Array.from({ length: len }, () =>
-      chars[Math.floor(Math.random() * chars.length)],
+    Array.from(
+      { length: len },
+      () => chars[Math.floor(Math.random() * chars.length)],
     ).join("");
   return `${seg(3)}-${seg(4)}-${seg(3)}`;
 }
@@ -511,359 +512,533 @@ export function CallScreen({
       aria-label="Active call"
       onPointerMove={showControls}
     >
-      {/* Video / Avatar area */}
-      <div className="call-screen-content">
-        {/* Remote video: screen share view (with zoom/pan) or regular camera view */}
-        {!isSwapped && remoteIsScreenSharing ? (
-          <div
-            ref={shareContainerRef}
-            className="call-screen-share-wrapper"
-            style={{ opacity: showRemoteVideo ? 1 : 0 }}
-            onPointerDown={handleSharePointerDown}
-            onPointerMove={handleSharePointerMove}
-            onPointerUp={handleSharePointerUp}
-            onPointerCancel={handleSharePointerUp}
-            onDoubleClick={handleShareDoubleClick}
-          >
-            <video
-              ref={remoteVideoCallback}
-              autoPlay
-              playsInline
-              className="call-screen-share-video"
-              style={{
-                transform: `translate(${sharePan.x}px, ${sharePan.y}px) scale(${shareZoom})`,
-              }}
-            />
-            {showZoomBadge && (
-              <div className="call-share-zoom-badge">
-                {shareZoom <= SHARE_ZOOM_MIN
-                  ? "1×"
-                  : `${shareZoom.toFixed(1)}×`}
-              </div>
-            )}
-            {shareZoom <= SHARE_ZOOM_MIN && (
-              <div className="call-share-zoom-hint">
-                Scroll to zoom · drag to pan · double-click to reset
-              </div>
-            )}
-          </div>
-        ) : (
-          /* Regular remote video — always in DOM for audio routing */
-          <video
-            ref={remoteVideoCallback}
-            autoPlay
-            playsInline
-            className="call-remote-video"
-            style={{
-              opacity: !isSwapped && showRemoteVideo ? 1 : 0,
-              pointerEvents: !isSwapped && showRemoteVideo ? "auto" : "none",
-            }}
-          />
-        )}
-
-        {/* Local video in full-screen main area when swapped */}
-        {isSwapped && showLocalPip && (
-          <video
-            ref={localVideoCallback}
-            autoPlay
-            playsInline
-            muted
-            className="call-remote-video"
-            style={{ opacity: isCameraOff ? 0 : 1, transform: "scaleX(-1)" }}
-          />
-        )}
-        {isSwapped && showLocalPip && isCameraOff && (
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            {localAvatarUrl ? (
-              <img
-                src={localAvatarUrl}
-                alt="You"
-                className="call-avatar rounded-full object-cover"
-              />
-            ) : (
+      <div className="call-screen-layout">
+        {/* ── Main call area (left) ─────────────────────────────────── */}
+        <div className="call-screen-main">
+          {/* Video / Avatar area */}
+          <div className="call-screen-content">
+            {/* Remote video: screen share view (with zoom/pan) or regular camera view */}
+            {!isSwapped && remoteIsScreenSharing ? (
               <div
-                className="call-avatar"
-                style={{ background: localGradient }}
+                ref={shareContainerRef}
+                className="call-screen-share-wrapper"
+                style={{ opacity: showRemoteVideo ? 1 : 0 }}
+                onPointerDown={handleSharePointerDown}
+                onPointerMove={handleSharePointerMove}
+                onPointerUp={handleSharePointerUp}
+                onPointerCancel={handleSharePointerUp}
+                onDoubleClick={handleShareDoubleClick}
               >
-                {localInitials}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Avatar / status fallback (voice call, pre-connect, or remote camera off) */}
-        {!isSwapped && !showRemoteVideo && (
-          <>
-            {contactAvatarUrl ? (
-              <img
-                src={contactAvatarUrl}
-                alt={contactName}
-                className="call-avatar rounded-full object-cover"
-              />
-            ) : (
-              <div
-                className="call-avatar"
-                style={{ background: contactGradient }}
-              >
-                {contactInitials}
-              </div>
-            )}
-            <div className="call-name">{contactName}</div>
-
-            {status === "calling" && (
-              <div className="call-status-text">Calling...</div>
-            )}
-            {status === "connecting" && (
-              <div className="call-status-text">Connecting...</div>
-            )}
-            {status === "reconnecting" && (
-              <div className="call-status-text">Reconnecting...</div>
-            )}
-            {status === "failed" && (
-              <div className="call-status-text call-status-failed">
-                Connection failed. Network may not support P2P calls.
-              </div>
-            )}
-            {status === "connected" && remoteCameraOff && (
-              <div
-                className="call-status-text"
-                style={{ opacity: 0.6, fontSize: "0.85rem" }}
-              >
-                Camera off
-              </div>
-            )}
-            {status === "connected" && !hasRemoteVideo && !remoteCameraOff && (
-              <div className="call-waveform" aria-hidden="true">
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* PiP — shows local (default) or remote (swapped); draggable & click-to-swap */}
-        {showLocalPip && (
-          <div
-            className={`call-local-pip${pipExpanded ? " call-local-pip--expanded" : ""}`}
-            style={{
-              transform: `translate(${pipOffset.x}px, ${pipOffset.y}px)`,
-              cursor: dragRef.current.active ? "grabbing" : "grab",
-            }}
-            onPointerDown={handlePipPointerDown}
-            onPointerMove={handlePipPointerMove}
-            onPointerUp={handlePipPointerUp}
-            onDoubleClick={handlePipDoubleClick}
-            onClick={handlePipClick}
-          >
-            {isSwapped ? (
-              showRemoteVideo ? (
                 <video
-                  ref={remoteVideoPipRef}
+                  ref={remoteVideoCallback}
                   autoPlay
                   playsInline
-                  className="call-local-video"
-                />
-              ) : (
-                <div
+                  className="call-screen-share-video"
                   style={{
-                    width: "100%",
-                    height: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderRadius: "inherit",
-                    overflow: "hidden",
+                    transform: `translate(${sharePan.x}px, ${sharePan.y}px) scale(${shareZoom})`,
                   }}
-                >
-                  {contactAvatarUrl ? (
-                    <img
-                      src={contactAvatarUrl}
-                      alt={contactName}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        background: contactGradient,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#fff",
-                        fontSize: pipExpanded ? "2rem" : "1rem",
-                        fontWeight: 600,
-                      }}
-                    >
-                      {contactInitials}
-                    </div>
-                  )}
-                </div>
-              )
-            ) : isCameraOff ? (
-              <div
-                className="call-local-avatar"
+                />
+                {showZoomBadge && (
+                  <div className="call-share-zoom-badge">
+                    {shareZoom <= SHARE_ZOOM_MIN
+                      ? "1×"
+                      : `${shareZoom.toFixed(1)}×`}
+                  </div>
+                )}
+                {shareZoom <= SHARE_ZOOM_MIN && (
+                  <div className="call-share-zoom-hint">
+                    Scroll to zoom · drag to pan · double-click to reset
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Regular remote video — always in DOM for audio routing */
+              <video
+                ref={remoteVideoCallback}
+                autoPlay
+                playsInline
+                className="call-remote-video"
                 style={{
-                  width: "100%",
-                  height: "100%",
+                  opacity: !isSwapped && showRemoteVideo ? 1 : 0,
+                  pointerEvents:
+                    !isSwapped && showRemoteVideo ? "auto" : "none",
+                }}
+              />
+            )}
+
+            {/* Local video in full-screen main area when swapped */}
+            {isSwapped && showLocalPip && (
+              <video
+                ref={localVideoCallback}
+                autoPlay
+                playsInline
+                muted
+                className="call-remote-video"
+                style={{
+                  opacity: isCameraOff ? 0 : 1,
+                  transform: "scaleX(-1)",
+                }}
+              />
+            )}
+            {isSwapped && showLocalPip && isCameraOff && (
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  borderRadius: "inherit",
-                  overflow: "hidden",
                 }}
               >
                 {localAvatarUrl ? (
                   <img
                     src={localAvatarUrl}
                     alt="You"
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
+                    className="call-avatar rounded-full object-cover"
                   />
                 ) : (
                   <div
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      background: localGradient,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#fff",
-                      fontSize: pipExpanded ? "2rem" : "1rem",
-                      fontWeight: 600,
-                    }}
+                    className="call-avatar"
+                    style={{ background: localGradient }}
                   >
                     {localInitials}
                   </div>
                 )}
               </div>
-            ) : (
-              <video
-                ref={localVideoCallback}
-                autoPlay
-                playsInline
-                muted
-                className="call-local-video"
-              />
+            )}
+
+            {/* Waiting state — large centered local preview (calling / connecting, video) */}
+            {!isSwapped && isWaiting && callWithVideo && localStream && (
+              <>
+                <div className="call-waiting-text">
+                  Waiting for other participants...
+                </div>
+                <div className="call-waiting-preview">
+                  <video
+                    ref={localVideoCallback}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="call-waiting-video"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Avatar / status fallback (voice call, pre-connect, or remote camera off) */}
+            {!isSwapped &&
+              !showRemoteVideo &&
+              !(isWaiting && callWithVideo && localStream) && (
+                <>
+                  {contactAvatarUrl ? (
+                    <img
+                      src={contactAvatarUrl}
+                      alt={contactName}
+                      className="call-avatar rounded-full object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="call-avatar"
+                      style={{ background: contactGradient }}
+                    >
+                      {contactInitials}
+                    </div>
+                  )}
+                  <div className="call-name">{contactName}</div>
+                  {contactPhone && (
+                    <div
+                      className="call-status-text"
+                      style={{ opacity: 0.6, fontSize: "0.85rem" }}
+                    >
+                      {contactPhone}
+                    </div>
+                  )}
+
+                  {status === "calling" && (
+                    <div className="call-status-text">Calling...</div>
+                  )}
+                  {status === "connecting" && (
+                    <div className="call-status-text">Connecting...</div>
+                  )}
+                  {status === "reconnecting" && (
+                    <div className="call-status-text">Reconnecting...</div>
+                  )}
+                  {isWaiting && (
+                    <div
+                      style={{
+                        marginTop: "1rem",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                        maxWidth: "90%",
+                        background: "rgba(255,255,255,0.08)",
+                        borderRadius: "0.5rem",
+                        padding: "0.4rem 0.75rem",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "0.8rem",
+                          opacity: 0.7,
+                          flex: 1,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          color: "#fff",
+                        }}
+                      >
+                        {callLinkDisplay}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleCopyLink}
+                        aria-label="Copy call link"
+                        style={{
+                          flexShrink: 0,
+                          color: "white",
+                          opacity: 0.8,
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          display: "flex",
+                        }}
+                      >
+                        {linkCopied ? (
+                          <Check className="w-4 h-4" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  )}
+                  {status === "failed" && (
+                    <div className="call-status-text call-status-failed">
+                      Connection failed. Network may not support P2P calls.
+                    </div>
+                  )}
+                  {status === "connected" && remoteCameraOff && (
+                    <div
+                      className="call-status-text"
+                      style={{ opacity: 0.6, fontSize: "0.85rem" }}
+                    >
+                      Camera off
+                    </div>
+                  )}
+                  {status === "connected" &&
+                    !hasRemoteVideo &&
+                    !remoteCameraOff && (
+                      <div className="call-waveform" aria-hidden="true">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                    )}
+                </>
+              )}
+
+            {/* PiP — shows local (default) or remote (swapped); draggable & click-to-swap */}
+            {showLocalPip && !isWaiting && (
+              <div
+                className={`call-local-pip${pipExpanded ? " call-local-pip--expanded" : ""}`}
+                style={{
+                  transform: `translate(${pipOffset.x}px, ${pipOffset.y}px)`,
+                  cursor: dragRef.current.active ? "grabbing" : "grab",
+                }}
+                onPointerDown={handlePipPointerDown}
+                onPointerMove={handlePipPointerMove}
+                onPointerUp={handlePipPointerUp}
+                onDoubleClick={handlePipDoubleClick}
+                onClick={handlePipClick}
+              >
+                {isSwapped ? (
+                  showRemoteVideo ? (
+                    <video
+                      ref={remoteVideoPipRef}
+                      autoPlay
+                      playsInline
+                      className="call-local-video"
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: "inherit",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {contactAvatarUrl ? (
+                        <img
+                          src={contactAvatarUrl}
+                          alt={contactName}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            background: contactGradient,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "#fff",
+                            fontSize: pipExpanded ? "2rem" : "1rem",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {contactInitials}
+                        </div>
+                      )}
+                    </div>
+                  )
+                ) : isCameraOff ? (
+                  <div
+                    className="call-local-avatar"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: "inherit",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {localAvatarUrl ? (
+                      <img
+                        src={localAvatarUrl}
+                        alt="You"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          background: localGradient,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#fff",
+                          fontSize: pipExpanded ? "2rem" : "1rem",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {localInitials}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <video
+                    ref={localVideoCallback}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="call-local-video"
+                  />
+                )}
+              </div>
+            )}
+
+            {status === "connected" && (
+              <div className="call-timer">{formatTimer(timer)}</div>
             )}
           </div>
-        )}
 
-        {status === "connected" && (
-          <div className="call-timer">{formatTimer(timer)}</div>
-        )}
-      </div>
-
-      {/* Bottom action bar */}
-      <div
-        className="call-screen-bar"
-        style={{
-          opacity: controlsVisible ? 1 : 0,
-          pointerEvents: controlsVisible ? "auto" : "none",
-          transition: "opacity 0.4s ease",
-        }}
-      >
-        {/* Camera (only for video calls) */}
-        {callWithVideo && (
-          <button
-            type="button"
-            className="call-bar-btn"
-            data-active={!isCameraOff}
-            onClick={onToggleCamera}
-            aria-label="Toggle camera"
-            style={isCameraOff ? { background: "var(--color-danger)" } : {}}
+          {/* Bottom action bar */}
+          <div
+            className="call-screen-bar"
+            style={{
+              opacity: controlsVisible ? 1 : 0,
+              pointerEvents: controlsVisible ? "auto" : "none",
+              transition: "opacity 0.4s ease",
+            }}
           >
-            {!isCameraOff ? (
-              <Video className="w-6 h-6" />
-            ) : (
-              <VideoOff className="w-6 h-6" />
+            {/* Camera (only for video calls) */}
+            {callWithVideo && (
+              <button
+                type="button"
+                className="call-bar-btn"
+                data-active={!isCameraOff}
+                onClick={onToggleCamera}
+                aria-label="Toggle camera"
+                style={isCameraOff ? { background: "var(--color-danger)" } : {}}
+              >
+                {!isCameraOff ? (
+                  <Video className="w-6 h-6" />
+                ) : (
+                  <VideoOff className="w-6 h-6" />
+                )}
+              </button>
             )}
-          </button>
-        )}
 
-        {/* Mic */}
-        <button
-          type="button"
-          className="call-bar-btn"
-          data-active={!isMuted}
-          onClick={onToggleMute}
-          aria-label="Toggle microphone"
-          style={isMuted ? { background: "var(--color-danger)" } : {}}
-        >
-          {!isMuted ? (
-            <Mic className="w-6 h-6" />
-          ) : (
-            <MicOff className="w-6 h-6" />
-          )}
-        </button>
+            {/* Mic */}
+            <button
+              type="button"
+              className="call-bar-btn"
+              data-active={!isMuted}
+              onClick={onToggleMute}
+              aria-label="Toggle microphone"
+              style={isMuted ? { background: "var(--color-danger)" } : {}}
+            >
+              {!isMuted ? (
+                <Mic className="w-6 h-6" />
+              ) : (
+                <MicOff className="w-6 h-6" />
+              )}
+            </button>
 
-        {/* Screen Share */}
-        {callWithVideo && (
-          <button
-            type="button"
-            className="call-bar-btn"
-            onClick={onToggleScreenShare}
-            aria-label="Share screen"
-            style={isScreenSharing ? { background: "var(--color-accent)" } : {}}
-          >
-            {isScreenSharing ? (
-              <MonitorOff className="w-6 h-6" />
-            ) : (
-              <MonitorUp className="w-6 h-6" />
+            {/* Screen Share */}
+            {callWithVideo && (
+              <button
+                type="button"
+                className="call-bar-btn"
+                onClick={onToggleScreenShare}
+                aria-label="Share screen"
+                style={
+                  isScreenSharing ? { background: "var(--color-accent)" } : {}
+                }
+              >
+                {isScreenSharing ? (
+                  <MonitorOff className="w-6 h-6" />
+                ) : (
+                  <MonitorUp className="w-6 h-6" />
+                )}
+              </button>
             )}
-          </button>
-        )}
 
-        {/* Retry button (failed state) */}
-        {status === "failed" && (
+            {/* Participants */}
+            <button
+              type="button"
+              className="call-bar-btn"
+              aria-label="Participants"
+              style={{ display: "flex", alignItems: "center", gap: "2px" }}
+            >
+              <Users className="w-5 h-5" />
+              <ChevronRight className="w-3 h-3" style={{ opacity: 0.6 }} />
+            </button>
+
+            {/* Add people */}
+            {onAddPeople && (
+              <button
+                type="button"
+                className="call-bar-btn"
+                onClick={onAddPeople}
+                aria-label="Add people to call"
+              >
+                <UserPlus className="w-6 h-6" />
+              </button>
+            )}
+
+            {/* Retry button (failed state) */}
+            {status === "failed" && (
+              <button
+                type="button"
+                className="call-bar-btn"
+                onClick={onRetry}
+                aria-label="Retry call"
+                style={{ background: "var(--color-accent)" }}
+              >
+                <RotateCw className="w-6 h-6" />
+              </button>
+            )}
+
+            {/* End call */}
+            <button
+              type="button"
+              className="call-end-btn"
+              onClick={onEndCall}
+              aria-label="End call"
+            >
+              <PhoneOff className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+        {/* end call-screen-main */}
+
+        {/* ── Right sidebar (desktop only) ──────────────────────────── */}
+        <aside className="call-sidebar">
+          {/* Contact avatar */}
+          <div className="call-sidebar-avatar-wrap">
+            {contactAvatarUrl ? (
+              <img
+                src={contactAvatarUrl}
+                alt={contactName}
+                className="call-sidebar-avatar rounded-full object-cover"
+              />
+            ) : (
+              <div className="call-sidebar-avatar call-sidebar-avatar--group">
+                <Users className="w-8 h-8" />
+              </div>
+            )}
+          </div>
+
+          {/* Call title */}
+          <h2 className="call-sidebar-title">
+            {contactPhone
+              ? `Call from ${contactPhone}`
+              : `Call with ${contactName}`}
+          </h2>
+          <p className="call-sidebar-subtitle">Call link</p>
+
+          {/* Link share description */}
+          <p className="call-sidebar-desc">
+            Anyone with Ephemeral can use this link to join the call. Share only
+            with people you trust.
+          </p>
+
+          {/* Call link field */}
+          <div className="call-sidebar-link-row">
+            <span className="call-sidebar-link-text">{callLinkDisplay}</span>
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              className="call-sidebar-copy-btn"
+              title="Copy link"
+            >
+              {linkCopied ? (
+                <Check className="w-4 h-4" />
+              ) : (
+                <Copy className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+
+          {/* Add people */}
           <button
             type="button"
-            className="call-bar-btn"
-            onClick={onRetry}
-            aria-label="Retry call"
-            style={{ background: "var(--color-accent)" }}
+            className="call-sidebar-add-people"
+            onClick={onAddPeople}
           >
-            <RotateCw className="w-6 h-6" />
+            <UserPlus className="w-5 h-5 call-sidebar-add-icon" />
+            <span className="call-sidebar-add-label">Add people</span>
+            <ChevronRight className="w-5 h-5 call-sidebar-add-chevron" />
           </button>
-        )}
-
-        {/* End call */}
-        <button
-          type="button"
-          className="call-end-btn"
-          onClick={onEndCall}
-          aria-label="End call"
-        >
-          <PhoneOff className="w-6 h-6" />
-        </button>
+        </aside>
       </div>
+      {/* end call-screen-layout */}
     </div>
   );
 }

@@ -16,6 +16,7 @@ export function VideoVoiceSettings() {
     modelStatus,
     downloadProgress,
     webGPUSupported,
+    transcriptionAvailable,
     loadModel,
     clearModelCache,
     cacheSize,
@@ -369,6 +370,7 @@ export function VideoVoiceSettings() {
       </div>
 
       {/* ── Speech Transcription ──────────────────────────────── */}
+      {transcriptionAvailable && (
       <div className="flex flex-col gap-2.5">
         <Label className="text-[11px] font-semibold text-text-secondary uppercase tracking-[0.6px]">
           Speech Transcription
@@ -489,6 +491,7 @@ export function VideoVoiceSettings() {
           </p>
         )}
       </div>
+      )}
     </div>
   );
 }

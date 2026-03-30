@@ -13,12 +13,16 @@ export function TranscribeButton({
   messageId,
   audioUrl,
 }: TranscribeButtonProps) {
-  const { transcribe, modelStatus, downloadProgress } = useTranscription();
+  const { transcribe, modelStatus, downloadProgress, transcriptionAvailable } =
+    useTranscription();
 
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">(
     transcriptionCache.has(messageId) ? "done" : "idle",
   );
   const [text, setText] = useState(transcriptionCache.get(messageId) ?? "");
+
+  // Hide button entirely on mobile or CPU-only devices
+  if (!transcriptionAvailable) return null;
 
   const handleClick = useCallback(async () => {
     if (state === "loading") return;

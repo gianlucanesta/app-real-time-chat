@@ -14,6 +14,17 @@ body {
   -webkit-font-smoothing: antialiased;
   background-color: var(--color-bg);
   color: var(--color-text-main);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Allow text selection in inputs, textareas, and chat bubbles */
+input,
+textarea,
+[contenteditable="true"],
+.group\/bubble {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 /* Lock the viewport — prevent any page-level scroll on mobile */

@@ -18,11 +18,14 @@ import {
   type DownloadProgress,
   type ModelStatus,
 } from "../lib/audioTranscription";
+import { isMobileDevice, detectGPU } from "../lib/utils";
 
 interface TranscriptionContextValue {
   modelStatus: ModelStatus;
   downloadProgress: DownloadProgress | null;
   webGPUSupported: boolean;
+  /** false on mobile devices or when no GPU is detected (CPU-only). */
+  transcriptionAvailable: boolean;
   loadModel: () => Promise<void>;
   unloadModel: () => void;
   transcribe: (audioUrl: string) => Promise<string>;
@@ -43,6 +46,9 @@ export function TranscriptionProvider({ children }: { children: ReactNode }) {
   const [cacheSize, setCacheSize] = useState(0);
   const [cached, setCached] = useState(false);
   const webGPUSupported = checkWebGPUSupport();
+  const [hasGPU, setHasGPU] = useState(true); // optimistic default
+  const isMobile = isMobileDevice();
+  const transcriptionAvailable = !isMobile && hasGPU;
 
   const refreshCacheInfo = useCallback(async () => {
     const [size, isCached] = await Promise.all([
@@ -53,9 +59,10 @@ export function TranscriptionProvider({ children }: { children: ReactNode }) {
     setCached(isCached);
   }, []);
 
-  // Check cache on mount
+  // Check cache + GPU on mount
   useEffect(() => {
     refreshCacheInfo();
+    detectGPU().then(setHasGPU);
   }, [refreshCacheInfo]);
 
   const loadModel = useCallback(async () => {
@@ -104,6 +111,7 @@ export function TranscriptionProvider({ children }: { children: ReactNode }) {
         modelStatus,
         downloadProgress,
         webGPUSupported,
+        transcriptionAvailable,
         loadModel,
         unloadModel,
         transcribe,
