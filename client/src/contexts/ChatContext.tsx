@@ -17,6 +17,15 @@ import { useWebRTC, type IncomingCallData } from "../hooks/useWebRTC";
 import type { CallStatus } from "../hooks/useWebRTC";
 import { apiFetch } from "../lib/api";
 import { playNotificationTone } from "../lib/notificationTones";
+import { SCHEDULED_CALL_PREFIX } from "../components/chat/ScheduleCallModal";
+
+/** Replace raw scheduled-call wire text with a human-friendly sidebar label. */
+function sanitizeLastMessage(text: string | undefined): string | undefined {
+  if (text && text.includes(SCHEDULED_CALL_PREFIX)) {
+    return text.replace(/📅\[SCHEDULED_CALL\]\{.*\}/, "📅 Scheduled call invite");
+  }
+  return text;
+}
 
 // --- Types ---
 export interface LinkPreview {
@@ -302,6 +311,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             localStorage.getItem(`favorite_${c.id}`) === "true";
           return {
             ...c,
+            lastMessage: sanitizeLastMessage(c.lastMessage),
             lastMessageTimestamp: c.lastMessageTime || undefined,
             lastMessageTime: c.lastMessageTime
               ? fmtTime(c.lastMessageTime)
@@ -567,7 +577,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             const isActive = activeConvRef.current?.id === c.id;
             return {
               ...c,
-              lastMessage: isMe ? `You: ${newMsg.text}` : newMsg.text,
+              lastMessage: sanitizeLastMessage(isMe ? `You: ${newMsg.text}` : newMsg.text),
               lastMessageTime: msgTimestamp,
               lastMessageTimestamp: msg.createdAt,
               lastMessageId: msg._id,
@@ -598,7 +608,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             gradient:
               msg.senderGradient ?? "linear-gradient(135deg,#2563EB,#7C3AED)",
             initials: msg.senderInitials ?? "??",
-            lastMessage: newMsg.text,
+            lastMessage: sanitizeLastMessage(newMsg.text),
             lastMessageTime: msgTimestamp,
             lastMessageTimestamp: msg.createdAt,
             lastMediaType: msg.mediaType || null,
