@@ -28,7 +28,7 @@ interface NewGroupPanelProps {
 export function NewGroupPanel({
   isOpen,
   onClose,
-  onCreated: _onCreated,
+  onCreated,
 }: NewGroupPanelProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -36,14 +36,26 @@ export function NewGroupPanel({
   const [selected, setSelected] = useState<Contact[]>([]);
   const [groupName, setGroupName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const groupNameRef = useRef<HTMLInputElement>(null);
 
-  // Fetch contacts when panel opens
+  // Fetch contacts when panel opens — deduplicate by linked_user_id
   useEffect(() => {
     if (!isOpen) return;
     setIsLoading(true);
     apiFetch<{ contacts: Contact[] }>("/contacts")
-      .then(({ contacts: list }) => setContacts(list))
+      .then(({ contacts: list }) => {
+        // Deduplicate: when multiple contacts link to the same registered
+        // user, keep only the first occurrence (by id, which is oldest).
+        const seen = new Set<string>();
+        const deduped = list.filter((c) => {
+          if (!c.linked_user_id) return true; // unlinked contacts always show
+          if (seen.has(c.linked_user_id)) return false;
+          seen.add(c.linked_user_id);
+          return true;
+        });
+        setContacts(deduped);
+      })
       .catch(() => setContacts([]))
       .finally(() => setIsLoading(false));
   }, [isOpen]);
@@ -99,9 +111,52 @@ export function NewGroupPanel({
     );
   };
 
-  const handleCreate = () => {
-    // Group creation is not yet fully implemented on the server — close panel
-    onClose();
+  const handleCreate = async () => {
+    if (!groupName.trim() || isCreating) return;
+    setIsCreating(true);
+    try {
+      const memberIds = selected
+        .filter((c) => c.linked_user_id !== null)
+        .map((c) => c.linked_user_id as string);
+
+      console.log("[NewGroupPanel] creating group", {
+        name: groupName.trim(),
+        memberIds,
+      });
+
+      const { group } = await apiFetch<{
+        group: {
+          id: string;
+          name: string;
+          gradient: string;
+          initials: string;
+          member_ids: string[];
+        };
+      }>("/groups", {
+        method: "POST",
+        body: JSON.stringify({
+          name: groupName.trim(),
+          memberIds,
+        }),
+      });
+
+      console.log("[NewGroupPanel] group created", group);
+
+      onCreated?.({
+        id: `grp_${group.id}`,
+        type: "group" as const,
+        name: group.name,
+        gradient: group.gradient,
+        initials: group.initials,
+        unreadCount: 0,
+        participants: group.member_ids,
+      });
+      onClose();
+    } catch (err) {
+      console.error("[NewGroupPanel] failed to create group:", err);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   return (
@@ -324,7 +379,7 @@ export function NewGroupPanel({
           {/* Create FAB */}
           <div className="absolute bottom-6 right-6">
             <button
-              disabled={!groupName.trim()}
+              disabled={!groupName.trim() || isCreating}
               onClick={handleCreate}
               className="w-14 h-14 rounded-full bg-accent flex items-center justify-center text-white shadow-lg hover:brightness-110 transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
               aria-label="Create group"

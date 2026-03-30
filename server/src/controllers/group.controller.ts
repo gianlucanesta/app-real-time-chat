@@ -44,6 +44,13 @@ export async function create(
       memberIds,
     );
 
+    console.log("[group.create] Created group:", {
+      id: group.id,
+      name: group.name,
+      createdBy: req.user!.sub,
+      members: group.member_ids,
+    });
+
     // Emit socket event so all members see the new group immediately
     const io = req.app.get("io");
     if (io) {
@@ -54,6 +61,9 @@ export async function create(
           group,
         });
       }
+      console.log("[group.create] Emitted group:created to", group.member_ids.length, "members");
+    } else {
+      console.warn("[group.create] Socket.io instance not available — skipped real-time emit");
     }
 
     res.status(201).json({ group });

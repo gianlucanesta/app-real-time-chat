@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { Message } from "../models/message.model.js";
 import * as UserModel from "../models/user.model.js";
 import * as GroupModel from "../models/group.model.js";
+import * as ContactModel from "../models/contact.model.js";
 
 /**
  * GET /api/conversations
@@ -103,6 +104,49 @@ export async function list(
       b.lastMessageTime > a.lastMessageTime ? 1 : -1,
     );
 
+    // ── Persistent contacts ──────────────────────────────────────────────────
+    // Contacts saved in PostgreSQL must always appear in the chat list,
+    // even when all messages have expired (24h TTL).
+    const existingPartnerIds = new Set(
+      conversations.map((c) => {
+        const parts = c.id.split("___");
+        return parts.find((p: string) => p !== userId) ?? parts[0];
+      }),
+    );
+
+    const contacts = await ContactModel.listByOwner(userId);
+    const contactConversations = contacts
+      .filter((ct) => ct.linked_user_id && !existingPartnerIds.has(ct.linked_user_id))
+      .map((ct) => {
+        const partnerId = ct.linked_user_id as string;
+        const parts = [userId, partnerId].sort();
+        const convId = parts.join("___");
+        return {
+          id: convId,
+          type: "direct" as const,
+          name: ct.linked_display_name || ct.display_name,
+          gradient: ct.gradient,
+          initials: ct.linked_initials || ct.initials || "??",
+          avatar: null as string | null,
+          lastMessage: "",
+          lastMessageTime: "",
+          lastMessageId: undefined as string | undefined,
+          lastMessageIsMine: false,
+          lastMessageStatus: undefined as string | undefined,
+          lastMediaType: null as "image" | "video" | "audio" | null,
+          lastMediaDuration: null as number | null,
+          unreadCount: 0,
+          isOnline: false,
+          participants: parts,
+          phone: ct.phone ?? "",
+          firstName: "",
+          lastName: "",
+        };
+      });
+
+    // Merge contact-based conversations with message-based ones
+    const allDirect = [...conversations, ...contactConversations];
+
     // ── Group conversations ──────────────────────────────────────────────────
     const groups = await GroupModel.listForUser(userId);
     const groupConversations = await Promise.all(
@@ -162,9 +206,17 @@ export async function list(
     );
 
     // Merge and re-sort
-    const allConversations = [...conversations, ...groupConversations].sort(
+    const allConversations = [...allDirect, ...groupConversations].sort(
       (a, b) => (b.lastMessageTime > a.lastMessageTime ? 1 : -1),
     );
+
+    console.log("[conversations.list]", {
+      userId,
+      directFromMessages: conversations.length,
+      fromContacts: contactConversations.length,
+      groups: groupConversations.length,
+      total: allConversations.length,
+    });
 
     res.json({ conversations: allConversations });
   } catch (err) {
