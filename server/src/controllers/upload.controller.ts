@@ -85,7 +85,7 @@ export async function upload(
           folder: "ephemeral-chat",
           use_filename: true,
           unique_filename: true,
-          public_id: safeBaseName,
+          display_name: safeBaseName,
         },
         (error, result) => {
           if (error) reject(error);
