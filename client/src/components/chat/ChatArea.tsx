@@ -1505,7 +1505,7 @@ export function ChatArea({
           />
         ) : (
           <div
-            className={`flex flex-col bg-input/80 backdrop-blur-md border border-border/50 shadow-lg overflow-hidden transition-all duration-150 ${replyingTo ? "rounded-3xl" : "rounded-full"}`}
+            className={`flex flex-col bg-input/80 backdrop-blur-md border border-border/50 shadow-lg overflow-hidden ${replyingTo ? "rounded-t-xl rounded-b-[24px]" : "rounded-full"}`}
           >
             {/* Reply preview bar */}
             {replyingTo && (
