@@ -114,6 +114,7 @@ function CallRoomPage() {
       gradient={myGradient}
       peerWaiting={peerWaiting}
       isInCall={isInCall}
+      joined={joined}
       onJoin={handleJoin}
     />
   );

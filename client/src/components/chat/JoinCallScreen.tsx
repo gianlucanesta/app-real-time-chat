@@ -21,6 +21,8 @@ interface JoinCallScreenProps {
   peerWaiting: boolean;
   /** Whether we are currently connecting/in a call */
   isInCall: boolean;
+  /** Whether the local user has already clicked "Join now" */
+  joined: boolean;
   onJoin: (withVideo: boolean) => void;
 }
 
@@ -32,6 +34,7 @@ export function JoinCallScreen({
   gradient,
   peerWaiting,
   isInCall,
+  joined,
   onJoin,
 }: JoinCallScreenProps) {
   const [cameraOn, setCameraOn] = useState(true);
@@ -184,21 +187,32 @@ export function JoinCallScreen({
 
         {/* Right panel - info & join */}
         <div className="join-call-info">
-          <h1 className="join-call-title">Ready to join?</h1>
+          <h1 className="join-call-title">
+            {joined && !isInCall ? "You're in" : "Ready to join?"}
+          </h1>
           <p className="join-call-subtitle">
-            {peerWaiting
-              ? "Someone is waiting in this call"
-              : "No one else is here yet"}
+            {joined && !isInCall
+              ? "Waiting for others to join..."
+              : peerWaiting
+                ? "Someone is waiting in this call"
+                : "No one else is here yet"}
           </p>
 
-          <button
-            onClick={handleJoin}
-            className="join-call-btn"
-            disabled={isInCall}
-          >
-            <PhoneCall className="w-5 h-5" />
-            Join now
-          </button>
+          {joined && !isInCall ? (
+            <button className="join-call-btn" disabled>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Waiting...
+            </button>
+          ) : (
+            <button
+              onClick={handleJoin}
+              className="join-call-btn"
+              disabled={isInCall}
+            >
+              <PhoneCall className="w-5 h-5" />
+              Join now
+            </button>
+          )}
 
           {/* Share link */}
           <div className="join-call-share">
