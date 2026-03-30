@@ -11,6 +11,17 @@ export interface IGroupChat {
   created_at: string;
 }
 
+export interface IGroupMember {
+  user_id: string;
+  display_name: string;
+  phone: string;
+  avatar_url: string | null;
+  initials: string | null;
+  avatar_gradient: string;
+  role: "admin" | "member";
+  joined_at: string;
+}
+
 export interface IGroupChatWithMembers extends IGroupChat {
   member_ids: string[];
 }
@@ -46,8 +57,8 @@ export async function create(
     await Promise.all(
       allMembers.map((uid) =>
         client.query(
-          `INSERT INTO group_chat_members (group_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-          [group.id, uid],
+          `INSERT INTO group_chat_members (group_id, user_id, role) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+          [group.id, uid, uid === createdBy ? "admin" : "member"],
         ),
       ),
     );
@@ -95,4 +106,121 @@ export async function listForUser(
   }
 
   return groups.map((g) => ({ ...g, member_ids: memberMap.get(g.id) ?? [] }));
+}
+
+/** Get a single group chat by ID. */
+export async function getById(groupId: string): Promise<IGroupChat | null> {
+  const { rows } = await pool.query<IGroupChat>(
+    `SELECT * FROM group_chats WHERE id = $1`,
+    [groupId],
+  );
+  return rows[0] ?? null;
+}
+
+/** Get group members with their user info and roles. */
+export async function getMembers(groupId: string): Promise<IGroupMember[]> {
+  const { rows } = await pool.query<IGroupMember>(
+    `SELECT gcm.user_id, u.display_name, u.phone, u.avatar_url, u.initials, u.avatar_gradient, gcm.role, gcm.joined_at
+     FROM group_chat_members gcm
+     JOIN users u ON u.id = gcm.user_id
+     WHERE gcm.group_id = $1
+     ORDER BY
+       CASE WHEN gcm.role = 'admin' THEN 0 ELSE 1 END,
+       u.display_name`,
+    [groupId],
+  );
+  return rows;
+}
+
+/** Get a member's role in a group. Returns null if not a member. */
+export async function getMemberRole(
+  groupId: string,
+  userId: string,
+): Promise<"admin" | "member" | null> {
+  const { rows } = await pool.query<{ role: string }>(
+    `SELECT role FROM group_chat_members WHERE group_id = $1 AND user_id = $2`,
+    [groupId, userId],
+  );
+  return (rows[0]?.role as "admin" | "member") ?? null;
+}
+
+/** Update group info (name, description, icon_url). Only provided fields are updated. */
+export async function updateGroup(
+  groupId: string,
+  updates: { name?: string; description?: string; icon_url?: string | null },
+): Promise<IGroupChat | null> {
+  const setClauses: string[] = [];
+  const values: (string | null)[] = [];
+  let idx = 1;
+
+  if (updates.name !== undefined) {
+    setClauses.push(`name = $${idx}`);
+    values.push(updates.name.trim());
+    idx++;
+    // Also update initials
+    const words = updates.name.trim().split(/\s+/);
+    const initials =
+      words.length >= 2
+        ? (words[0][0] + words[1][0]).toUpperCase()
+        : updates.name.trim().slice(0, 2).toUpperCase();
+    setClauses.push(`initials = $${idx}`);
+    values.push(initials);
+    idx++;
+  }
+  if (updates.description !== undefined) {
+    setClauses.push(`description = $${idx}`);
+    values.push(updates.description);
+    idx++;
+  }
+  if (updates.icon_url !== undefined) {
+    setClauses.push(`icon_url = $${idx}`);
+    values.push(updates.icon_url);
+    idx++;
+  }
+
+  if (setClauses.length === 0) return getById(groupId);
+
+  values.push(groupId);
+  const { rows } = await pool.query<IGroupChat>(
+    `UPDATE group_chats SET ${setClauses.join(", ")} WHERE id = $${idx} RETURNING *`,
+    values,
+  );
+  return rows[0] ?? null;
+}
+
+/** Add a member to a group. */
+export async function addMember(
+  groupId: string,
+  userId: string,
+  role: "admin" | "member" = "member",
+): Promise<void> {
+  await pool.query(
+    `INSERT INTO group_chat_members (group_id, user_id, role)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (group_id, user_id) DO NOTHING`,
+    [groupId, userId, role],
+  );
+}
+
+/** Remove a member from a group. */
+export async function removeMember(
+  groupId: string,
+  userId: string,
+): Promise<void> {
+  await pool.query(
+    `DELETE FROM group_chat_members WHERE group_id = $1 AND user_id = $2`,
+    [groupId, userId],
+  );
+}
+
+/** Update a member's role. */
+export async function updateMemberRole(
+  groupId: string,
+  userId: string,
+  role: "admin" | "member",
+): Promise<void> {
+  await pool.query(
+    `UPDATE group_chat_members SET role = $1 WHERE group_id = $2 AND user_id = $3`,
+    [role, groupId, userId],
+  );
 }

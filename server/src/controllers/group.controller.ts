@@ -61,9 +61,15 @@ export async function create(
           group,
         });
       }
-      console.log("[group.create] Emitted group:created to", group.member_ids.length, "members");
+      console.log(
+        "[group.create] Emitted group:created to",
+        group.member_ids.length,
+        "members",
+      );
     } else {
-      console.warn("[group.create] Socket.io instance not available — skipped real-time emit");
+      console.warn(
+        "[group.create] Socket.io instance not available — skipped real-time emit",
+      );
     }
 
     res.status(201).json({ group });
@@ -89,7 +95,14 @@ export async function list(
         const [lastMsg, unreadCount] = await Promise.all([
           Message.findOne(
             { conversationId, expires_at: { $gt: new Date() } },
-            { text: 1, createdAt: 1, sender: 1, status: 1, mediaType: 1, mediaDuration: 1 },
+            {
+              text: 1,
+              createdAt: 1,
+              sender: 1,
+              status: 1,
+              mediaType: 1,
+              mediaDuration: 1,
+            },
           )
             .sort({ createdAt: -1 })
             .lean(),
@@ -139,6 +152,182 @@ export async function list(
     );
 
     res.json({ conversations });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** GET /api/groups/:id — get group info with members */
+export async function getById(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.sub;
+
+    const group = await GroupModel.getById(id);
+    if (!group) {
+      res.status(404).json({ error: "Group not found" });
+      return;
+    }
+
+    // Verify the requesting user is a member
+    const role = await GroupModel.getMemberRole(id, userId);
+    if (!role) {
+      res.status(403).json({ error: "Not a member of this group" });
+      return;
+    }
+
+    const members = await GroupModel.getMembers(id);
+
+    res.json({ group, members, myRole: role });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** PATCH /api/groups/:id — update group info (admin only) */
+export async function update(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.sub;
+
+    const role = await GroupModel.getMemberRole(id, userId);
+    if (role !== "admin") {
+      res.status(403).json({ error: "Only admins can edit group info" });
+      return;
+    }
+
+    const { name, description, icon_url } = req.body as {
+      name?: string;
+      description?: string;
+      icon_url?: string | null;
+    };
+
+    if (
+      name !== undefined &&
+      (!name.trim() || name.trim().length > MAX_NAME_LENGTH)
+    ) {
+      res.status(422).json({ error: "Invalid group name" });
+      return;
+    }
+
+    const updated = await GroupModel.updateGroup(id, {
+      name,
+      description,
+      icon_url,
+    });
+    if (!updated) {
+      res.status(404).json({ error: "Group not found" });
+      return;
+    }
+
+    // Emit update to all members
+    const io = req.app.get("io");
+    if (io) {
+      const members = await GroupModel.getMembers(id);
+      const conversationId = `grp_${id}`;
+      for (const m of members) {
+        io.to("user:" + m.user_id).emit("group:updated" as any, {
+          conversationId,
+          group: updated,
+        });
+      }
+    }
+
+    res.json({ group: updated });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** POST /api/groups/:id/members — add members (admin only) */
+export async function addMembers(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.sub;
+
+    const role = await GroupModel.getMemberRole(id, userId);
+    if (role !== "admin") {
+      res.status(403).json({ error: "Only admins can add members" });
+      return;
+    }
+
+    const { memberIds } = req.body as { memberIds?: string[] };
+    if (!Array.isArray(memberIds) || memberIds.length === 0) {
+      res.status(422).json({ error: "memberIds array is required" });
+      return;
+    }
+
+    await Promise.all(memberIds.map((uid) => GroupModel.addMember(id, uid)));
+
+    const members = await GroupModel.getMembers(id);
+    res.json({ members });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** DELETE /api/groups/:id/members/:userId — remove a member (admin only, or self-leave) */
+export async function removeMember(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { id, userId: targetId } = req.params;
+    const requesterId = req.user!.sub;
+
+    // Allow self-leave or admin removal
+    if (targetId !== requesterId) {
+      const role = await GroupModel.getMemberRole(id, requesterId);
+      if (role !== "admin") {
+        res.status(403).json({ error: "Only admins can remove members" });
+        return;
+      }
+    }
+
+    await GroupModel.removeMember(id, targetId);
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** PATCH /api/groups/:id/members/:userId/role — change member role (admin only) */
+export async function updateMemberRole(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { id, userId: targetId } = req.params;
+    const requesterId = req.user!.sub;
+
+    const requesterRole = await GroupModel.getMemberRole(id, requesterId);
+    if (requesterRole !== "admin") {
+      res.status(403).json({ error: "Only admins can change roles" });
+      return;
+    }
+
+    const { role } = req.body as { role?: string };
+    if (role !== "admin" && role !== "member") {
+      res.status(422).json({ error: "Role must be 'admin' or 'member'" });
+      return;
+    }
+
+    await GroupModel.updateMemberRole(id, targetId, role);
+    res.json({ ok: true });
   } catch (err) {
     next(err);
   }

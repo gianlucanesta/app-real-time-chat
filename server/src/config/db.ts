@@ -175,9 +175,20 @@ export async function initSchema(): Promise<void> {
     CREATE TABLE IF NOT EXISTS group_chat_members (
       group_id    UUID        NOT NULL REFERENCES group_chats(id) ON DELETE CASCADE,
       user_id     UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      role        TEXT        NOT NULL DEFAULT 'member',
       joined_at   TIMESTAMPTZ DEFAULT now(),
       PRIMARY KEY (group_id, user_id)
     );
+
+    -- Idempotent migration: add role column if it doesn't exist
+    DO $$ BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'group_chat_members' AND column_name = 'role'
+      ) THEN
+        ALTER TABLE group_chat_members ADD COLUMN role TEXT NOT NULL DEFAULT 'member';
+      END IF;
+    END $$;
   `);
   console.log("[pg] schema ready");
 }
