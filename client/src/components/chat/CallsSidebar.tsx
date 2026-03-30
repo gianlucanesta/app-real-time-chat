@@ -78,6 +78,7 @@ interface CallsSidebarProps {
   selectedCallGroup: CallGroup | null;
   onSelectCallGroup: (group: CallGroup) => void;
   onNewCall?: () => void;
+  onQuickCall?: (contactId: string, withVideo: boolean) => void;
 }
 
 export function CallsSidebar({
@@ -86,6 +87,7 @@ export function CallsSidebar({
   selectedCallGroup,
   onSelectCallGroup,
   onNewCall,
+  onQuickCall,
 }: CallsSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -158,6 +160,7 @@ export function CallsSidebar({
             group={group}
             isSelected={selectedCallGroup?.contactId === group.contactId}
             onSelect={() => onSelectCallGroup(group)}
+            onQuickCall={onQuickCall}
           />
         ))}
 
@@ -184,6 +187,7 @@ export function CallsSidebar({
             group={group}
             isSelected={selectedCallGroup?.contactId === group.contactId}
             onSelect={() => onSelectCallGroup(group)}
+            onQuickCall={onQuickCall}
           />
         ))}
       </div>
@@ -197,10 +201,12 @@ function CallEntry({
   group,
   isSelected,
   onSelect,
+  onQuickCall,
 }: {
   group: CallGroup;
   isSelected: boolean;
   onSelect: () => void;
+  onQuickCall?: (contactId: string, withVideo: boolean) => void;
 }) {
   const { lastCall } = group;
   const { text: statusText, isMissed } = callStatusText(group);
@@ -273,6 +279,7 @@ function CallEntry({
       <button
         onClick={(e) => {
           e.stopPropagation();
+          onQuickCall?.(group.contactId, lastCall.callType === "video");
         }}
         className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-text-secondary hover:text-accent hover:bg-accent/10 transition-colors opacity-0 group-hover:opacity-100"
         title={lastCall.callType === "video" ? "Video call" : "Voice call"}

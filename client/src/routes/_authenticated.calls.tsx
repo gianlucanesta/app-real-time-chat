@@ -416,6 +416,7 @@ function CallsPage() {
           favorites={favorites}
           selectedCallGroup={selectedGroup}
           onSelectCallGroup={handleSelectGroup}
+          onQuickCall={handleStartCallFromModal}
         />
         {/* Dialpad overlays the sidebar */}
         <DialpadPanel

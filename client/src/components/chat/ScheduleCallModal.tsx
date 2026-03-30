@@ -3,7 +3,6 @@ import {
   X,
   Video,
   Phone,
-  ChevronDown,
   Search,
   Send,
   ArrowLeft,
