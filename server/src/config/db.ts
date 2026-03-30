@@ -159,6 +159,25 @@ export async function initSchema(): Promise<void> {
       content       TEXT        NOT NULL,
       created_at    TIMESTAMPTZ DEFAULT now()
     );
+
+    -- Idempotent migration: standalone group chats
+    CREATE TABLE IF NOT EXISTS group_chats (
+      id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+      name        TEXT        NOT NULL,
+      description TEXT        NOT NULL DEFAULT '',
+      icon_url    TEXT,
+      gradient    TEXT        NOT NULL DEFAULT 'linear-gradient(135deg,#059669,#1D4ED8)',
+      initials    TEXT        NOT NULL DEFAULT '',
+      created_by  UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at  TIMESTAMPTZ DEFAULT now()
+    );
+
+    CREATE TABLE IF NOT EXISTS group_chat_members (
+      group_id    UUID        NOT NULL REFERENCES group_chats(id) ON DELETE CASCADE,
+      user_id     UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      joined_at   TIMESTAMPTZ DEFAULT now(),
+      PRIMARY KEY (group_id, user_id)
+    );
   `);
   console.log("[pg] schema ready");
 }

@@ -103,6 +103,7 @@ export function ChatArea({
     activeConversation,
     setActiveConversation,
     activeMessages,
+    messagesLoading,
     sendMessage,
     sendMediaMessage,
     addOptimisticMediaMessage,
@@ -1068,80 +1069,120 @@ export function ChatArea({
         ref={messagesContainerRef}
         className={`flex-1 min-h-0 overflow-y-auto px-4 md:px-8 flex flex-col pt-6 pb-4 scrollbar-thin scrollbar-thumb-border hover:scrollbar-thumb-toggle-off ${isSelectMode ? "select-mode" : ""}`}
       >
-        {groupMessagesByDate(activeMessages).map(([label, msgs]) => (
-          <div key={label} className="flex flex-col">
-            {/* Date Separator */}
-            <div className="flex items-center justify-center my-6">
-              <span className="bg-input/70 text-text-secondary text-[11px] font-medium uppercase tracking-[1px] px-3 py-1 rounded-lg">
-                {label}
-              </span>
-            </div>
-
-            {msgs.map((msg) => (
-              <ChatMessage
-                key={msg.id}
-                id={msg.id}
-                text={msg.text}
-                time={msg.timestamp}
-                isSent={msg.isMe}
-                status={msg.status}
-                mediaUrl={msg.mediaUrl}
-                mediaType={msg.mediaType}
-                mediaDuration={msg.mediaDuration}
-                mediaFileName={msg.mediaFileName}
-                isUploading={msg.isUploading}
-                viewOnce={msg.viewOnce}
-                viewedAt={msg.viewedAt}
-                contactInitials={msg.isMe ? myInitials : contactInitials}
-                contactGradient={msg.isMe ? myGradient : contactGradient}
-                contactAvatarUrl={msg.isMe ? myAvatarUrl : contactAvatarUrl}
-                isSelectMode={isSelectMode}
-                isSelected={selectedMessages.includes(msg.id)}
-                onToggleSelect={() => toggleMessageSelection(msg.id)}
-                onCopy={() => handleCopyMessage(msg.text)}
-                onEnterSelectMode={(reason) =>
-                  handleEnterSelectMode(msg.id, reason)
-                }
-                reactions={reactions[msg.id]}
-                onReaction={(emoji) => reactToMessage(msg.id, emoji)}
-                currentUserId={user?.id}
-                onViewOnceOpen={() => markViewOnceOpened(msg.id)}
-                onOpenMedia={() => {
-                  const idx = allMedia.findIndex((m) => m.messageId === msg.id);
-                  if (idx >= 0) setMediaViewerIndex(idx);
-                }}
-                linkPreview={msg.linkPreview}
-                statusReply={msg.statusReply}
-              />
+        {messagesLoading ? (
+          <div className="flex flex-col gap-3 py-2" aria-busy="true" aria-label="Loading messages">
+            {/* Skeleton rows: alternating received / sent to mimic a real conversation */}
+            {[
+              { sent: false, widths: ["w-48", "w-32"] },
+              { sent: true,  widths: ["w-56"] },
+              { sent: false, widths: ["w-64", "w-40"] },
+              { sent: true,  widths: ["w-40", "w-52"] },
+              { sent: false, widths: ["w-36"] },
+              { sent: true,  widths: ["w-60"] },
+              { sent: false, widths: ["w-44", "w-28"] },
+              { sent: true,  widths: ["w-52", "w-36"] },
+            ].map((row, i) => (
+              <div
+                key={i}
+                className={`flex items-end gap-2 mb-1 ${row.sent ? "self-end flex-row-reverse" : "self-start"}`}
+              >
+                {/* Avatar circle */}
+                <div className="w-8 h-8 rounded-full bg-border/60 animate-pulse shrink-0" />
+                {/* Bubble */}
+                <div
+                  className={`flex flex-col gap-1.5 rounded-2xl px-4 py-3 ${
+                    row.sent
+                      ? "rounded-br-sm bg-accent/20"
+                      : "rounded-bl-sm bg-card border border-border/50"
+                  } animate-pulse`}
+                >
+                  {row.widths.map((w, j) => (
+                    <div key={j} className={`h-3 rounded-full bg-border/70 ${w}`} />
+                  ))}
+                  {/* Timestamp bar */}
+                  <div className="h-2 w-10 rounded-full bg-border/50 self-end mt-0.5" />
+                </div>
+              </div>
             ))}
           </div>
-        ))}
+        ) : (
+          <>
+            {groupMessagesByDate(activeMessages).map(([label, msgs]) => (
+              <div key={label} className="flex flex-col">
+                {/* Date Separator */}
+                <div className="flex items-center justify-center my-6">
+                  <span className="bg-input/70 text-text-secondary text-[11px] font-medium uppercase tracking-[1px] px-3 py-1 rounded-lg">
+                    {label}
+                  </span>
+                </div>
 
-        {/* Typing indicator bubble */}
-        <div aria-live="polite" aria-atomic="true">
-          {isContactTyping && (
-            <div className="flex items-end mb-4 self-start">
-              <div
-                className="px-4 py-3 bg-card border border-border/50 rounded-2xl rounded-bl-sm shadow-sm flex items-center gap-[6px]"
-                aria-label="Contact is typing"
-                role="status"
-              >
-                <span
-                  className="w-2.5 h-2.5 rounded-full bg-accent/70 animate-bounce"
-                  style={{ animationDelay: "0ms" }}
-                />
-                <span
-                  className="w-2.5 h-2.5 rounded-full bg-accent/70 animate-bounce"
-                  style={{ animationDelay: "160ms" }}
-                />
-                <span
-                  className="w-2.5 h-2.5 rounded-full bg-accent/70 animate-bounce"
-                  style={{ animationDelay: "320ms" }}
-                />
+                {msgs.map((msg) => (
+                  <ChatMessage
+                    key={msg.id}
+                    id={msg.id}
+                    text={msg.text}
+                    time={msg.timestamp}
+                    isSent={msg.isMe}
+                    status={msg.status}
+                    mediaUrl={msg.mediaUrl}
+                    mediaType={msg.mediaType}
+                    mediaDuration={msg.mediaDuration}
+                    mediaFileName={msg.mediaFileName}
+                    isUploading={msg.isUploading}
+                    viewOnce={msg.viewOnce}
+                    viewedAt={msg.viewedAt}
+                    contactInitials={msg.isMe ? myInitials : contactInitials}
+                    contactGradient={msg.isMe ? myGradient : contactGradient}
+                    contactAvatarUrl={msg.isMe ? myAvatarUrl : contactAvatarUrl}
+                    isSelectMode={isSelectMode}
+                    isSelected={selectedMessages.includes(msg.id)}
+                    onToggleSelect={() => toggleMessageSelection(msg.id)}
+                    onCopy={() => handleCopyMessage(msg.text)}
+                    onEnterSelectMode={(reason) =>
+                      handleEnterSelectMode(msg.id, reason)
+                    }
+                    reactions={reactions[msg.id]}
+                    onReaction={(emoji) => reactToMessage(msg.id, emoji)}
+                    currentUserId={user?.id}
+                    onViewOnceOpen={() => markViewOnceOpened(msg.id)}
+                    onOpenMedia={() => {
+                      const idx = allMedia.findIndex((m) => m.messageId === msg.id);
+                      if (idx >= 0) setMediaViewerIndex(idx);
+                    }}
+                    linkPreview={msg.linkPreview}
+                    statusReply={msg.statusReply}
+                  />
+                ))}
               </div>
+            ))}
+
+            {/* Typing indicator bubble */}
+            <div aria-live="polite" aria-atomic="true">
+              {isContactTyping && (
+                <div className="flex items-end mb-4 self-start">
+                  <div
+                    className="px-4 py-3 bg-card border border-border/50 rounded-2xl rounded-bl-sm shadow-sm flex items-center gap-[6px]"
+                    aria-label="Contact is typing"
+                    role="status"
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-full bg-accent/70 animate-bounce"
+                      style={{ animationDelay: "0ms" }}
+                    />
+                    <span
+                      className="w-2.5 h-2.5 rounded-full bg-accent/70 animate-bounce"
+                      style={{ animationDelay: "160ms" }}
+                    />
+                    <span
+                      className="w-2.5 h-2.5 rounded-full bg-accent/70 animate-bounce"
+                      style={{ animationDelay: "320ms" }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
 
         {/* Scroll anchor */}
         <div ref={messagesEndRef} className="shrink-0" />

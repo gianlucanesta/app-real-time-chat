@@ -108,7 +108,7 @@ export function NewGroupPanel({ isOpen, onClose }: NewGroupPanelProps) {
       {step === 1 && (
         <>
           {/* Header */}
-          <div className="flex items-center gap-3 px-4 h-[60px] border-b border-border shrink-0 bg-card">
+          <div className="flex items-center gap-3 px-4 h-[64px] border-b border-border shrink-0 bg-card">
             <button
               className="w-10 h-10 rounded-full flex items-center justify-center text-text-secondary hover:bg-bg transition-colors"
               onClick={onClose}
@@ -258,7 +258,7 @@ export function NewGroupPanel({ isOpen, onClose }: NewGroupPanelProps) {
       {step === 2 && (
         <>
           {/* Header */}
-          <div className="flex items-center gap-3 px-4 h-[60px] border-b border-border shrink-0 bg-card">
+          <div className="flex items-center gap-3 px-4 h-[64px] border-b border-border shrink-0 bg-card">
             <button
               className="w-10 h-10 rounded-full flex items-center justify-center text-text-secondary hover:bg-bg transition-colors"
               onClick={() => setStep(1)}

@@ -95,7 +95,7 @@ export function NewContactPanel({
     <div
       className={`absolute inset-0 z-[21] bg-card flex flex-col transition-transform duration-300 ease-in-out border-l border-r border-border ${isOpen ? "translate-x-0" : "translate-x-full"}`}
     >
-      <div className="flex items-center gap-3 px-4 h-[60px] border-b border-border shrink-0">
+      <div className="flex items-center gap-3 px-4 h-[64px] border-b border-border shrink-0">
         <button
           className="w-10 h-10 rounded-full flex items-center justify-center text-text-secondary hover:bg-bg transition-colors"
           onClick={onClose}

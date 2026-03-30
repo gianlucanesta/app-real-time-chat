@@ -17,6 +17,7 @@ import { conversationRouter } from "./routes/conversation.routes.js";
 import { uploadRouter } from "./routes/upload.routes.js";
 import { statusRouter } from "./routes/status.routes.js";
 import { communityRouter } from "./routes/community.routes.js";
+import { groupRouter } from "./routes/group.routes.js";
 import { turnRouter } from "./routes/turn.routes.js";
 
 /**
@@ -89,6 +90,7 @@ export function createApp(): express.Express {
   app.use("/api/upload", uploadRouter);
   app.use("/api/status", statusRouter);
   app.use("/api/communities", communityRouter);
+  app.use("/api/groups", groupRouter);
   app.use("/api/turn", turnRouter);
 
   // ── Error handler (must be last) ───────────────────────────────────────────

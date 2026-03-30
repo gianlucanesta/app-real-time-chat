@@ -264,6 +264,11 @@ export function Sidebar({
       <NewGroupPanel
         isOpen={isNewGroupOpen}
         onClose={() => onCloseNewGroup?.()}
+        onCreated={(conv) => {
+          addOrUpdateConversation(conv);
+          setActiveConversation(conv);
+          onCloseNewGroup?.();
+        }}
       />
 
       {/* Sidebar Header */}

@@ -100,6 +100,7 @@ export interface Conversation {
 interface ChatContextType {
   conversations: Conversation[];
   conversationsLoading: boolean;
+  messagesLoading: boolean;
   activeConversation: Conversation | null;
   activeMessages: Message[];
   typingUsers: Record<string, { displayName: string }>;
@@ -198,6 +199,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [conversationsLoading, setConversationsLoading] = useState(true);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [activeConversation, setActiveConversation] =
     useState<Conversation | null>(null);
   const [activeMessages, setActiveMessages] = useState<Message[]>([]);
@@ -319,8 +321,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!activeConversation) {
       setActiveMessages([]);
+      setMessagesLoading(false);
       return;
     }
+    setMessagesLoading(true);
     apiFetch<{
       messages: Array<{
         _id: string;
@@ -389,6 +393,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           }
         }
         setReactions((prev) => ({ ...prev, ...loadedReactions }));
+        setMessagesLoading(false);
 
         // Mark unread messages as read
         const unreadIds = messages
@@ -408,9 +413,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           ),
         );
       })
-      .catch((err) =>
-        console.warn("[chat] load messages failed:", (err as Error).message),
-      );
+      .catch((err) => {
+        console.warn("[chat] load messages failed:", (err as Error).message);
+        setMessagesLoading(false);
+      });
   }, [activeConversation?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── (Re-)join conversation room whenever socket or active conversation changes
@@ -1691,6 +1697,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       value={{
         conversations,
         conversationsLoading,
+        messagesLoading,
         activeConversation,
         activeMessages: activeMessages.filter(
           (m) => !hiddenMessageIds.has(m.id),
