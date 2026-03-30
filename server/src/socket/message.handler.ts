@@ -396,6 +396,65 @@ export function registerMessageHandlers(
     },
   );
 
+  // ── message:edit ──
+  socket.on(
+    "message:edit",
+    async (
+      data: { messageId: string; conversationId: string; text: string },
+      ack: (res: { ok: boolean }) => void,
+    ) => {
+      const { messageId, conversationId, text } = data;
+      if (!messageId || !conversationId || typeof text !== "string") {
+        if (typeof ack === "function") ack({ ok: false });
+        return;
+      }
+
+      const trimmed = text.trim();
+      if (trimmed.length === 0 || trimmed.length > 4096) {
+        if (typeof ack === "function") ack({ ok: false });
+        return;
+      }
+
+      try {
+        const editedAt = new Date();
+        const msg = await Message.findOneAndUpdate(
+          { _id: messageId, sender: userId },
+          { $set: { text: trimmed, edited: true, editedAt } },
+          { new: true },
+        );
+
+        if (!msg) {
+          if (typeof ack === "function") ack({ ok: false });
+          return;
+        }
+
+        const editPayload = {
+          messageId,
+          conversationId,
+          text: trimmed,
+          editedAt: editedAt.toISOString(),
+        };
+
+        io.to("conv:" + conversationId).emit("message:edited", editPayload);
+        const parts = conversationId.split("___");
+        if (parts.length === 2) {
+          const otherId = parts.find((id: string) => id !== userId);
+          if (otherId) {
+            io.to("user:" + otherId).emit("message:edited", editPayload);
+          }
+        }
+
+        if (typeof ack === "function") ack({ ok: true });
+      } catch (err) {
+        console.error(
+          "[socket] message:edit error:",
+          (err as Error).message,
+        );
+        if (typeof ack === "function") ack({ ok: false });
+      }
+    },
+  );
+
   // ── message:viewOnce:open ──
   socket.on(
     "message:viewOnce:open",

@@ -108,6 +108,15 @@ const messageSchema = new mongoose.Schema({
     },
     default: null,
   },
+  // Whether the message was edited after sending
+  edited: {
+    type: Boolean,
+    default: false,
+  },
+  editedAt: {
+    type: Date,
+    default: null,
+  },
   // expires_at is set SERVER-SIDE on every write — never trust the client
   expires_at: {
     type: Date,

@@ -57,6 +57,8 @@ export interface Message {
   rawTimestamp: string;
   status: "sending" | "sent" | "delivered" | "read";
   isMe: boolean;
+  edited?: boolean;
+  editedAt?: string | null;
   linkPreview?: LinkPreview | null;
   isUploading?: boolean;
   statusReply?: {
@@ -183,6 +185,7 @@ interface ChatContextType {
   confirmRemoteDeletion: (ids: string[]) => void;
   reactions: Record<string, Reaction[]>;
   reactToMessage: (messageId: string, emoji: string) => void;
+  editMessage: (messageId: string, newText: string) => void;
   feedStatusUserIds: Set<string>;
   removeFeedStatusUserId: (userId: string) => void;
   sendStatusReplyMessage: (
@@ -440,6 +443,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             rawTimestamp: m.createdAt,
             status: m.status as "sent" | "delivered" | "read",
             isMe: m.sender === user?.id,
+            edited: (m as any).edited || false,
+            editedAt: (m as any).editedAt || null,
             linkPreview: m.linkPreview || null,
             statusReply: (m as any).statusReply || null,
             quotedReply: (m as any).quotedReply || null,
@@ -535,6 +540,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         rawTimestamp: msg.createdAt,
         status: msg.status as "sent" | "delivered" | "read",
         isMe,
+        edited: (msg as any).edited || false,
+        editedAt: (msg as any).editedAt || null,
         linkPreview: (msg as any).linkPreview || null,
         statusReply: (msg as any).statusReply || null,
         quotedReply: (msg as any).quotedReply || null,
@@ -991,6 +998,30 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     };
     socket.on("message:reaction", handleReaction);
 
+    const handleMessageEdited = (data: {
+      messageId: string;
+      conversationId: string;
+      text: string;
+      editedAt: string;
+    }) => {
+      setActiveMessages((prev) =>
+        prev.map((m) =>
+          m.id === data.messageId
+            ? { ...m, text: data.text, edited: true, editedAt: data.editedAt }
+            : m,
+        ),
+      );
+      // Update sidebar last message if it was the edited one
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === data.conversationId && c.lastMessageId === data.messageId
+            ? { ...c, lastMessage: data.text }
+            : c,
+        ),
+      );
+    };
+    socket.on("message:edited", handleMessageEdited);
+
     socket.on("presence:online", handlePresenceOnline);
     socket.on("presence:offline", handlePresenceOffline);
     socket.on("presence:list", handlePresenceList);
@@ -1040,6 +1071,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       socket.off("message:deleted", handleMessageDeleted);
       socket.off("message:viewOnce:opened", handleViewOnceOpened);
       socket.off("message:reaction", handleReaction);
+      socket.off("message:edited", handleMessageEdited);
       socket.off("presence:online", handlePresenceOnline);
       socket.off("presence:offline", handlePresenceOffline);
       socket.off("presence:list", handlePresenceList);
@@ -1710,6 +1742,38 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     [socket, user, activeConversation],
   );
 
+  // ── Edit message ─────────────────────────────────────────────────────────
+  const editMessage = useCallback(
+    (messageId: string, newText: string) => {
+      if (!socket || !user) return;
+      const convId = activeConversation?.id;
+      if (!convId) return;
+
+      const trimmed = newText.trim();
+      if (!trimmed) return;
+
+      // Optimistic update
+      setActiveMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId
+            ? { ...m, text: trimmed, edited: true, editedAt: new Date().toISOString() }
+            : m,
+        ),
+      );
+
+      socket.emit(
+        "message:edit",
+        { messageId, conversationId: convId, text: trimmed },
+        (ack) => {
+          if (!ack?.ok) {
+            console.warn("[chat] edit message failed");
+          }
+        },
+      );
+    },
+    [socket, user, activeConversation],
+  );
+
   // ── Send media message ───────────────────────────────────────────────────
   // ── Add optimistic media bubble immediately (before upload) ────────────────
   const addOptimisticMediaMessage = useCallback(
@@ -2075,6 +2139,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         confirmRemoteDeletion,
         reactions,
         reactToMessage,
+        editMessage,
         feedStatusUserIds,
         removeFeedStatusUserId: (userId: string) => {
           setFeedStatusUserIds((prev) => {

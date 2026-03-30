@@ -30,6 +30,7 @@ import { EditContactPanel } from "./EditContactPanel";
 import { ChatMessage } from "./ChatMessage";
 import { ConfirmModal } from "./ConfirmModal";
 import { DeleteChoiceModal } from "./DeleteChoiceModal";
+import { EditMessageModal } from "./EditMessageModal";
 import { AttachmentMenu } from "./AttachmentMenu";
 import { CameraModal } from "./CameraModal";
 import { VoiceRecorder } from "./VoiceRecorder";
@@ -130,6 +131,7 @@ export function ChatArea({
     confirmRemoteDeletion,
     reactions,
     reactToMessage,
+    editMessage,
     muteConversation,
     unmuteConversation,
     sendScheduledCallInvite,
@@ -190,6 +192,13 @@ export function ChatArea({
     mediaUrl?: string | null;
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Edit message state
+  const [editingMessage, setEditingMessage] = useState<{
+    id: string;
+    text: string;
+    time: string;
+  } | null>(null);
 
   // Attachment menu & voice recording
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
@@ -1312,6 +1321,14 @@ export function ChatArea({
                       statusReply={msg.statusReply}
                       quotedReply={msg.quotedReply}
                       onScrollToMessage={handleScrollToMessage}
+                      onEdit={() =>
+                        setEditingMessage({
+                          id: msg.id,
+                          text: msg.text,
+                          time: msg.timestamp,
+                        })
+                      }
+                      edited={msg.edited}
                     />
                   );
                 })}
@@ -1713,6 +1730,15 @@ export function ChatArea({
       )}
 
       {/* Confirmation Modals */}
+      <EditMessageModal
+        isOpen={!!editingMessage}
+        messageText={editingMessage?.text ?? ""}
+        messageTime={editingMessage?.time ?? ""}
+        onSave={(newText) => {
+          if (editingMessage) editMessage(editingMessage.id, newText);
+        }}
+        onClose={() => setEditingMessage(null)}
+      />
       <DeleteChoiceModal
         isOpen={activeModal === "delete-messages"}
         count={selectedMessages.length}

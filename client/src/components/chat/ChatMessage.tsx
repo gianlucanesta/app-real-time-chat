@@ -6,6 +6,7 @@ import {
   Forward,
   Pin,
   Star,
+  Pencil,
   CheckSquare,
   AlertTriangle,
   Trash2,
@@ -76,6 +77,8 @@ interface ChatMessageProps {
   } | null;
   onScrollToMessage?: (messageId: string) => void;
   onMessageInfo?: () => void;
+  onEdit?: () => void;
+  edited?: boolean;
 }
 
 const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
@@ -114,6 +117,8 @@ export function ChatMessage({
   quotedReply,
   onScrollToMessage,
   onMessageInfo,
+  onEdit,
+  edited,
 }: ChatMessageProps) {
   const [isReactionMenuOpen, setIsReactionMenuOpen] = useState(false);
   const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
@@ -934,8 +939,24 @@ export function ChatMessage({
                       className="w-4 h-4 text-text-secondary"
                       aria-hidden="true"
                     />{" "}
-                    Star
+                    Important
                   </button>
+                  {isSent && text && (
+                    <button
+                      type="button"
+                      className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
+                      onClick={() => {
+                        onEdit?.();
+                        setIsContextMenuOpen(false);
+                      }}
+                    >
+                      <Pencil
+                        className="w-4 h-4 text-text-secondary"
+                        aria-hidden="true"
+                      />{" "}
+                      Edit
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="w-full flex items-center gap-3 px-4 py-2 text-[13px] text-text-main hover:bg-input/80 transition-colors"
@@ -1143,6 +1164,11 @@ export function ChatMessage({
           <div
             className={`text-[11px] text-text-secondary mt-1 flex items-center gap-1 ${isSent ? "justify-end mr-1" : "ml-1"}`}
           >
+            {edited && (
+              <span className="italic" aria-label="Edited">
+                edited
+              </span>
+            )}
             {time}
             {isSent && status === "sending" && (
               <span
