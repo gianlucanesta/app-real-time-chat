@@ -100,3 +100,15 @@ export async function deleteById(
   );
   return rows[0] ?? null;
 }
+
+/** Delete a contact by its linked_user_id, scoped to the owner. */
+export async function deleteByLinkedUserId(
+  ownerId: string,
+  linkedUserId: string,
+): Promise<IContact | null> {
+  const { rows } = await pool.query<IContact>(
+    `DELETE FROM contacts WHERE owner_id = $1 AND linked_user_id = $2 RETURNING *`,
+    [ownerId, linkedUserId],
+  );
+  return rows[0] ?? null;
+}

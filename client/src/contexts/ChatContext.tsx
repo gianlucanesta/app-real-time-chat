@@ -1670,8 +1670,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setConversations((prev) => prev.filter((c) => c.id !== convId));
     // Deselect active conversation
     setActiveConversation(null);
-    // Delete messages on server
-    apiFetch(`/messages/${convId}`, { method: "DELETE" }).catch((err) =>
+    // Delete messages on server (and remove contact so conversation doesn't reappear)
+    apiFetch(`/messages/${convId}?deleteContact=true`, {
+      method: "DELETE",
+    }).catch((err) =>
       console.warn(
         "[chat] delete conversation failed:",
         (err as Error).message,
@@ -2175,8 +2177,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           localStorage.removeItem(`pinned_${convId}`);
           localStorage.removeItem(`favorite_${convId}`);
           localStorage.removeItem(`muted_${convId}`);
-          // Delete messages on server
-          apiFetch(`/messages/${convId}`, { method: "DELETE" }).catch((err) =>
+          // Delete messages on server (and remove contact so conversation doesn't reappear)
+          apiFetch(`/messages/${convId}?deleteContact=true`, {
+            method: "DELETE",
+          }).catch((err) =>
             console.warn(
               "[chat] delete conversation failed:",
               (err as Error).message,

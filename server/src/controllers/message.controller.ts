@@ -7,6 +7,7 @@ import { Message, MESSAGE_TTL_SECONDS } from "../models/message.model.js";
 import { redis } from "../config/redis.js";
 import { deleteCloudinaryAssetsForMessages } from "../services/cloudinary.service.js";
 import * as UserModel from "../models/user.model.js";
+import * as ContactModel from "../models/contact.model.js";
 
 const MAX_TEXT_LENGTH = 4096;
 
@@ -315,7 +316,8 @@ export async function clearConversation(
 
     // Verify the user is a participant
     const parts = conversationId.split("___");
-    if (parts.length !== 2 || !parts.includes(String(req.user!.sub))) {
+    const userId = String(req.user!.sub);
+    if (parts.length !== 2 || !parts.includes(userId)) {
       res.status(403).json({ error: "Forbidden" });
       return;
     }
@@ -330,6 +332,18 @@ export async function clearConversation(
 
     // Delete associated Cloudinary assets (fire-and-forget)
     deleteCloudinaryAssetsForMessages(messages).catch(() => {});
+
+    // When the caller requests a full "delete chat" (not just clear),
+    // also remove the contact record so the conversation doesn't reappear
+    // on the next page load via the persistent-contacts fallback.
+    if (req.query.deleteContact === "true") {
+      const partnerId = parts.find((id) => id !== userId);
+      if (partnerId) {
+        await ContactModel.deleteByLinkedUserId(userId, partnerId).catch(
+          () => {},
+        );
+      }
+    }
 
     res.status(200).json({ cleared: true });
   } catch (err) {
