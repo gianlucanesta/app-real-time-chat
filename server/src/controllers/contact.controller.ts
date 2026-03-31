@@ -76,6 +76,40 @@ export async function list(
   }
 }
 
+/** PATCH /api/contacts/:id */
+export async function update(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const contactId = req.params.id as string;
+    if (!contactId) {
+      res.status(400).json({ error: "contact id is required" });
+      return;
+    }
+    const { displayName, phone, initials, gradient } = req.body as {
+      displayName?: string;
+      phone?: string;
+      initials?: string;
+      gradient?: string;
+    };
+    const contact = await ContactModel.updateById(contactId, req.user!.sub, {
+      displayName: displayName?.trim(),
+      phone: phone?.trim(),
+      initials: initials?.trim(),
+      gradient,
+    });
+    if (!contact) {
+      res.status(404).json({ error: "Contact not found" });
+      return;
+    }
+    res.status(200).json({ contact });
+  } catch (err) {
+    next(err);
+  }
+}
+
 /** DELETE /api/contacts/:id */
 export async function remove(
   req: Request,

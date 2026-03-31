@@ -60,4 +60,5 @@ contactRouter.post("/", authMiddleware, ctrl.create);
  *       404:
  *         description: Contact not found
  */
+contactRouter.patch("/:id", authMiddleware, ctrl.update);
 contactRouter.delete("/:id", authMiddleware, ctrl.remove);

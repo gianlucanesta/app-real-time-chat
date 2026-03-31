@@ -7,6 +7,7 @@ import {
   Save,
 } from "lucide-react";
 import { PhoneSelect } from "../ui/PhoneSelect";
+import { apiFetch } from "../../lib/api";
 
 const COUNTRY_CODES = [
   { code: "+1", label: "+1 US" },
@@ -38,6 +39,14 @@ interface EditContactPanelProps {
   contactFirstName?: string;
   contactLastName?: string;
   contactPhone?: string;
+  contactId?: string | null;
+  onSave?: (updated: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    displayName: string;
+    initials: string;
+  }) => void;
 }
 
 function parseCountryCode(phone: string): { code: string; local: string } {
@@ -60,6 +69,8 @@ export function EditContactPanel({
   contactFirstName,
   contactLastName,
   contactPhone,
+  contactId,
+  onSave,
 }: EditContactPanelProps) {
   const parsed = parseCountryCode(contactPhone ?? "");
   const [firstName, setFirstName] = useState(
@@ -70,6 +81,7 @@ export function EditContactPanel({
   );
   const [phone, setPhone] = useState(parsed.local);
   const [country, setCountry] = useState(parsed.code);
+  const [isSaving, setIsSaving] = useState(false);
 
   const avatarInitials =
     `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() ||
@@ -243,11 +255,80 @@ export function EditContactPanel({
       <div className="absolute bottom-6 right-6 z-10">
         <button
           type="button"
-          className="w-[56px] h-[56px] rounded-full bg-accent text-white flex items-center justify-center shadow-lg hover:brightness-110 active:scale-95 transition-all"
+          disabled={isSaving || !firstName.trim()}
+          className="w-[56px] h-[56px] rounded-full bg-accent text-white flex items-center justify-center shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Save contact"
-          onClick={onClose}
+          onClick={async () => {
+            if (isSaving || !firstName.trim()) return;
+            setIsSaving(true);
+            try {
+              const numericPhone = phone.replace(/\D/g, "");
+              const fullPhone =
+                numericPhone.length > 0 ? `${country}${numericPhone}` : "";
+              const displayName =
+                `${firstName.trim()} ${lastName.trim()}`.trim();
+              const newInitials =
+                `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() ||
+                contactInitials;
+
+              if (contactId) {
+                await apiFetch(`/contacts/${contactId}`, {
+                  method: "PATCH",
+                  body: JSON.stringify({
+                    displayName,
+                    phone: fullPhone,
+                    initials: newInitials,
+                  }),
+                });
+              } else {
+                await apiFetch("/contacts", {
+                  method: "POST",
+                  body: JSON.stringify({
+                    displayName,
+                    phone: fullPhone,
+                    initials: newInitials,
+                    gradient: contactGradient,
+                  }),
+                });
+              }
+
+              onSave?.({
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+                phone: fullPhone,
+                displayName,
+                initials: newInitials,
+              });
+              onClose();
+            } catch (err) {
+              console.error("[EditContactPanel] save failed:", err);
+            } finally {
+              setIsSaving(false);
+            }
+          }}
         >
-          <Save className="w-6 h-6" />
+          {isSaving ? (
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="w-5 h-5 animate-spin"
+            >
+              <line x1="12" y1="2" x2="12" y2="6" />
+              <line x1="12" y1="18" x2="12" y2="22" />
+              <line x1="4.93" y1="4.93" x2="7.76" y2="7.76" />
+              <line x1="16.24" y1="16.24" x2="19.07" y2="19.07" />
+              <line x1="2" y1="12" x2="6" y2="12" />
+              <line x1="18" y1="12" x2="22" y2="12" />
+              <line x1="4.93" y1="19.07" x2="7.76" y2="16.24" />
+              <line x1="16.24" y1="7.76" x2="19.07" y2="4.93" />
+            </svg>
+          ) : (
+            <Save className="w-6 h-6" />
+          )}
         </button>
       </div>
     </div>

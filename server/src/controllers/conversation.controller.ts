@@ -28,76 +28,94 @@ export async function list(
       expires_at: { $gt: new Date() },
     });
 
-    const conversations = convIds.length === 0 ? [] : await Promise.all(
-      convIds.map(async (convId: string) => {
-        const parts = convId.split("___");
-        const partnerId = parts.find((id) => id !== userId) ?? parts[0];
+    // Load all contacts for this user once, build lookup by linked_user_id
+    const allContacts = await ContactModel.listByOwner(userId);
+    const contactByLinkedUser = new Map<string, string>(); // linkedUserId -> contactId
+    const contactByPhone = new Map<string, string>(); // phone -> contactId
+    for (const ct of allContacts) {
+      if (ct.linked_user_id) contactByLinkedUser.set(ct.linked_user_id, ct.id);
+      if (ct.phone) contactByPhone.set(ct.phone, ct.id);
+    }
 
-        const [lastMsg, unreadCount, partner] = await Promise.all([
-          Message.findOne(
-            { conversationId: convId, expires_at: { $gt: new Date() } },
-            {
-              text: 1,
-              createdAt: 1,
-              sender: 1,
-              status: 1,
-              mediaType: 1,
-              mediaDuration: 1,
-            },
-          )
-            .sort({ createdAt: -1 })
-            .lean(),
-          Message.countDocuments({
-            conversationId: convId,
-            sender: { $ne: userId },
-            status: { $ne: "read" },
-            expires_at: { $gt: new Date() },
-          }),
-          UserModel.findById(partnerId),
-        ]);
+    const conversations =
+      convIds.length === 0
+        ? []
+        : await Promise.all(
+            convIds.map(async (convId: string) => {
+              const parts = convId.split("___");
+              const partnerId = parts.find((id) => id !== userId) ?? parts[0];
 
-        const msgDoc = lastMsg as {
-          _id: { toString(): string };
-          text: string;
-          createdAt: Date;
-          sender: string;
-          status: string;
-          mediaType?: "image" | "video" | "audio" | null;
-          mediaDuration?: number | null;
-        } | null;
+              const [lastMsg, unreadCount, partner] = await Promise.all([
+                Message.findOne(
+                  { conversationId: convId, expires_at: { $gt: new Date() } },
+                  {
+                    text: 1,
+                    createdAt: 1,
+                    sender: 1,
+                    status: 1,
+                    mediaType: 1,
+                    mediaDuration: 1,
+                  },
+                )
+                  .sort({ createdAt: -1 })
+                  .lean(),
+                Message.countDocuments({
+                  conversationId: convId,
+                  sender: { $ne: userId },
+                  status: { $ne: "read" },
+                  expires_at: { $gt: new Date() },
+                }),
+                UserModel.findById(partnerId),
+              ]);
 
-        const lastMessageIsMine = msgDoc ? msgDoc.sender === userId : false;
+              const msgDoc = lastMsg as {
+                _id: { toString(): string };
+                text: string;
+                createdAt: Date;
+                sender: string;
+                status: string;
+                mediaType?: "image" | "video" | "audio" | null;
+                mediaDuration?: number | null;
+              } | null;
 
-        return {
-          id: convId,
-          type: "direct" as const,
-          name: partner?.display_name ?? "Unknown",
-          gradient:
-            partner?.avatar_gradient ??
-            "linear-gradient(135deg,#2563EB,#7C3AED)",
-          initials: partner?.initials ?? "??",
-          avatar: partner?.avatar_url ?? null,
-          lastMessage: msgDoc
-            ? lastMessageIsMine
-              ? `You: ${msgDoc.text}`
-              : msgDoc.text
-            : "",
-          // ISO string — client formats to "HH:mm"
-          lastMessageTime: msgDoc ? msgDoc.createdAt.toISOString() : "",
-          lastMessageId: msgDoc ? msgDoc._id.toString() : undefined,
-          lastMessageIsMine,
-          lastMessageStatus: msgDoc ? msgDoc.status : undefined,
-          lastMediaType: msgDoc?.mediaType || null,
-          lastMediaDuration: msgDoc?.mediaDuration || null,
-          unreadCount,
-          isOnline: false,
-          participants: parts,
-          phone: partner?.phone ?? "",
-          firstName: partner?.first_name ?? "",
-          lastName: partner?.last_name ?? "",
-        };
-      }),
-    );
+              const lastMessageIsMine = msgDoc
+                ? msgDoc.sender === userId
+                : false;
+
+              return {
+                id: convId,
+                type: "direct" as const,
+                name: partner?.display_name ?? "Unknown",
+                gradient:
+                  partner?.avatar_gradient ??
+                  "linear-gradient(135deg,#2563EB,#7C3AED)",
+                initials: partner?.initials ?? "??",
+                avatar: partner?.avatar_url ?? null,
+                lastMessage: msgDoc
+                  ? lastMessageIsMine
+                    ? `You: ${msgDoc.text}`
+                    : msgDoc.text
+                  : "",
+                // ISO string — client formats to "HH:mm"
+                lastMessageTime: msgDoc ? msgDoc.createdAt.toISOString() : "",
+                lastMessageId: msgDoc ? msgDoc._id.toString() : undefined,
+                lastMessageIsMine,
+                lastMessageStatus: msgDoc ? msgDoc.status : undefined,
+                lastMediaType: msgDoc?.mediaType || null,
+                lastMediaDuration: msgDoc?.mediaDuration || null,
+                unreadCount,
+                isOnline: false,
+                participants: parts,
+                phone: partner?.phone ?? "",
+                firstName: partner?.first_name ?? "",
+                lastName: partner?.last_name ?? "",
+                contactId:
+                  contactByLinkedUser.get(partnerId) ??
+                  contactByPhone.get(partner?.phone ?? "") ??
+                  null,
+              };
+            }),
+          );
 
     // Most-recent-first
     conversations.sort((a, b) =>
@@ -116,7 +134,9 @@ export async function list(
 
     const contacts = await ContactModel.listByOwner(userId);
     const contactConversations = contacts
-      .filter((ct) => ct.linked_user_id && !existingPartnerIds.has(ct.linked_user_id))
+      .filter(
+        (ct) => ct.linked_user_id && !existingPartnerIds.has(ct.linked_user_id),
+      )
       .map((ct) => {
         const partnerId = ct.linked_user_id as string;
         const parts = [userId, partnerId].sort();
@@ -141,6 +161,7 @@ export async function list(
           phone: ct.phone ?? "",
           firstName: "",
           lastName: "",
+          contactId: ct.id,
         };
       });
 
@@ -156,7 +177,14 @@ export async function list(
         const [lastMsg, unreadCount] = await Promise.all([
           Message.findOne(
             { conversationId, expires_at: { $gt: new Date() } },
-            { text: 1, createdAt: 1, sender: 1, status: 1, mediaType: 1, mediaDuration: 1 },
+            {
+              text: 1,
+              createdAt: 1,
+              sender: 1,
+              status: 1,
+              mediaType: 1,
+              mediaDuration: 1,
+            },
           )
             .sort({ createdAt: -1 })
             .lean(),
@@ -192,7 +220,9 @@ export async function list(
               ? `You: ${msgDoc.text}`
               : msgDoc.text
             : "",
-          lastMessageTime: msgDoc ? msgDoc.createdAt.toISOString() : g.created_at,
+          lastMessageTime: msgDoc
+            ? msgDoc.createdAt.toISOString()
+            : g.created_at,
           lastMessageId: msgDoc ? msgDoc._id.toString() : undefined,
           lastMessageIsMine,
           lastMessageStatus: msgDoc ? msgDoc.status : undefined,

@@ -1,5 +1,8 @@
 import { pool } from "../config/db.js";
-import type { IContact, IContactUpsert } from "../interfaces/contact.interface.js";
+import type {
+  IContact,
+  IContactUpsert,
+} from "../interfaces/contact.interface.js";
 
 /**
  * Insert or update a contact for a user.
@@ -53,6 +56,37 @@ export async function listByOwner(ownerId: string): Promise<IContact[]> {
     [ownerId],
   );
   return rows;
+}
+
+/** Update a contact's fields by its id, scoped to the owner. */
+export async function updateById(
+  contactId: string,
+  ownerId: string,
+  updates: {
+    displayName?: string;
+    phone?: string;
+    initials?: string;
+    gradient?: string;
+  },
+): Promise<IContact | null> {
+  const { rows } = await pool.query<IContact>(
+    `UPDATE contacts
+     SET display_name = COALESCE($3, display_name),
+         phone        = COALESCE($4, phone),
+         initials     = COALESCE($5, initials),
+         gradient     = COALESCE($6, gradient)
+     WHERE id = $1 AND owner_id = $2
+     RETURNING *`,
+    [
+      contactId,
+      ownerId,
+      updates.displayName ?? null,
+      updates.phone ?? null,
+      updates.initials ?? null,
+      updates.gradient ?? null,
+    ],
+  );
+  return rows[0] ?? null;
 }
 
 /** Delete a contact by its id, scoped to the owner. */

@@ -138,6 +138,7 @@ export function ChatArea({
     muteConversation,
     unmuteConversation,
     sendScheduledCallInvite,
+    addOrUpdateConversation,
   } = useChat();
   const toast = useToast();
   const chatSettings = useChatSettings();
@@ -936,6 +937,7 @@ export function ChatArea({
         />
       )}
       <EditContactPanel
+        key={activeConversation?.id}
         isOpen={isEditContactOpen}
         onClose={handleCloseEditContact}
         contactName={contactName}
@@ -945,6 +947,23 @@ export function ChatArea({
         contactFirstName={activeConversation?.firstName}
         contactLastName={activeConversation?.lastName}
         contactPhone={activeConversation?.phone}
+        contactId={activeConversation?.contactId}
+        onSave={({ displayName, initials, phone }) => {
+          if (!activeConversation) return;
+          addOrUpdateConversation({
+            ...activeConversation,
+            name: displayName,
+            initials,
+            phone,
+          });
+          setActiveConversation({
+            ...activeConversation,
+            name: displayName,
+            initials,
+            phone,
+          });
+          toast.showToast("Contact updated", "success");
+        }}
       />
       <ImportantMessagesPanel
         isOpen={isImportantOpen}

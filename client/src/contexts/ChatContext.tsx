@@ -116,6 +116,7 @@ export interface Conversation {
   phone?: string;
   firstName?: string;
   lastName?: string;
+  contactId?: string | null;
   isTyping?: boolean;
   typingName?: string;
   isMuted?: boolean;
@@ -450,9 +451,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             linkPreview: m.linkPreview || null,
             statusReply: (m as any).statusReply || null,
             quotedReply: (m as any).quotedReply || null,
-            isStarred: Array.isArray((m as any).starredBy) && user?.id
-              ? (m as any).starredBy.includes(user.id)
-              : false,
+            isStarred:
+              Array.isArray((m as any).starredBy) && user?.id
+                ? (m as any).starredBy.includes(user.id)
+                : false,
           })),
         );
 
@@ -1777,7 +1779,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setActiveMessages((prev) =>
         prev.map((m) =>
           m.id === messageId
-            ? { ...m, text: trimmed, edited: true, editedAt: new Date().toISOString() }
+            ? {
+                ...m,
+                text: trimmed,
+                edited: true,
+                editedAt: new Date().toISOString(),
+              }
             : m,
         ),
       );
