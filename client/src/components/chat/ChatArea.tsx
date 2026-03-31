@@ -20,6 +20,7 @@ import {
   Link2,
   Calendar,
   X,
+  Upload,
 } from "lucide-react";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
@@ -209,6 +210,8 @@ export function ChatArea({
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [viewOnce, setViewOnce] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const dragCounter = useRef(0);
 
   // Media preview state
   const [previewFiles, setPreviewFiles] = useState<
@@ -627,6 +630,50 @@ export function ChatArea({
     ],
   );
 
+  // Drag-and-drop file upload handlers
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    if (e.dataTransfer.types.includes("Files")) {
+      setIsDragOver(true);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
+      setIsDragOver(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current = 0;
+    setIsDragOver(false);
+
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    if (droppedFiles.length === 0) return;
+
+    const mapped = droppedFiles.map((file) => {
+      let type: "image" | "video" | "audio" | "document" = "document";
+      if (file.type.startsWith("image/")) type = "image";
+      else if (file.type.startsWith("video/")) type = "video";
+      else if (file.type.startsWith("audio/")) type = "audio";
+      return { file, type, previewUrl: URL.createObjectURL(file) };
+    });
+
+    setPreviewFiles((prev) => [...prev, ...mapped]);
+  }, []);
+
   // Handle voice recording send
   const handleVoiceSend = useCallback(
     async (blob: Blob, _duration: number) => {
@@ -792,7 +839,22 @@ export function ChatArea({
             }
           : {}),
       }}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
     >
+      {/* Drag-and-drop overlay */}
+      {isDragOver && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-blue-500/10 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3 px-16 py-12 border-2 border-dashed border-blue-400 rounded-2xl bg-blue-500/15">
+            <Upload className="w-12 h-12 text-blue-400" />
+            <span className="text-lg font-medium text-blue-300">
+              Drop files here to send
+            </span>
+          </div>
+        </div>
+      )}
       {/* Right Side Panels */}
       {activeConversation?.type === "group" ? (
         <GroupInfoPanel
