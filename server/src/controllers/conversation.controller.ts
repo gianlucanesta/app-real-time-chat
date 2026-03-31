@@ -114,8 +114,12 @@ export async function list(
                 isOnline: false,
                 participants: parts,
                 phone: partner?.phone ?? "",
-                firstName: partner?.first_name ?? "",
-                lastName: partner?.last_name ?? "",
+                firstName: contact
+                  ? (contact.display_name.split(" ")[0] ?? "")
+                  : (partner?.first_name ?? ""),
+                lastName: contact
+                  ? contact.display_name.split(" ").slice(1).join(" ")
+                  : (partner?.last_name ?? ""),
                 contactId: contact?.id ?? null,
               };
             }),

@@ -948,19 +948,23 @@ export function ChatArea({
         contactLastName={activeConversation?.lastName}
         contactPhone={activeConversation?.phone}
         contactId={activeConversation?.contactId}
-        onSave={({ displayName, initials, phone }) => {
+        onSave={({ firstName, lastName, displayName, initials, phone }) => {
           if (!activeConversation) return;
           addOrUpdateConversation({
             ...activeConversation,
             name: displayName,
             initials,
             phone,
+            firstName,
+            lastName,
           });
           setActiveConversation({
             ...activeConversation,
             name: displayName,
             initials,
             phone,
+            firstName,
+            lastName,
           });
           toast.showToast("Contact updated", "success");
         }}
