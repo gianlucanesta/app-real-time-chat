@@ -3,6 +3,7 @@ import { Message } from "../models/message.model.js";
 import * as UserModel from "../models/user.model.js";
 import * as GroupModel from "../models/group.model.js";
 import * as ContactModel from "../models/contact.model.js";
+import type { IContact } from "../interfaces/contact.interface.js";
 
 /**
  * GET /api/conversations
@@ -30,11 +31,11 @@ export async function list(
 
     // Load all contacts for this user once, build lookup by linked_user_id
     const allContacts = await ContactModel.listByOwner(userId);
-    const contactByLinkedUser = new Map<string, string>(); // linkedUserId -> contactId
-    const contactByPhone = new Map<string, string>(); // phone -> contactId
+    const contactByLinkedUser = new Map<string, IContact>(); // linkedUserId -> contact
+    const contactByPhone = new Map<string, IContact>(); // phone -> contact
     for (const ct of allContacts) {
-      if (ct.linked_user_id) contactByLinkedUser.set(ct.linked_user_id, ct.id);
-      if (ct.phone) contactByPhone.set(ct.phone, ct.id);
+      if (ct.linked_user_id) contactByLinkedUser.set(ct.linked_user_id, ct);
+      if (ct.phone) contactByPhone.set(ct.phone, ct);
     }
 
     const conversations =
@@ -82,14 +83,20 @@ export async function list(
                 ? msgDoc.sender === userId
                 : false;
 
+              const contact =
+                contactByLinkedUser.get(partnerId) ??
+                contactByPhone.get(partner?.phone ?? "");
+
               return {
                 id: convId,
                 type: "direct" as const,
-                name: partner?.display_name ?? "Unknown",
+                name:
+                  contact?.display_name ?? partner?.display_name ?? "Unknown",
                 gradient:
                   partner?.avatar_gradient ??
+                  contact?.gradient ??
                   "linear-gradient(135deg,#2563EB,#7C3AED)",
-                initials: partner?.initials ?? "??",
+                initials: contact?.initials ?? partner?.initials ?? "??",
                 avatar: partner?.avatar_url ?? null,
                 lastMessage: msgDoc
                   ? lastMessageIsMine
@@ -109,10 +116,7 @@ export async function list(
                 phone: partner?.phone ?? "",
                 firstName: partner?.first_name ?? "",
                 lastName: partner?.last_name ?? "",
-                contactId:
-                  contactByLinkedUser.get(partnerId) ??
-                  contactByPhone.get(partner?.phone ?? "") ??
-                  null,
+                contactId: contact?.id ?? null,
               };
             }),
           );
