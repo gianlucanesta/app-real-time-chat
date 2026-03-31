@@ -37,6 +37,7 @@ import {
   MuteConversationModal,
   type MuteDuration,
 } from "./MuteConversationModal";
+import { ConfirmModal } from "./ConfirmModal";
 
 interface SidebarProps {
   onOpenNewChat?: () => void;
@@ -199,6 +200,9 @@ export function Sidebar({
   } = useChat();
 
   const [mutingConvId, setMutingConvId] = useState<string | null>(null);
+  const [pendingDeleteConvId, setPendingDeleteConvId] = useState<string | null>(
+    null,
+  );
 
   const exitSelectMode = () => {
     setIsSelectMode(false);
@@ -731,8 +735,8 @@ export function Sidebar({
                         <div
                           onClick={(e) => {
                             e.stopPropagation();
-                            deleteConversationById(chat.id);
                             setOpenConvMenuId(null);
+                            setPendingDeleteConvId(chat.id);
                           }}
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-danger hover:bg-danger/10 transition-colors cursor-pointer"
                         >
@@ -877,6 +881,19 @@ export function Sidebar({
       </div>
       {/* Bottom spacing for mobile nav bar */}
       <div className="h-[4px] md:hidden shrink-0"></div>
+
+      {/* Delete chat confirmation modal */}
+      <ConfirmModal
+        isOpen={pendingDeleteConvId !== null}
+        title="Delete chat?"
+        description="This contact and all messages will be permanently removed. This cannot be undone."
+        confirmText="Delete chat"
+        onConfirm={() => {
+          if (pendingDeleteConvId) deleteConversationById(pendingDeleteConvId);
+          setPendingDeleteConvId(null);
+        }}
+        onCancel={() => setPendingDeleteConvId(null)}
+      />
 
       {/* Mute modal (triggered from per-conversation context menu) */}
       {mutingConvId &&
