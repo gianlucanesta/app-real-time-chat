@@ -130,8 +130,8 @@ export function EvervaultBackground({
       mouseRef.current = { x: -9999, y: -9999 };
     };
 
-    container.addEventListener("mousemove", handleMouseMove);
-    container.addEventListener("mouseleave", handleMouseLeave);
+    window.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseleave", handleMouseLeave);
 
     const draw = (now: number) => {
       const w = canvas.width / dpr;
@@ -241,8 +241,8 @@ export function EvervaultBackground({
     return () => {
       cancelAnimationFrame(rafRef.current);
       ro.disconnect();
-      container.removeEventListener("mousemove", handleMouseMove);
-      container.removeEventListener("mouseleave", handleMouseLeave);
+      window.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseleave", handleMouseLeave);
     };
   }, [
     characters,
