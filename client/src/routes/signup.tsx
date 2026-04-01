@@ -119,7 +119,7 @@ function SignupPage() {
       /> */}
       <EvervaultBackground />
       {/* <div className="auth-bg-vignette" /> */}
-      <div className="min-h-full flex flex-col items-center justify-center py-8 px-4 sm:px-5 bg-bg text-text-main font-sans">
+      <div className="min-h-full flex flex-col items-center justify-center py-8 px-4 sm:px-5 relative z-[1] text-text-main font-sans">
         {signupSuccess ? (
           <div className="w-full max-w-[440px] bg-card rounded-[16px] px-6 sm:px-8 py-10 relative z-10 flex flex-col items-center text-center">
             <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mb-6">
@@ -529,7 +529,7 @@ function SignupPage() {
         )}
 
         {/* Page Footer */}
-        <footer className="flex justify-center gap-4 sm:gap-5 text-[12px] text-text-secondary mt-6 pb-4 w-full">
+        <footer className="flex justify-center gap-4 sm:gap-5 text-[12px] text-text-secondary/80 mt-6 pb-4 w-full">
           <Link
             to="/privacy-policy"
             className="hover:text-text-main transition-colors p-2 -m-2"

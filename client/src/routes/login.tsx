@@ -88,7 +88,7 @@ function LoginPage() {
       /> */}
       <EvervaultBackground />
       {/* <div className="auth-bg-vignette" /> */}
-      <div className="min-h-full flex flex-col items-center justify-center py-8 px-4 sm:px-5 bg-bg text-text-main font-sans">
+      <div className="min-h-full flex flex-col items-center justify-center py-8 px-4 sm:px-5 relative z-[1] text-text-main font-sans">
         {loginSuccess && (
           <div className="fixed inset-0 z-50 flex items-center justify-center success-modal-overlay">
             <div className="bg-card rounded-2xl px-10 py-10 flex flex-col items-center gap-5 success-modal-card border border-border shadow-2xl">
@@ -439,7 +439,7 @@ function LoginPage() {
         </div>
 
         {/* Page Footer */}
-        <footer className="flex justify-center gap-4 sm:gap-5 text-[12px] text-text-secondary mt-6 pb-4 w-full">
+        <footer className="flex justify-center gap-4 sm:gap-5 text-[12px] text-text-secondary/80 mt-6 pb-4 w-full">
           <Link
             to="/privacy-policy"
             className="hover:text-text-main transition-colors p-2 -m-2"
