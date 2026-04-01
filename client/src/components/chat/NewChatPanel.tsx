@@ -9,6 +9,7 @@ interface SearchUser {
   display_name: string;
   initials: string;
   avatar_gradient: string;
+  avatar_url?: string | null;
   email?: string;
 }
 
@@ -21,6 +22,7 @@ interface SavedContact {
   linked_user_id: string | null;
   linked_display_name?: string;
   linked_initials?: string;
+  linked_avatar_url?: string | null;
 }
 
 interface NewChatPanelProps {
@@ -234,15 +236,23 @@ export function NewChatPanel({
               className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-input/50 transition-colors"
             >
               <div className="relative inline-block shrink-0">
-                <div
-                  className="w-[42px] h-[42px] rounded-full flex items-center justify-center font-bold text-[13px] text-white"
-                  style={{
-                    background:
-                      c.gradient || "linear-gradient(135deg,#2563EB,#7C3AED)",
-                  }}
-                >
-                  {c.linked_initials || c.initials}
-                </div>
+                {c.linked_avatar_url ? (
+                  <img
+                    src={c.linked_avatar_url}
+                    alt={c.linked_display_name || c.display_name}
+                    className="w-[42px] h-[42px] rounded-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="w-[42px] h-[42px] rounded-full flex items-center justify-center font-bold text-[13px] text-white"
+                    style={{
+                      background:
+                        c.gradient || "linear-gradient(135deg,#2563EB,#7C3AED)",
+                    }}
+                  >
+                    {c.linked_initials || c.initials}
+                  </div>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-[14px] text-text-main truncate">
@@ -280,16 +290,24 @@ export function NewChatPanel({
             className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-input/50 transition-colors"
           >
             <div className="relative inline-block shrink-0">
-              <div
-                className="w-[42px] h-[42px] rounded-full flex items-center justify-center font-bold text-[13px] text-white"
-                style={{
-                  background:
-                    u.avatar_gradient ||
-                    "linear-gradient(135deg,#2563EB,#7C3AED)",
-                }}
-              >
-                {u.initials}
-              </div>
+              {u.avatar_url ? (
+                <img
+                  src={u.avatar_url}
+                  alt={u.display_name}
+                  className="w-[42px] h-[42px] rounded-full object-cover"
+                />
+              ) : (
+                <div
+                  className="w-[42px] h-[42px] rounded-full flex items-center justify-center font-bold text-[13px] text-white"
+                  style={{
+                    background:
+                      u.avatar_gradient ||
+                      "linear-gradient(135deg,#2563EB,#7C3AED)",
+                  }}
+                >
+                  {u.initials}
+                </div>
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-[14px] text-text-main truncate">

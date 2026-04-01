@@ -48,7 +48,8 @@ export async function listByOwner(ownerId: string): Promise<IContact[]> {
     `SELECT
        c.*,
        u.display_name AS linked_display_name,
-       u.initials     AS linked_initials
+       u.initials     AS linked_initials,
+       u.avatar_url   AS linked_avatar_url
      FROM contacts c
      LEFT JOIN users u ON u.id = c.linked_user_id
      WHERE c.owner_id = $1

@@ -11,6 +11,7 @@ export interface IContact {
   /** Joined from users table when linked. */
   linked_display_name?: string;
   linked_initials?: string;
+  linked_avatar_url?: string | null;
 }
 
 /** Parameters for upserting a contact. */

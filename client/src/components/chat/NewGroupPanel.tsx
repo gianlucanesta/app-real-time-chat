@@ -17,6 +17,7 @@ interface Contact {
   linked_initials?: string;
   gradient: string;
   linked_user_id: string | null;
+  linked_avatar_url?: string | null;
 }
 
 interface NewGroupPanelProps {
@@ -302,12 +303,20 @@ export function NewGroupPanel({
                       >
                         {/* Avatar */}
                         <div className="relative shrink-0">
-                          <div
-                            className="w-11 h-11 rounded-full flex items-center justify-center text-white text-[14px] font-semibold"
-                            style={{ background: contact.gradient }}
-                          >
-                            {displayInitials(contact)}
-                          </div>
+                          {contact.linked_avatar_url ? (
+                            <img
+                              src={contact.linked_avatar_url}
+                              alt={displayName(contact)}
+                              className="w-11 h-11 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div
+                              className="w-11 h-11 rounded-full flex items-center justify-center text-white text-[14px] font-semibold"
+                              style={{ background: contact.gradient }}
+                            >
+                              {displayInitials(contact)}
+                            </div>
+                          )}
                           {sel && (
                             <div className="absolute inset-0 rounded-full bg-accent flex items-center justify-center">
                               <Check className="w-5 h-5 text-white stroke-[3]" />
