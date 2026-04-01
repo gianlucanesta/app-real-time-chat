@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Mail, MessageSquare, ArrowLeft } from "lucide-react";
+import { EvervaultBackground } from "../components/ui/evervault-background";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -35,7 +36,9 @@ function ForgotPasswordPage() {
   };
 
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center p-4 sm:p-5 bg-bg text-text-main font-sans overflow-hidden auth-page-glow relative">
+    <div className="absolute inset-0 overflow-y-auto auth-page-glow auth-page-scroll">
+      <EvervaultBackground />
+      <div className="min-h-full flex flex-col items-center justify-center p-4 sm:p-5 relative z-[1] text-text-main font-sans">
       <div className="w-full max-w-[440px] bg-card rounded-[16px] px-6 sm:px-8 py-8 sm:py-10 relative z-10 flex flex-col mb-8">
         {/* Header */}
         <div className="text-center mb-8">
@@ -133,6 +136,8 @@ function ForgotPasswordPage() {
             </div>
           </>
         )}
+      </div>
+      </div>
       </div>
     </div>
   );
