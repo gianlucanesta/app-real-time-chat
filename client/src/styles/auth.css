@@ -4,7 +4,7 @@
 
 /* ── Evervault encrypted-text background ─────────────────── */
 .evervault-bg-container {
-  position: absolute;
+  position: fixed;
   inset: 0;
   overflow: hidden;
   pointer-events: auto;
