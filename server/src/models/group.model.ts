@@ -24,6 +24,7 @@ export interface IGroupMember {
 
 export interface IGroupChatWithMembers extends IGroupChat {
   member_ids: string[];
+  member_names: Record<string, string>;
 }
 
 /** Create a new group chat and add all members (including creator). */
@@ -64,7 +65,14 @@ export async function create(
     );
 
     await client.query("COMMIT");
-    return { ...group, member_ids: allMembers };
+    // Fetch display names for all members
+    const { rows: nameRows } = await client.query<{
+      id: string;
+      display_name: string;
+    }>(`SELECT id, display_name FROM users WHERE id = ANY($1)`, [allMembers]);
+    const member_names: Record<string, string> = {};
+    for (const r of nameRows) member_names[r.id] = r.display_name;
+    return { ...group, member_ids: allMembers, member_names };
   } catch (err) {
     await client.query("ROLLBACK");
     throw err;
@@ -89,23 +97,34 @@ export async function listForUser(
 
   if (!groups.length) return [];
 
-  // Fetch all member IDs for these groups in one query
+  // Fetch all member IDs and display names for these groups in one query
   const groupIds = groups.map((g) => g.id);
   const { rows: memberRows } = await pool.query<{
     group_id: string;
     user_id: string;
+    display_name: string;
   }>(
-    `SELECT group_id, user_id FROM group_chat_members WHERE group_id = ANY($1)`,
+    `SELECT gcm.group_id, gcm.user_id, u.display_name
+     FROM group_chat_members gcm
+     JOIN users u ON u.id = gcm.user_id
+     WHERE gcm.group_id = ANY($1)`,
     [groupIds],
   );
 
   const memberMap = new Map<string, string[]>();
+  const nameMap = new Map<string, Record<string, string>>();
   for (const row of memberRows) {
     if (!memberMap.has(row.group_id)) memberMap.set(row.group_id, []);
     memberMap.get(row.group_id)!.push(row.user_id);
+    if (!nameMap.has(row.group_id)) nameMap.set(row.group_id, {});
+    nameMap.get(row.group_id)![row.user_id] = row.display_name;
   }
 
-  return groups.map((g) => ({ ...g, member_ids: memberMap.get(g.id) ?? [] }));
+  return groups.map((g) => ({
+    ...g,
+    member_ids: memberMap.get(g.id) ?? [],
+    member_names: nameMap.get(g.id) ?? {},
+  }));
 }
 
 /** Get a single group chat by ID. */

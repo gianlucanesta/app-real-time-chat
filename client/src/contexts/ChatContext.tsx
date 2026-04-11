@@ -113,6 +113,7 @@ export interface Conversation {
   unreadCount: number;
   isOnline?: boolean;
   participants: string[];
+  participantNames?: string[];
   phone?: string;
   firstName?: string;
   lastName?: string;
@@ -328,10 +329,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             lastMessageTime: c.lastMessageTime
               ? fmtTime(c.lastMessageTime)
               : undefined,
-            // Apply cached presence info
-            isOnline: c.participants.some((p) =>
-              onlineUserIdsRef.current.has(p),
-            ),
+            // Only direct conversations show online status, never groups
+            isOnline:
+              c.type !== "group" &&
+              c.participants.some((p) => onlineUserIdsRef.current.has(p)),
             isMuted,
             mutedUntil,
             isArchived,
@@ -685,7 +686,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       onlineUserIdsRef.current.add(data.userId);
       setConversations((prev) =>
         prev.map((c) =>
-          c.participants.includes(data.userId) ? { ...c, isOnline: true } : c,
+          c.type !== "group" && c.participants.includes(data.userId)
+            ? { ...c, isOnline: true }
+            : c,
         ),
       );
     };
@@ -695,7 +698,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       onlineUserIdsRef.current.delete(data.userId);
       setConversations((prev) =>
         prev.map((c) =>
-          c.participants.includes(data.userId) ? { ...c, isOnline: false } : c,
+          c.type !== "group" && c.participants.includes(data.userId)
+            ? { ...c, isOnline: false }
+            : c,
         ),
       );
     };

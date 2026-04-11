@@ -356,6 +356,7 @@ export function ChatArea({
   const contactName = activeConversation?.name || "";
   const contactInitials = activeConversation?.initials || "";
   const contactGradient = activeConversation?.gradient || "";
+  const isGroup = activeConversation?.type === "group";
 
   // Derive current user's initials & gradient for sent audio messages
   const myInitials = user?.displayName
@@ -1015,7 +1016,7 @@ export function ChatArea({
                 {contactInitials}
               </div>
             )}
-            {isContactOnline && (
+            {isContactOnline && !isGroup && (
               <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-success border-2 border-bg box-content"></span>
             )}
           </div>
@@ -1023,7 +1024,7 @@ export function ChatArea({
           <div
             className="flex-1 min-w-0"
             onMouseEnter={() => {
-              if (!isContactOnline && !isContactTyping) {
+              if (!isGroup && !isContactOnline && !isContactTyping) {
                 if (offlineTimerRef.current)
                   clearTimeout(offlineTimerRef.current);
                 offlineTimerRef.current = setTimeout(() => {
@@ -1032,14 +1033,19 @@ export function ChatArea({
               }
             }}
             onMouseLeave={() => {
-              if (offlineTimerRef.current)
-                clearTimeout(offlineTimerRef.current);
-              if (!offlineTextVisible) setOfflineTextVisible(true);
+              if (!isGroup) {
+                if (offlineTimerRef.current)
+                  clearTimeout(offlineTimerRef.current);
+                if (!offlineTextVisible) setOfflineTextVisible(true);
+              }
             }}
           >
             <h2
               className={`font-semibold text-text-main leading-tight truncate transition-all duration-300 ease-in-out ${
-                !isContactOnline && !isContactTyping && !offlineTextVisible
+                !isGroup &&
+                !isContactOnline &&
+                !isContactTyping &&
+                !offlineTextVisible
                   ? "text-[17px] md:text-[18px] translate-y-[2px]"
                   : "text-[15px] md:text-[16px]"
               }`}
@@ -1052,7 +1058,11 @@ export function ChatArea({
                 <span>Muted</span>
               </div>
             )}
-            {isContactTyping ? (
+            {isGroup ? (
+              <div className="hidden md:flex items-center text-[11px] md:text-[12px] text-text-secondary mt-0.5 truncate">
+                {liveConv?.participantNames?.join(", ") || ""}
+              </div>
+            ) : isContactTyping ? (
               <div className="flex items-center gap-1.5 text-[11px] md:text-[12px] text-accent mt-0.5 transition-all duration-300 ease-in-out">
                 <span className="flex gap-0.5">
                   <span

@@ -580,7 +580,7 @@ export function Sidebar({
                         {chat.initials}
                       </div>
                     )}
-                    {chat.isOnline && (
+                    {chat.isOnline && chat.type !== "group" && (
                       <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-success border-2 border-bg md:border-card box-content"></span>
                     )}
                   </div>

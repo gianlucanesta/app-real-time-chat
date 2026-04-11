@@ -239,6 +239,7 @@ export async function list(
           unreadCount,
           isOnline: false,
           participants: g.member_ids,
+          participantNames: Object.values(g.member_names),
         };
       }),
     );
