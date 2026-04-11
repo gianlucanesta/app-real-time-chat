@@ -214,10 +214,10 @@ export function NewGroupPanel({
                         {displayInitials(c)}
                       </div>
                     )}
-                    <div className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-destructive flex items-center justify-center border-2 border-card">
+                    <div className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-danger flex items-center justify-center border-2 border-bg shadow-sm">
                       <svg
                         viewBox="0 0 24 24"
-                        className="w-2.5 h-2.5 text-white fill-none stroke-white stroke-[3]"
+                        className="w-2.5 h-2.5 fill-none stroke-white stroke-[3]"
                       >
                         <line x1="18" y1="6" x2="6" y2="18" />
                         <line x1="6" y1="6" x2="18" y2="18" />
