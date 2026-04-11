@@ -135,7 +135,7 @@ export async function lookupPhone(
       return;
     }
     const user = await UserModel.findByPhone(phone.trim());
-    if (!user) {
+    if (!user || user.id === req.user!.sub) {
       res.status(200).json({ found: false });
       return;
     }
@@ -210,7 +210,12 @@ export async function requestReport(
     }
     // In production this would queue an async export job.
     // For now, return a success acknowledgment.
-    res.status(200).json({ message: "Report request received. You will be notified when it is ready." });
+    res
+      .status(200)
+      .json({
+        message:
+          "Report request received. You will be notified when it is ready.",
+      });
   } catch (err) {
     next(err);
   }
@@ -228,7 +233,12 @@ export async function requestChannelReport(
       res.status(404).json({ error: "User not found" });
       return;
     }
-    res.status(200).json({ message: "Channel report request received. You will be notified when it is ready." });
+    res
+      .status(200)
+      .json({
+        message:
+          "Channel report request received. You will be notified when it is ready.",
+      });
   } catch (err) {
     next(err);
   }

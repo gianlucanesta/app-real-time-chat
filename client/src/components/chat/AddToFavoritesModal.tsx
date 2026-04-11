@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { X, Search, Heart } from "lucide-react";
 import { useChat, type Conversation } from "../../contexts/ChatContext";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface AddToFavoritesModalProps {
   open: boolean;
@@ -12,6 +13,7 @@ export function AddToFavoritesModal({
   onClose,
 }: AddToFavoritesModalProps) {
   const { conversations, addToFavorites, removeFromFavorites } = useChat();
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
 
   // Filter to direct conversations only and apply search

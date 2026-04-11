@@ -41,9 +41,13 @@ function LayoutContent() {
   }, [pathname]);
 
   // Derive contact info from conversations using the callContactId
+  // Ensure we match only conversations where callContactId is the OTHER
+  // participant, not ourselves (every conversation includes the current user).
   const callConv = conversations.find(
     (c) =>
-      webrtc.callContactId && c.participants.includes(webrtc.callContactId),
+      webrtc.callContactId &&
+      webrtc.callContactId !== user?.id &&
+      c.participants.includes(webrtc.callContactId),
   );
   const contactName = callConv?.name ?? webrtc.incomingCall?.fromName ?? "";
   const contactInitials = callConv?.initials ?? "";

@@ -67,6 +67,15 @@ export function ChannelsSidebar({
     }
   };
 
+  const handleUnfollow = async (channelId: string) => {
+    try {
+      await apiFetch(`/channels/${channelId}/follow`, { method: "DELETE" });
+      fetchChannels(isSearchMode ? searchQuery : undefined);
+    } catch (err) {
+      console.error("Failed to unfollow channel:", err);
+    }
+  };
+
   const formatFollowers = (count: number): string => {
     if (count >= 1_000_000)
       return `${(count / 1_000_000).toFixed(1)}M followers`;
@@ -83,7 +92,10 @@ export function ChannelsSidebar({
     if (hrs < 24) return `${hrs}h`;
     const days = Math.floor(hrs / 24);
     if (days < 7) return `${days}d`;
-    return new Date(dateStr).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return new Date(dateStr).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    });
   };
 
   // Split channels into followed and suggested
