@@ -67,15 +67,6 @@ export function ChannelsSidebar({
     }
   };
 
-  const _handleUnfollow = async (channelId: string) => {
-    try {
-      await apiFetch(`/channels/${channelId}/follow`, { method: "DELETE" });
-      fetchChannels(isSearchMode ? searchQuery : undefined);
-    } catch (err) {
-      console.error("Failed to unfollow channel:", err);
-    }
-  };
-
   const formatFollowers = (count: number): string => {
     if (count >= 1_000_000)
       return `${(count / 1_000_000).toFixed(1)}M followers`;
