@@ -740,7 +740,7 @@ export function Sidebar({
                           }}
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-danger hover:bg-danger/10 transition-colors cursor-pointer"
                         >
-                          <Trash2 className="w-4 h-4" /> Delete chat
+                          <Trash2 className="w-4 h-4" /> {chat.type === "group" ? "Delete group" : "Delete chat"}
                         </div>
                       </div>
                     )}
@@ -883,17 +883,23 @@ export function Sidebar({
       <div className="h-[4px] md:hidden shrink-0"></div>
 
       {/* Delete chat confirmation modal */}
-      <ConfirmModal
-        isOpen={pendingDeleteConvId !== null}
-        title="Delete chat?"
-        description="This contact and all messages will be permanently removed. This cannot be undone."
-        confirmText="Delete chat"
-        onConfirm={() => {
-          if (pendingDeleteConvId) deleteConversationById(pendingDeleteConvId);
-          setPendingDeleteConvId(null);
-        }}
-        onCancel={() => setPendingDeleteConvId(null)}
-      />
+      {(() => {
+        const pendingConv = pendingDeleteConvId ? conversations.find((c) => c.id === pendingDeleteConvId) : null;
+        const isGroupDelete = pendingConv?.type === "group";
+        return (
+          <ConfirmModal
+            isOpen={pendingDeleteConvId !== null}
+            title={isGroupDelete ? "Delete group?" : "Delete chat?"}
+            description={isGroupDelete ? "This group and all its messages will be permanently removed. This cannot be undone." : "This contact and all messages will be permanently removed. This cannot be undone."}
+            confirmText={isGroupDelete ? "Delete group" : "Delete chat"}
+            onConfirm={() => {
+              if (pendingDeleteConvId) deleteConversationById(pendingDeleteConvId);
+              setPendingDeleteConvId(null);
+            }}
+            onCancel={() => setPendingDeleteConvId(null)}
+          />
+        );
+      })()}
 
       {/* Mute modal (triggered from per-conversation context menu) */}
       {mutingConvId &&

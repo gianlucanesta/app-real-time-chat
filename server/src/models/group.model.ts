@@ -232,6 +232,14 @@ export async function removeMember(
   );
 }
 
+/** Delete a group entirely (members + group row). */
+export async function deleteGroup(groupId: string): Promise<void> {
+  await pool.query(`DELETE FROM group_chat_members WHERE group_id = $1`, [
+    groupId,
+  ]);
+  await pool.query(`DELETE FROM group_chats WHERE id = $1`, [groupId]);
+}
+
 /** Update a member's role. */
 export async function updateMemberRole(
   groupId: string,

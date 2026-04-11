@@ -8,6 +8,7 @@ groupRouter.get("/", authMiddleware, ctrl.list);
 groupRouter.post("/", authMiddleware, ctrl.create);
 groupRouter.get("/:id", authMiddleware, ctrl.getById);
 groupRouter.patch("/:id", authMiddleware, ctrl.update);
+groupRouter.delete("/:id", authMiddleware, ctrl.deleteGroup);
 groupRouter.post("/:id/members", authMiddleware, ctrl.addMembers);
 groupRouter.delete("/:id/members/:userId", authMiddleware, ctrl.removeMember);
 groupRouter.patch(

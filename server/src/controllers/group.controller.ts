@@ -334,3 +334,37 @@ export async function updateMemberRole(
     next(err);
   }
 }
+
+/** DELETE /api/groups/:id — leave or delete a group */
+export async function deleteGroup(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const id = req.params.id as string;
+    const userId = req.user!.sub;
+
+    // Verify the user is actually a member
+    const role = await GroupModel.getMemberRole(id, userId);
+    if (!role) {
+      res.status(404).json({ error: "Group not found or you are not a member" });
+      return;
+    }
+
+    const conversationId = `grp_${id}`;
+
+    if (role === "admin") {
+      // Admin: delete all messages + the entire group
+      await Message.deleteMany({ conversationId });
+      await GroupModel.deleteGroup(id);
+    } else {
+      // Non-admin: just leave — remove membership, keep group for others
+      await GroupModel.removeMember(id, userId);
+    }
+
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+}

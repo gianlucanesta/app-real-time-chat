@@ -1675,15 +1675,22 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setConversations((prev) => prev.filter((c) => c.id !== convId));
     // Deselect active conversation
     setActiveConversation(null);
-    // Delete messages on server (and remove contact so conversation doesn't reappear)
-    apiFetch(`/messages/${convId}?deleteContact=true`, {
-      method: "DELETE",
-    }).catch((err) =>
-      console.warn(
-        "[chat] delete conversation failed:",
-        (err as Error).message,
-      ),
-    );
+    // Persist deletion on server
+    if (convId.startsWith("grp_")) {
+      const groupId = convId.slice(4);
+      apiFetch(`/groups/${groupId}`, { method: "DELETE" }).catch((err) =>
+        console.warn("[chat] delete group failed:", (err as Error).message),
+      );
+    } else {
+      apiFetch(`/messages/${convId}?deleteContact=true`, {
+        method: "DELETE",
+      }).catch((err) =>
+        console.warn(
+          "[chat] delete conversation failed:",
+          (err as Error).message,
+        ),
+      );
+    }
   }, [activeConversation]);
 
   // ── React to message ─────────────────────────────────────────────────────
@@ -2182,15 +2189,25 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           localStorage.removeItem(`pinned_${convId}`);
           localStorage.removeItem(`favorite_${convId}`);
           localStorage.removeItem(`muted_${convId}`);
-          // Delete messages on server (and remove contact so conversation doesn't reappear)
-          apiFetch(`/messages/${convId}?deleteContact=true`, {
-            method: "DELETE",
-          }).catch((err) =>
-            console.warn(
-              "[chat] delete conversation failed:",
-              (err as Error).message,
-            ),
-          );
+          // Persist deletion on server
+          if (convId.startsWith("grp_")) {
+            const groupId = convId.slice(4);
+            apiFetch(`/groups/${groupId}`, { method: "DELETE" }).catch((err) =>
+              console.warn(
+                "[chat] delete group failed:",
+                (err as Error).message,
+              ),
+            );
+          } else {
+            apiFetch(`/messages/${convId}?deleteContact=true`, {
+              method: "DELETE",
+            }).catch((err) =>
+              console.warn(
+                "[chat] delete conversation failed:",
+                (err as Error).message,
+              ),
+            );
+          }
         },
         pendingRemoteDeletions,
         confirmRemoteDeletion,
