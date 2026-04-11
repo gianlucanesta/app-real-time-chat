@@ -12,6 +12,8 @@
 
 Deployed on [Render](https://render.com) — see [render.yaml](render.yaml) for service configuration.
 
+**[Open Live App](https://app-real-time-chat-frontend.onrender.com/)**
+
 ## Features
 
 ### Messaging
@@ -155,9 +157,9 @@ The client runs on `http://localhost:5173`, the server on `http://localhost:3000
 
 ## API Documentation
 
-- **Swagger UI** — interactive docs at [`/api/docs`](https://app-real-time-chat-backend.onrender.com/api/docs/) (live) or `http://localhost:3000/api/docs` (local)
+- **Swagger UI** — interactive docs at [`/api/docs`](https://app-real-time-chat-backend.onrender.com/api/docs/#/) (live) or `http://localhost:3000/api/docs` (local)
 - **OpenAPI JSON spec** — raw spec at [`/api/docs.json`](https://app-real-time-chat-backend.onrender.com/api/docs.json)
-- **Fumadocs** — comprehensive docs covering architecture, API, features, and client internals
+- **Fumadocs** — comprehensive docs at [app-real-time-chat-docs.onrender.com/docs](https://app-real-time-chat-docs.onrender.com/docs) covering architecture, API, features, and client internals
 
 ### Documented API Groups
 
