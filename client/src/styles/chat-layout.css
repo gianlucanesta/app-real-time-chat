@@ -30,7 +30,7 @@
   display: flex;
   flex-direction: row;
   gap: var(--spacing-4);
-  align-items: flex-start;
+  align-items: stretch;
   justify-content: center;
 }
 
@@ -38,6 +38,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: var(--spacing-3);
   padding: var(--spacing-5);
   background-color: var(--color-card);
@@ -47,7 +48,8 @@
   color: var(--color-text-main);
   font-size: var(--text-sm);
   font-weight: 500;
-  width: 120px;
+  width: 130px;
+  text-align: center;
   transition:
     background-color var(--transition-fast),
     border-color var(--transition-fast);
