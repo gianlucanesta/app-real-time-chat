@@ -13,7 +13,7 @@ export function AddToFavoritesModal({
   onClose,
 }: AddToFavoritesModalProps) {
   const { conversations, addToFavorites, removeFromFavorites } = useChat();
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const [search, setSearch] = useState("");
 
   // Filter to direct conversations only and apply search

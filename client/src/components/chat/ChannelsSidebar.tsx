@@ -67,7 +67,7 @@ export function ChannelsSidebar({
     }
   };
 
-  const handleUnfollow = async (channelId: string) => {
+  const _handleUnfollow = async (channelId: string) => {
     try {
       await apiFetch(`/channels/${channelId}/follow`, { method: "DELETE" });
       fetchChannels(isSearchMode ? searchQuery : undefined);
