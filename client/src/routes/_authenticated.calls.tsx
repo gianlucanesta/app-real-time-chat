@@ -179,6 +179,9 @@ function buildCallGroupsFromConversations(
       const ts = new Date(now - tpl.dayOffset * day);
       ts.setHours(tpl.hour, tpl.minute, 0, 0);
 
+      // Only include calls from the last 24 hours
+      if (now - ts.getTime() > day) continue;
+
       calls.push({
         id: `call-${conv.id}-${j}`,
         contactId: otherId,
