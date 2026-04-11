@@ -200,12 +200,20 @@ export function NewGroupPanel({
                   aria-label={`Remove ${displayName(c)}`}
                 >
                   <div className="relative">
-                    <div
-                      className="w-12 h-12 rounded-full flex items-center justify-center text-white text-[15px] font-semibold"
-                      style={{ background: c.gradient }}
-                    >
-                      {displayInitials(c)}
-                    </div>
+                    {c.linked_avatar_url ? (
+                      <img
+                        src={c.linked_avatar_url}
+                        alt={displayName(c)}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div
+                        className="w-12 h-12 rounded-full flex items-center justify-center text-white text-[15px] font-semibold"
+                        style={{ background: c.gradient }}
+                      >
+                        {displayInitials(c)}
+                      </div>
+                    )}
                     <div className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-destructive flex items-center justify-center border-2 border-card">
                       <svg
                         viewBox="0 0 24 24"
@@ -406,12 +414,20 @@ export function NewGroupPanel({
               <div className="flex flex-col gap-1">
                 {selected.map((c) => (
                   <div key={c.id} className="flex items-center gap-3 py-2">
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-white text-[13px] font-semibold shrink-0"
-                      style={{ background: c.gradient }}
-                    >
-                      {displayInitials(c)}
-                    </div>
+                    {c.linked_avatar_url ? (
+                      <img
+                        src={c.linked_avatar_url}
+                        alt={displayName(c)}
+                        className="w-10 h-10 rounded-full object-cover shrink-0"
+                      />
+                    ) : (
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-white text-[13px] font-semibold shrink-0"
+                        style={{ background: c.gradient }}
+                      >
+                        {displayInitials(c)}
+                      </div>
+                    )}
                     <span className="text-[14px] text-text-main font-medium">
                       {displayName(c)}
                     </span>

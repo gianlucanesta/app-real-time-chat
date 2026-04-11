@@ -1291,7 +1291,8 @@ export function ChatArea({
                     setActiveModal("delete-chat");
                   }}
                 >
-                  <Trash2 className="w-4 h-4" /> {isGroup ? "Delete group" : "Delete chat"}
+                  <Trash2 className="w-4 h-4" />{" "}
+                  {isGroup ? "Delete group" : "Delete chat"}
                 </button>
               </div>
             )}
@@ -1907,12 +1908,19 @@ export function ChatArea({
       <ConfirmModal
         isOpen={activeModal === "delete-chat"}
         title={isGroup ? "Delete group?" : "Delete chat?"}
-        description={isGroup ? "This group and all its messages will be permanently removed. This cannot be undone." : "This contact and all messages will be permanently removed. This cannot be undone."}
+        description={
+          isGroup
+            ? "This group and all its messages will be permanently removed. This cannot be undone."
+            : "This contact and all messages will be permanently removed. This cannot be undone."
+        }
         confirmText={isGroup ? "Delete group" : "Delete chat"}
         onConfirm={() => {
           deleteConversation();
           setActiveModal(null);
-          toast.showToast(isGroup ? "Group deleted" : "Chat deleted", "success");
+          toast.showToast(
+            isGroup ? "Group deleted" : "Chat deleted",
+            "success",
+          );
         }}
         onCancel={() => setActiveModal(null)}
       />

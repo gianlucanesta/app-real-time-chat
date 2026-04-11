@@ -97,7 +97,8 @@ export async function list(
                   contact?.gradient ??
                   "linear-gradient(135deg,#2563EB,#7C3AED)",
                 initials: contact?.initials ?? partner?.initials ?? "??",
-                avatar: partner?.avatar_url ?? null,
+                avatar:
+                  partner?.avatar_url ?? contact?.linked_avatar_url ?? null,
                 lastMessage: msgDoc
                   ? lastMessageIsMine
                     ? `You: ${msgDoc.text}`
@@ -155,7 +156,7 @@ export async function list(
           name: ct.linked_display_name || ct.display_name,
           gradient: ct.gradient,
           initials: ct.linked_initials || ct.initials || "??",
-          avatar: null as string | null,
+          avatar: ct.linked_avatar_url ?? null,
           lastMessage: "",
           lastMessageTime: "",
           lastMessageId: undefined as string | undefined,

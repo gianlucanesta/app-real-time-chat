@@ -278,7 +278,10 @@ export function ArchiveSidebar({ onSelectChat }: ArchiveSidebarProps) {
                           }}
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-danger hover:bg-danger/10 transition-colors cursor-pointer"
                         >
-                          <Trash2 className="w-4 h-4" /> {chat.type === "group" ? "Delete group" : "Delete chat"}
+                          <Trash2 className="w-4 h-4" />{" "}
+                          {chat.type === "group"
+                            ? "Delete group"
+                            : "Delete chat"}
                         </div>
                       </div>
                     )}

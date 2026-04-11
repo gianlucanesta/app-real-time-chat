@@ -348,7 +348,9 @@ export async function deleteGroup(
     // Verify the user is actually a member
     const role = await GroupModel.getMemberRole(id, userId);
     if (!role) {
-      res.status(404).json({ error: "Group not found or you are not a member" });
+      res
+        .status(404)
+        .json({ error: "Group not found or you are not a member" });
       return;
     }
 
