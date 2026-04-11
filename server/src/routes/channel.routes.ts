@@ -4,9 +4,235 @@ import * as ctrl from "../controllers/channel.controller.js";
 
 export const channelRouter = Router();
 
+/**
+ * @openapi
+ * /api/channels:
+ *   get:
+ *     tags: [Channels]
+ *     summary: List all channels
+ *     description: Returns all public channels and channels the current user follows. Supports optional search filter.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Filter channels by name (case-insensitive substring match)
+ *     responses:
+ *       200:
+ *         description: List of channels
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 channels:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       description:
+ *                         type: string
+ *                       avatarUrl:
+ *                         type: string
+ *                         nullable: true
+ *                       privacy:
+ *                         type: string
+ *                         enum: [public, private]
+ *                       followerCount:
+ *                         type: integer
+ *                       isFollowing:
+ *                         type: boolean
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 channelRouter.get("/", authMiddleware, ctrl.list);
+
+/**
+ * @openapi
+ * /api/channels:
+ *   post:
+ *     tags: [Channels]
+ *     summary: Create a new channel
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, description]
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 maxLength: 100
+ *               description:
+ *                 type: string
+ *               avatarUrl:
+ *                 type: string
+ *                 nullable: true
+ *               privacy:
+ *                 type: string
+ *                 enum: [public, private]
+ *                 default: public
+ *     responses:
+ *       201:
+ *         description: Channel created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 channel:
+ *                   type: object
+ *       401:
+ *         description: Unauthorized
+ *       422:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 channelRouter.post("/", authMiddleware, ctrl.create);
+
+/**
+ * @openapi
+ * /api/channels/{id}:
+ *   get:
+ *     tags: [Channels]
+ *     summary: Get channel by ID
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Channel details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 channel:
+ *                   type: object
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Channel not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 channelRouter.get("/:id", authMiddleware, ctrl.getById);
+
+/**
+ * @openapi
+ * /api/channels/{id}/follow:
+ *   post:
+ *     tags: [Channels]
+ *     summary: Follow a channel
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Successfully followed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 followed:
+ *                   type: boolean
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Channel not found
+ */
 channelRouter.post("/:id/follow", authMiddleware, ctrl.follow);
+
+/**
+ * @openapi
+ * /api/channels/{id}/follow:
+ *   delete:
+ *     tags: [Channels]
+ *     summary: Unfollow a channel
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Successfully unfollowed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 unfollowed:
+ *                   type: boolean
+ *       401:
+ *         description: Unauthorized
+ */
 channelRouter.delete("/:id/follow", authMiddleware, ctrl.unfollowChannel);
+
+/**
+ * @openapi
+ * /api/channels/{id}:
+ *   delete:
+ *     tags: [Channels]
+ *     summary: Delete a channel
+ *     description: Only the channel owner can delete it.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Channel deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 deleted:
+ *                   type: boolean
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Channel not found or not owned by you
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 channelRouter.delete("/:id", authMiddleware, ctrl.remove);

@@ -51,6 +51,9 @@ Deployed on [Render](https://render.com) — see [render.yaml](render.yaml) for 
 - **Password reset** via email token
 - **Google OAuth 2.0** login
 - **Facebook OAuth 2.0** login (logic completely implemented, actually works only for the owner until authorization from Meta)
+- **Microsoft OAuth 2.0** login
+- **GitHub OAuth 2.0** login
+- **TikTok OAuth 2.0** login
 - **JWT dual-token** strategy (short-lived access + HttpOnly refresh cookie)
 
 ### User Experience
@@ -152,8 +155,15 @@ The client runs on `http://localhost:5173`, the server on `http://localhost:3000
 
 ## API Documentation
 
-- **Swagger UI** — available at `/api/docs` when server is running
+- **Swagger UI** — interactive docs at [`/api/docs`](https://app-real-time-chat-backend.onrender.com/api/docs/) (live) or `http://localhost:3000/api/docs` (local)
+- **OpenAPI JSON spec** — raw spec at [`/api/docs.json`](https://app-real-time-chat-backend.onrender.com/api/docs.json)
 - **Fumadocs** — comprehensive docs covering architecture, API, features, and client internals
+
+### Documented API Groups
+
+Auth · Users · Contacts · Conversations · Messages · Status · Upload · WebRTC (TURN) · Channels · Communities · Groups · Health
+
+WebSocket events (Socket.IO) are documented inside the Swagger UI description panel.
 
 ## Testing
 
