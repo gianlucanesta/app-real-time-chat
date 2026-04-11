@@ -5,6 +5,7 @@ import { CallInfoPanel } from "../components/chat/CallInfoPanel";
 import { StartCallModal } from "../components/chat/StartCallModal";
 import { CallLinkModal } from "../components/chat/CallLinkModal";
 import { DialpadPanel } from "../components/chat/DialpadPanel";
+import { AddToFavoritesModal } from "../components/chat/AddToFavoritesModal";
 import {
   ScheduleCallModal,
   type ScheduledCall,
@@ -172,7 +173,10 @@ function buildCallGroupsFromConversations(
     // Each conversation gets 1-3 calls
     const numCalls = Math.min(3, callTemplates.length - idx * 2);
     const calls: CallRecord[] = [];
-    const otherId = conv.participants.find(p => p !== currentUserId) || conv.participants[0] || conv.id;
+    const otherId =
+      conv.participants.find((p) => p !== currentUserId) ||
+      conv.participants[0] ||
+      conv.id;
 
     for (let j = 0; j < numCalls && idx * 2 + j < callTemplates.length; j++) {
       const tpl = callTemplates[idx * 2 + j];
@@ -240,6 +244,7 @@ function CallsPage() {
   const [showCallLink, setShowCallLink] = useState(false);
   const [showDialpad, setShowDialpad] = useState(false);
   const [showScheduleCall, setShowScheduleCall] = useState(false);
+  const [showAddFavorites, setShowAddFavorites] = useState(false);
 
   // Scheduled calls list
   const [_scheduledCalls, setScheduledCalls] = useState<ScheduledCall[]>([]);
@@ -259,8 +264,66 @@ function CallsPage() {
     [conversations, user?.id],
   );
 
-  // First 2 groups act as favorites
-  const favorites = useMemo(() => callGroups.slice(0, 2), [callGroups]);
+  // Favorites: conversations marked as favorite that also have call history
+  const favoriteConvIds = useMemo(
+    () =>
+      new Set(
+        conversations
+          .filter((c) => c.isFavorite)
+          .map((c) => {
+            const otherId =
+              c.participants.find((p) => p !== user?.id) ||
+              c.participants[0] ||
+              c.id;
+            return otherId;
+          }),
+      ),
+    [conversations, user?.id],
+  );
+
+  const favorites = useMemo(() => {
+    // Show favorite contacts from call groups, plus build stubs for favorites without call history
+    const fromCalls = callGroups.filter((g) =>
+      favoriteConvIds.has(g.contactId),
+    );
+    const fromCallIds = new Set(fromCalls.map((g) => g.contactId));
+
+    // Build entries for favorite conversations that don't have call history yet
+    const extraFavs: CallGroup[] = conversations
+      .filter((c) => c.isFavorite && !c.isArchived)
+      .map((c) => {
+        const otherId =
+          c.participants.find((p) => p !== user?.id) ||
+          c.participants[0] ||
+          c.id;
+        return { conv: c, otherId };
+      })
+      .filter(({ otherId }) => !fromCallIds.has(otherId))
+      .map(({ conv, otherId }) => ({
+        contactId: otherId,
+        contactName: conv.name,
+        contactAvatar: conv.avatar || null,
+        contactGradient: conv.gradient,
+        contactInitials: conv.initials,
+        calls: [],
+        lastCall: {
+          id: `stub-${conv.id}`,
+          contactId: otherId,
+          contactName: conv.name,
+          contactAvatar: conv.avatar || null,
+          contactGradient: conv.gradient,
+          contactInitials: conv.initials,
+          direction: "outgoing" as const,
+          callType: "voice" as const,
+          result: "accepted" as const,
+          timestamp: new Date().toISOString(),
+        },
+        count: 0,
+      }));
+
+    return [...fromCalls, ...extraFavs];
+  }, [callGroups, favoriteConvIds, conversations, user?.id]);
+
   const recent = callGroups;
 
   // On mobile: when selecting a group, show detail
@@ -422,6 +485,7 @@ function CallsPage() {
           selectedCallGroup={selectedGroup}
           onSelectCallGroup={handleSelectGroup}
           onQuickCall={handleStartCallFromModal}
+          onAddFavorite={() => setShowAddFavorites(true)}
         />
         {/* Dialpad overlays the sidebar */}
         <DialpadPanel
@@ -461,6 +525,10 @@ function CallsPage() {
         open={showScheduleCall}
         onClose={() => setShowScheduleCall(false)}
         onSchedule={handleScheduleCall}
+      />
+      <AddToFavoritesModal
+        open={showAddFavorites}
+        onClose={() => setShowAddFavorites(false)}
       />
     </div>
   );

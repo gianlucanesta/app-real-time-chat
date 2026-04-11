@@ -78,6 +78,7 @@ interface CallsSidebarProps {
   selectedCallGroup: CallGroup | null;
   onSelectCallGroup: (group: CallGroup) => void;
   onNewCall?: () => void;
+  onAddFavorite?: () => void;
   onQuickCall?: (contactId: string, withVideo: boolean) => void;
 }
 
@@ -87,6 +88,7 @@ export function CallsSidebar({
   selectedCallGroup,
   onSelectCallGroup,
   onNewCall,
+  onAddFavorite,
   onQuickCall,
 }: CallsSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -140,19 +142,17 @@ export function CallsSidebar({
           </h2>
         </div>
 
-        {filteredFavorites.length === 0 && (
-          <button
-            className="flex items-center gap-3 px-4 py-3 w-full hover:bg-input/50 transition-colors"
-            onClick={onNewCall}
-          >
-            <div className="w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center">
-              <UserPlus className="w-5 h-5 text-accent" />
-            </div>
-            <span className="text-[13.5px] text-text-main font-medium">
-              Add favorite
-            </span>
-          </button>
-        )}
+        <button
+          className="flex items-center gap-3 px-4 py-3 w-full hover:bg-input/50 transition-colors"
+          onClick={onAddFavorite}
+        >
+          <div className="w-10 h-10 rounded-full bg-accent/15 flex items-center justify-center">
+            <UserPlus className="w-5 h-5 text-accent" />
+          </div>
+          <span className="text-[13.5px] text-text-main font-medium">
+            Add favorite
+          </span>
+        </button>
 
         {filteredFavorites.map((group) => (
           <CallEntry

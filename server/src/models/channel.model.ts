@@ -1,5 +1,5 @@
 import { pool } from "../config/db.js";
-import type { IChannel, IChannelCreate } from "../interfaces/channel.interface.js";
+import type { IChannel, IChannelCreate, IChannelMessage } from "../interfaces/channel.interface.js";
 
 /** Create a new channel. */
 export async function create({
@@ -49,6 +49,7 @@ export async function findById(
 /**
  * List channels visible to the current user.
  * Returns all public channels + private channels owned by the user.
+ * Includes latest message preview for followed channels.
  */
 export async function listAll(
   currentUserId: string,
@@ -68,9 +69,18 @@ export async function listAll(
             EXISTS(
               SELECT 1 FROM channel_followers cf
               WHERE cf.channel_id = c.id AND cf.user_id = $1
-            ) AS is_following
+            ) AS is_following,
+            lm.content AS last_message,
+            lm.created_at AS last_message_at
      FROM channels c
      JOIN users u ON u.id = c.owner_id
+     LEFT JOIN LATERAL (
+       SELECT cm.content, cm.created_at
+       FROM channel_messages cm
+       WHERE cm.channel_id = c.id
+       ORDER BY cm.created_at DESC
+       LIMIT 1
+     ) lm ON true
      WHERE (c.privacy = 'public' OR c.owner_id = $1)
      ${searchClause}
      ORDER BY c.follower_count DESC, c.created_at DESC`,
@@ -128,4 +138,50 @@ export async function deleteById(
     [channelId, ownerId],
   );
   return rows[0] ?? null;
+}
+
+// ── Channel Messages ─────────────────────────────────────────────
+
+/** Create a message in a channel (only owner). */
+export async function createMessage(
+  channelId: string,
+  authorId: string,
+  content: string,
+  mediaUrl?: string | null,
+): Promise<IChannelMessage> {
+  const { rows } = await pool.query<IChannelMessage>(
+    `INSERT INTO channel_messages (channel_id, author_id, content, media_url)
+     VALUES ($1, $2, $3, $4)
+     RETURNING *`,
+    [channelId, authorId, content.trim(), mediaUrl ?? null],
+  );
+  return rows[0];
+}
+
+/** List messages for a channel (newest first, paginated). */
+export async function listMessages(
+  channelId: string,
+  limit = 50,
+  before?: string,
+): Promise<IChannelMessage[]> {
+  const params: (string | number)[] = [channelId, limit];
+  let beforeClause = "";
+  if (before) {
+    beforeClause = "AND cm.created_at < (SELECT created_at FROM channel_messages WHERE id = $3)";
+    params.push(before);
+  }
+  const { rows } = await pool.query<IChannelMessage>(
+    `SELECT cm.*,
+            u.display_name AS author_display_name,
+            u.initials     AS author_initials,
+            u.avatar_gradient AS author_avatar_gradient
+     FROM channel_messages cm
+     JOIN users u ON u.id = cm.author_id
+     WHERE cm.channel_id = $1
+     ${beforeClause}
+     ORDER BY cm.created_at ASC
+     LIMIT $2`,
+    params,
+  );
+  return rows;
 }

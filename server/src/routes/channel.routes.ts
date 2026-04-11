@@ -236,3 +236,72 @@ channelRouter.delete("/:id/follow", authMiddleware, ctrl.unfollowChannel);
  *               $ref: '#/components/schemas/Error'
  */
 channelRouter.delete("/:id", authMiddleware, ctrl.remove);
+
+// ── Channel Messages ─────────────────────────────────────────────
+
+/**
+ * @openapi
+ * /api/channels/{id}/messages:
+ *   get:
+ *     tags: [Channels]
+ *     summary: List channel messages
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *       - in: query
+ *         name: before
+ *         schema:
+ *           type: string
+ *         description: Message ID to paginate before
+ *     responses:
+ *       200:
+ *         description: List of channel messages
+ */
+channelRouter.get("/:id/messages", authMiddleware, ctrl.listMessages);
+
+/**
+ * @openapi
+ * /api/channels/{id}/messages:
+ *   post:
+ *     tags: [Channels]
+ *     summary: Post a message to a channel (owner only)
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [content]
+ *             properties:
+ *               content:
+ *                 type: string
+ *               mediaUrl:
+ *                 type: string
+ *                 nullable: true
+ *     responses:
+ *       201:
+ *         description: Message created
+ *       403:
+ *         description: Only the channel owner can post
+ *       422:
+ *         description: Validation error
+ */
+channelRouter.post("/:id/messages", authMiddleware, ctrl.createMessage);

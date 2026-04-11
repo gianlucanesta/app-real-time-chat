@@ -197,6 +197,16 @@ export async function initSchema(): Promise<void> {
     WHERE gcm.group_id = gc.id
       AND gcm.user_id = gc.created_by
       AND gcm.role = 'member';
+
+    -- Idempotent migration: channel messages
+    CREATE TABLE IF NOT EXISTS channel_messages (
+      id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+      channel_id  UUID        NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
+      author_id   UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      content     TEXT        NOT NULL DEFAULT '',
+      media_url   TEXT,
+      created_at  TIMESTAMPTZ DEFAULT now()
+    );
   `);
   console.log("[pg] schema ready");
 }

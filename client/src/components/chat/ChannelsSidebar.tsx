@@ -83,6 +83,22 @@ export function ChannelsSidebar({
     return `${count} follower${count !== 1 ? "s" : ""}`;
   };
 
+  const formatTimeAgo = (dateStr: string): string => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "now";
+    if (mins < 60) return `${mins}m`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h`;
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return `${days}d`;
+    return new Date(dateStr).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  };
+
+  // Split channels into followed and suggested
+  const followedChannels = channels.filter((c) => c.is_following);
+  const suggestedChannels = channels.filter((c) => !c.is_following);
+
   return (
     <>
       <aside className="w-full md:w-[var(--width-sidebar)] md:min-w-[var(--width-sidebar)] h-full flex flex-col border-r border-border bg-card shrink-0 overflow-hidden">
@@ -128,17 +144,7 @@ export function ChannelsSidebar({
           </div>
         </div>
 
-        {/* Subtitle text */}
-        <div className="px-4 pt-4 pb-2">
-          <p className="text-text-secondary text-[13px] leading-relaxed">
-            Get updates on your favorite topics
-          </p>
-          <p className="text-text-secondary text-[12px] mt-1">
-            Find channels to follow below
-          </p>
-        </div>
-
-        {/* Search bar (shown in search mode or always) */}
+        {/* Search bar (shown in search mode) */}
         {isSearchMode && (
           <div className="px-4 py-2">
             <div className="relative flex items-center bg-input border border-border rounded-lg h-[38px] px-3 focus-within:border-accent transition-colors">
@@ -183,59 +189,107 @@ export function ChannelsSidebar({
               </p>
             </div>
           ) : (
-            channels.map((channel) => (
-              <div
-                key={channel.id}
-                className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors ${
-                  selectedChannel?.id === channel.id
-                    ? "bg-accent/10"
-                    : "hover:bg-input"
-                }`}
-                onClick={() => onSelectChannel(channel)}
-              >
-                {/* Channel avatar */}
-                <div className="w-12 h-12 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
-                  {channel.avatar_url ? (
-                    <img
-                      src={channel.avatar_url}
-                      alt={channel.name}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                  ) : (
-                    <Megaphone className="w-6 h-6 text-accent" />
-                  )}
-                </div>
+            <>
+              {/* ── Followed Channels (chat-like list) ── */}
+              {followedChannels.length > 0 && (
+                <>
+                  {followedChannels.map((channel) => (
+                    <div
+                      key={channel.id}
+                      className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-colors ${
+                        selectedChannel?.id === channel.id
+                          ? "bg-accent/10"
+                          : "hover:bg-input"
+                      }`}
+                      onClick={() => onSelectChannel(channel)}
+                    >
+                      {/* Channel avatar */}
+                      <div className="w-12 h-12 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
+                        {channel.avatar_url ? (
+                          <img
+                            src={channel.avatar_url}
+                            alt={channel.name}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                        ) : (
+                          <Megaphone className="w-6 h-6 text-accent" />
+                        )}
+                      </div>
 
-                {/* Channel info */}
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-text-main text-[14px] truncate">
-                    {channel.name}
-                  </p>
-                  <p className="text-[12px] text-text-secondary truncate">
-                    {formatFollowers(channel.follower_count)}
-                  </p>
-                </div>
+                      {/* Channel info with last message preview */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="font-semibold text-text-main text-[14px] truncate">
+                            {channel.name}
+                          </p>
+                          {channel.last_message_at && (
+                            <span className="text-[11px] text-text-secondary shrink-0 ml-2">
+                              {formatTimeAgo(channel.last_message_at)}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[12px] text-text-secondary truncate mt-0.5">
+                          {channel.last_message || channel.description}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
 
-                {/* Follow / Following button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (channel.is_following) {
-                      handleUnfollow(channel.id);
-                    } else {
-                      handleFollow(channel.id);
-                    }
-                  }}
-                  className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all shrink-0 ${
-                    channel.is_following
-                      ? "bg-input text-text-secondary hover:bg-border"
-                      : "bg-accent text-white hover:brightness-110"
-                  }`}
-                >
-                  {channel.is_following ? "Following" : "Follow"}
-                </button>
-              </div>
-            ))
+              {/* ── Suggested Channels ("Find channels to follow") ── */}
+              {suggestedChannels.length > 0 && (
+                <>
+                  <div className="px-2 pt-4 pb-2">
+                    <p className="text-text-secondary text-[13px] font-semibold uppercase tracking-wide">
+                      Find channels to follow
+                    </p>
+                  </div>
+
+                  {suggestedChannels.map((channel) => (
+                    <div
+                      key={channel.id}
+                      className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-input transition-colors"
+                      onClick={() => onSelectChannel(channel)}
+                    >
+                      {/* Channel avatar */}
+                      <div className="w-12 h-12 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
+                        {channel.avatar_url ? (
+                          <img
+                            src={channel.avatar_url}
+                            alt={channel.name}
+                            className="w-12 h-12 rounded-full object-cover"
+                          />
+                        ) : (
+                          <Megaphone className="w-6 h-6 text-accent" />
+                        )}
+                      </div>
+
+                      {/* Channel info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-text-main text-[14px] truncate">
+                          {channel.name}
+                        </p>
+                        <p className="text-[12px] text-text-secondary truncate">
+                          {formatFollowers(channel.follower_count)}
+                        </p>
+                      </div>
+
+                      {/* Follow button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFollow(channel.id);
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all shrink-0 bg-accent text-white hover:brightness-110"
+                      >
+                        Follow
+                      </button>
+                    </div>
+                  ))}
+                </>
+              )}
+            </>
           )}
         </div>
 

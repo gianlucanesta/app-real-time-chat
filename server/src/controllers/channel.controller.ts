@@ -124,3 +124,60 @@ export async function remove(
     next(err);
   }
 }
+
+// ── Channel Messages ─────────────────────────────────────────────
+
+/** GET /api/channels/:id/messages */
+export async function listMessages(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const channelId = req.params.id as string;
+    const limit = Math.min(Number(req.query.limit) || 50, 100);
+    const before = req.query.before as string | undefined;
+    const messages = await ChannelModel.listMessages(channelId, limit, before);
+    res.status(200).json({ messages });
+  } catch (err) {
+    next(err);
+  }
+}
+
+/** POST /api/channels/:id/messages */
+export async function createMessage(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const channelId = req.params.id as string;
+    const { content, mediaUrl } = req.body;
+
+    // Only the channel owner can post
+    const channel = await ChannelModel.findById(channelId, req.user!.sub);
+    if (!channel) {
+      res.status(404).json({ error: "Channel not found" });
+      return;
+    }
+    if (channel.owner_id !== req.user!.sub) {
+      res.status(403).json({ error: "Only the channel owner can post messages" });
+      return;
+    }
+
+    if (!content || typeof content !== "string" || !content.trim()) {
+      res.status(422).json({ error: "Message content is required" });
+      return;
+    }
+
+    const message = await ChannelModel.createMessage(
+      channelId,
+      req.user!.sub,
+      content,
+      mediaUrl ?? null,
+    );
+    res.status(201).json({ message });
+  } catch (err) {
+    next(err);
+  }
+}
