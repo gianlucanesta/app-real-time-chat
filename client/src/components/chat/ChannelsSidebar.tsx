@@ -85,7 +85,7 @@ export function ChannelsSidebar({
 
   return (
     <>
-      <aside className="w-full md:w-[340px] lg:w-[380px] h-full flex flex-col border-r border-border bg-card shrink-0 overflow-hidden">
+      <aside className="w-full md:w-[var(--width-sidebar)] md:min-w-[var(--width-sidebar)] h-full flex flex-col border-r border-border bg-card shrink-0 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-4 h-[64px] border-b border-border shrink-0">
           <h1 className="text-xl font-bold text-text-main">Channels</h1>
