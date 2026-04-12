@@ -76,7 +76,7 @@ export function registerCallHandlers(
 
   // ── Call link room management ──
   socket.on("call:join-room", ({ roomId }) => {
-    if (typeof roomId !== "string" || !roomId || roomId.length > 20) return;
+    if (typeof roomId !== "string" || !roomId || roomId.length > 50) return;
     const room = `call:${roomId}`;
     socket.join(room);
 
